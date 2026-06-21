@@ -1,0 +1,8 @@
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('index') }}">📊 Моя CRM</a>
+        {% if session.get('logged_in') %}
+            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light">Вийти</a>
+        {% endif %}
+    </div>
+</nav>
