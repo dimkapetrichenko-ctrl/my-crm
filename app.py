@@ -2,7 +2,7 @@ import os
 import psycopg2
 from psycopg2.extras import DictCursor
 from flask import Flask, render_template, request, redirect, url_for, session
-from werkzeug.security import generate_password_hash, check_password_check
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 app = Flask(__name__)
