@@ -35,16 +35,14 @@ def init_db():
         )
     ''')
     
-    # Скрипт автоматичної міграції (додає колонки, якщо ви переходите зі старої версії бази)
-    cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='clients'")
-    existing_columns = [row[0] for row in cursor.fetchall()]
-    if 'country' not in existing_columns:
-        cursor.execute("ALTER TABLE clients ADD COLUMN country TEXT;")
-    if 'contact_person' not in existing_columns:
-        cursor.execute("ALTER TABLE clients ADD COLUMN contact_person TEXT;")
-    if 'address' in existing_columns:
-        # Безпечно ігноруємо або прибираємо стару колонку address за бажанням
-        pass
+# Перевіряємо та додаємо колонку country, contact_person
+if 'country' not in existing_columns:
+    cursor.execute("ALTER TABLE clients ADD COLUMN country TEXT;")
+if 'contact_person' not in existing_columns:
+    cursor.execute("ALTER TABLE clients ADD COLUMN contact_person TEXT;")
+# ДОДАЙТЕ ЦІ ДВА РЯДКИ:
+if 'address' not in existing_columns:
+    cursor.execute("ALTER TABLE clients ADD COLUMN address TEXT;")
 
     # Таблиця історії перемовин
     cursor.execute('''
