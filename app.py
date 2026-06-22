@@ -8,8 +8,10 @@ import io
 
 app = Flask(__name__)
 
+# Секретний ключ для захисту сесій входу
 app.secret_key = os.environ.get('SECRET_KEY', 'super-secret-key-change-me')
 
+# Логін та пароль із змінних оточення Render
 CRM_USERNAME = os.environ.get('CRM_USERNAME', 'admin')
 CRM_PASSWORD = os.environ.get('CRM_PASSWORD', 'Mayer2026') 
 
@@ -23,26 +25,29 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Створюємо або оновлюємо таблицю клієнтів з новими полями
+    # Створюємо таблицю клієнтів з усіма необхідними полями
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clients (
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             country TEXT,
+            address TEXT,
             contact_person TEXT,
             phone TEXT,
             email TEXT
         )
     ''')
     
-# Перевіряємо та додаємо колонку country, contact_person
-if 'country' not in existing_columns:
-    cursor.execute("ALTER TABLE clients ADD COLUMN country TEXT;")
-if 'contact_person' not in existing_columns:
-    cursor.execute("ALTER TABLE clients ADD COLUMN contact_person TEXT;")
-# ДОДАЙТЕ ЦІ ДВА РЯДКИ:
-if 'address' not in existing_columns:
-    cursor.execute("ALTER TABLE clients ADD COLUMN address TEXT;")
+    # Автоматична міграція бази даних (додавання нових колонок, якщо вони відсутні)
+    cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='clients'")
+    existing_columns = [row[0] for row in cursor.fetchall()]
+    
+    if 'country' not in existing_columns:
+        cursor.execute("ALTER TABLE clients ADD COLUMN country TEXT;")
+    if 'address' not in existing_columns:
+        cursor.execute("ALTER TABLE clients ADD COLUMN address TEXT;")
+    if 'contact_person' not in existing_columns:
+        cursor.execute("ALTER TABLE clients ADD COLUMN contact_person TEXT;")
 
     # Таблиця історії перемовин
     cursor.execute('''
@@ -62,6 +67,7 @@ if 'address' not in existing_columns:
 if DATABASE_URL:
     init_db()
 
+# Декоратор для захисту маршрутів (вхід обов'язковий)
 def login_required(f):
     from functools import wraps
     @wraps(f)
@@ -98,11 +104,11 @@ def index():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
     
-    # Отримуємо унікальний список країн для випадаючого списку фільтра
+    # Отримуємо список унікальних країн для фільтра
     cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
     countries = [row['country'] for row in cursor.fetchall()]
     
-    # Формуємо SQL-запит з урахуванням пошуку та фільтрації
+    # Головний SQL-запит для пошуку та фільтрації
     sql = "SELECT * FROM clients WHERE 1=1"
     params = []
     
@@ -128,6 +134,7 @@ def index():
 def add_client():
     name = request.form.get('name')
     country = request.form.get('country')
+    address = request.form.get('address')
     contact_person = request.form.get('contact_person')
     phone = request.form.get('phone')
     email = request.form.get('email')
@@ -136,8 +143,8 @@ def add_client():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO clients (name, country, contact_person, phone, email) VALUES (%s, %s, %s, %s, %s)",
-            (name, country, contact_person, phone, email)
+            "INSERT INTO clients (name, country, address, contact_person, phone, email) VALUES (%s, %s, %s, %s, %s, %s)",
+            (name, country, address, contact_person, phone, email)
         )
         conn.commit()
         cursor.close()
@@ -149,6 +156,7 @@ def add_client():
 def edit_client(client_id):
     name = request.form.get('name')
     country = request.form.get('country')
+    address = request.form.get('address')
     contact_person = request.form.get('contact_person')
     phone = request.form.get('phone')
     email = request.form.get('email')
@@ -157,8 +165,8 @@ def edit_client(client_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE clients SET name=%s, country=%s, contact_person=%s, phone=%s, email=%s WHERE id=%s",
-            (name, country, contact_person, phone, email, client_id)
+            "UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, phone=%s, email=%s WHERE id=%s",
+            (name, country, address, contact_person, phone, email, client_id)
         )
         conn.commit()
         cursor.close()
@@ -207,32 +215,6 @@ def edit_negotiation(neg_id):
         conn.close()
     return redirect(url_for('client_detail', client_id=client_id))
 
-@app.route('/export_excel')
-@login_required
-def export_excel():
-    conn = get_db_connection()
-    
-    # Вивантажуємо клієнтів разом із завантаженою останньою історією (або просто загальний список)
-    query = """
-        SELECT c.name AS "Назва компанії", c.country AS "Країна", 
-               c.contact_person AS "Відповідальна особа", c.phone AS "Телефон", c.email AS "Email"
-        FROM clients c ORDER BY c.name ASC
-    """
-    df = pd.read_sql(query, conn)
-    conn.close()
-    
-    # Створюємо Excel файл в пам'яті
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Клієнти Mayer CRM')
-    output.seek(0)
-    
-    return send_file(
-        output,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=f'Mayer_CRM_Clients_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
-    )
 @app.route('/delete_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
 def delete_negotiation(neg_id):
@@ -244,8 +226,34 @@ def delete_negotiation(neg_id):
     conn.commit()
     cursor.close()
     conn.close()
-    
     return redirect(url_for('client_detail', client_id=client_id))
+
+@app.route('/export_excel')
+@login_required
+def export_excel():
+    conn = get_db_connection()
+    
+    query = """
+        SELECT c.name AS "Назва компанії", c.country AS "Країна", c.address AS "Адреса",
+               c.contact_person AS "Відповідальна особа", c.phone AS "Телефон", c.email AS "Email"
+        FROM clients c ORDER BY c.name ASC
+    """
+    # Виправлено механічну помилку read_sql_out -> read_sql
+    df = pd.read_sql(query, conn)
+    conn.close()
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Клієнти Mayer CRM')
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Mayer_CRM_Clients_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
+    )
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
