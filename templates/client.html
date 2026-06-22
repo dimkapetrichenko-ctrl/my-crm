@@ -1,54 +1,117 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="mb-3">
-    <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">← Назад до списку</a>
+
+<div class="row mb-4">
+    <div class="col">
+        <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">← Назад до списку</a>
+    </div>
 </div>
 
 <div class="row">
     <div class="col-md-5 mb-4">
-        <div class="card shadow-sm border-primary">
-            <div class="card-header bg-primary text-white">Інформація про клієнта</div>
-            <div class="card-body">
-                <h3>{{ client.name }}</h3>
-                <hr>
-                <p><strong>📍 Адреса:</strong> {{ client.address or 'Не вказано' }}</p>
-                <p><strong>📞 Телефон:</strong> {{ client.phone or 'Не вказано' }}</p>
-                <p><strong>✉️ Email:</strong> {{ client.email or 'Не вказано' }}</p>
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">🏢 Данні компанії</h5>
+                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#editClientModal">✏️ Редагувати</button>
             </div>
-        </div>
-
-        <div class="card shadow-sm mt-4">
-            <div class="card-header bg-dark text-white">Додати результат перемовин</div>
             <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label">Зміст розмови / Наступні кроки</label>
-                        <textarea name="result" class="form-control" rows="4" placeholder="Про що домовились, які деталі замовлення чи запиту..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Зберегти запис</button>
-                </form>
+                <h3 class="card-title text-danger mb-3">{{ client.name }}</h3>
+                <p>🌍 <strong>Країна:</strong> {{ client.country or 'Не вказано' }}</p>
+                <p>👤 <strong>Відповідальна особа:</strong> {{ client.contact_person or 'Не вказано' }}</p>
+                <p>📞 <strong>Телефон:</strong> {{ client.phone or 'Не вказано' }}</p>
+                <p>✉️ <strong>Email:</strong> {{ client.email or 'Не вказано' }}</p>
             </div>
         </div>
     </div>
 
     <div class="col-md-7">
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white">Історія взаємодії</div>
-            <div class="card-body">
-                {% if history %}
-                    {% for log in history %}
-                    <div class="p-3 mb-3 bg-white border rounded shadow-sm">
-                        <div class="d-flex justify-content-between text-muted small mb-2">
-                            <span>📅 {{ log.date }}</span>
-                        </div>
-                        <p class="mb-0" style="white-space: pre-line;">{{ log.result }}</p>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                <p class="text-muted text-center my-4">Перемовин з цим клієнтом ще не зафіксовано.</p>
-                {% endif %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">✍️ Додати запис про перемовини</h5>
             </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <textarea name="result" class="form-control" rows="3" placeholder="Опишіть результат дзвінка чи зустрічі, домовленості, наступні кроки..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Додати запис</button>
+                </form>
+            </div>
+        </div>
+
+        <h4 class="mb-3">📜 Історія комунікацій</h4>
+        {% for item in history %}
+        <div class="card shadow-sm mb-2">
+            <div class="card-body">
+                <div class="d-flex justify-content-between text-muted mb-2">
+                    <small>📅 {{ item.date }}</small>
+                    <button class="btn btn-sm btn-link text-primary p-0" data-bs-toggle="modal" data-bs-target="#editNegModal{{ item.id }}">Редагувати запис</button>
+                </div>
+                <p class="mb-0 card-text" style="white-space: pre-wrap;">{{ item.result }}</p>
+            </div>
+        </div>
+
+        <div class="modal fade" id="editNegModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form action="{{ url_for('edit_negotiation', neg_id=item.id) }}" method="POST">
+                        <input type="hidden" name="client_id" value="{{ client.id }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Редагувати запис від {{ item.date }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <textarea name="result" class="form-control" rows="4" required>{{ item.result }}</textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                            <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal fade" id="editClientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редагувати картку клієнта</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('edit_client', client_id=client.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Назва компанії</label>
+                        <input type="text" name="name" class="form-control" value="{{ client.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Країна</label>
+                        <input type="text" name="country" class="form-control" value="{{ client.country or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ім'я відповідальної особи</label>
+                        <input type="text" name="contact_person" class="form-control" value="{{ client.contact_person or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input type="text" name="phone" class="form-control" value="{{ client.phone or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" value="{{ client.email or '' }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                    <button type="submit" class="btn btn-danger">Зберегти зміни</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
 {% endblock %}
