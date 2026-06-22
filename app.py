@@ -8,10 +8,8 @@ import io
 
 app = Flask(__name__)
 
-# Секретний ключ для захисту сесій входу
 app.secret_key = os.environ.get('SECRET_KEY', 'super-secret-key-change-me')
 
-# Логін та пароль із змінних оточення Render
 CRM_USERNAME = os.environ.get('CRM_USERNAME', 'admin')
 CRM_PASSWORD = os.environ.get('CRM_PASSWORD', 'Mayer2026') 
 
@@ -25,7 +23,6 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Створюємо таблицю клієнтів з усіма необхідними полями
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clients (
             id SERIAL PRIMARY KEY,
@@ -34,22 +31,36 @@ def init_db():
             address TEXT,
             contact_person TEXT,
             phone TEXT,
-            email TEXT
+            email TEXT,
+            website TEXT,
+            buyer_type TEXT,
+            brands TEXT,
+            contact_person_2 TEXT,
+            position_2 TEXT,
+            phone_2 TEXT,
+            email_2 TEXT
         )
     ''')
     
-    # Автоматична міграція бази даних (додавання нових колонок, якщо вони відсутні)
+    # Автоматична міграція для нових полів
     cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='clients'")
     existing_columns = [row[0] for row in cursor.fetchall()]
     
-    if 'country' not in existing_columns:
-        cursor.execute("ALTER TABLE clients ADD COLUMN country TEXT;")
-    if 'address' not in existing_columns:
-        cursor.execute("ALTER TABLE clients ADD COLUMN address TEXT;")
-    if 'contact_person' not in existing_columns:
-        cursor.execute("ALTER TABLE clients ADD COLUMN contact_person TEXT;")
+    new_fields = {
+        'website': 'TEXT',
+        'buyer_type': 'TEXT',
+        'brands': 'TEXT',
+        'contact_person_2': 'TEXT',
+        'position_2': 'TEXT',
+        'phone_2': 'TEXT',
+        'email_2': 'TEXT'
+    }
+    
+    for field, f_type in new_fields.items():
+        if field not in existing_columns:
+            cursor.execute(f"ALTER TABLE clients ADD COLUMN {field} {f_type};")
 
-    # Таблиця історії перемовин
+    # Таблиця історії
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS negotiations (
             id SERIAL PRIMARY KEY,
@@ -67,7 +78,6 @@ def init_db():
 if DATABASE_URL:
     init_db()
 
-# Декоратор для захисту маршрутів (вхід обов'язковий)
 def login_required(f):
     from functools import wraps
     @wraps(f)
@@ -104,17 +114,15 @@ def index():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
     
-    # Отримуємо список унікальних країн для фільтра
     cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
     countries = [row['country'] for row in cursor.fetchall()]
     
-    # Головний SQL-запит для пошуку та фільтрації
     sql = "SELECT * FROM clients WHERE 1=1"
     params = []
     
     if search_query:
-        sql += " AND (LOWER(name) LIKE LOWER(%s) OR LOWER(contact_person) LIKE LOWER(%s))"
-        params.extend([f"%{search_query}%", f"%{search_query}%"])
+        sql += " AND (LOWER(name) LIKE LOWER(%s) OR LOWER(contact_person) LIKE LOWER(%s) OR LOWER(brands) LIKE LOWER(%s))"
+        params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
         
     if country_filter:
         sql += " AND country = %s"
@@ -138,13 +146,27 @@ def add_client():
     contact_person = request.form.get('contact_person')
     phone = request.form.get('phone')
     email = request.form.get('email')
+    website = request.form.get('website')
+    buyer_type = request.form.get('buyer_type')
+    
+    # Збір кількох обраних брендів з чекбоксів в один рядок через кому
+    selected_brands = request.form.getlist('brands')
+    brands = ", ".join(selected_brands) if selected_brands else ""
+    
+    contact_person_2 = request.form.get('contact_person_2')
+    position_2 = request.form.get('position_2')
+    phone_2 = request.form.get('phone_2')
+    email_2 = request.form.get('email_2')
     
     if name:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO clients (name, country, address, contact_person, phone, email) VALUES (%s, %s, %s, %s, %s, %s)",
-            (name, country, address, contact_person, phone, email)
+            """INSERT INTO clients (name, country, address, contact_person, phone, email, website, buyer_type, brands, 
+                                   contact_person_2, position_2, phone_2, email_2) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (name, country, address, contact_person, phone, email, website, buyer_type, brands,
+             contact_person_2, position_2, phone_2, email_2)
         )
         conn.commit()
         cursor.close()
@@ -160,13 +182,26 @@ def edit_client(client_id):
     contact_person = request.form.get('contact_person')
     phone = request.form.get('phone')
     email = request.form.get('email')
+    website = request.form.get('website')
+    buyer_type = request.form.get('buyer_type')
+    
+    selected_brands = request.form.getlist('brands')
+    brands = ", ".join(selected_brands) if selected_brands else ""
+    
+    contact_person_2 = request.form.get('contact_person_2')
+    position_2 = request.form.get('position_2')
+    phone_2 = request.form.get('phone_2')
+    email_2 = request.form.get('email_2')
     
     if name:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, phone=%s, email=%s WHERE id=%s",
-            (name, country, address, contact_person, phone, email, client_id)
+            """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, phone=%s, email=%s, 
+                                  website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
+                                  phone_2=%s, email_2=%s WHERE id=%s""",
+            (name, country, address, contact_person, phone, email, website, buyer_type, brands,
+             contact_person_2, position_2, phone_2, email_2, client_id)
         )
         conn.commit()
         cursor.close()
@@ -234,11 +269,12 @@ def export_excel():
     conn = get_db_connection()
     
     query = """
-        SELECT c.name AS "Назва компанії", c.country AS "Країна", c.address AS "Адреса",
-               c.contact_person AS "Відповідальна особа", c.phone AS "Телефон", c.email AS "Email"
+        SELECT c.name AS "Назва компанії", c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
+               c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
+               c.contact_person AS "Контактна особа 1", c.phone AS "Телефон 1", c.email AS "Email 1",
+               c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.email_2 AS "Email 2"
         FROM clients c ORDER BY c.name ASC
     """
-    # Виправлено механічну помилку read_sql_out -> read_sql
     df = pd.read_sql(query, conn)
     conn.close()
     
