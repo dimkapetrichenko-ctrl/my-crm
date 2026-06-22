@@ -223,7 +223,16 @@ def client_detail(client_id):
         return redirect(url_for('client_detail', client_id=client_id))
     
     cursor.execute("SELECT * FROM clients WHERE id = %s", (client_id,))
-    client = cursor.fetchone()
+    raw_client = cursor.fetchone()
+    
+    # Створюємо безпечну копію даних клієнта, щоб уникнути помилок через пусті поля (None/NULL) у старих записах
+    client = dict(raw_client) if raw_client else {}
+    fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
+                       'contact_person', 'phone', 'email', 
+                       'contact_person_2', 'position_2', 'phone_2', 'email_2']
+    for field in fields_to_check:
+        if field not in client or client[field] is None:
+            client[field] = ''
     
     cursor.execute("SELECT * FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
     history = cursor.fetchall()
