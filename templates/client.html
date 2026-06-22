@@ -1,170 +1,80 @@
-{% extends 'base.html' %}
-{% block content %}
-
-<div class="row mb-4">
-    <div class="col">
-        <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">← Назад до списку</a>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-5 mb-4">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">🏢 Дані компанії</h5>
-                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#editClientModal">✏️ Редагувати</button>
-            </div>
-            <div class="card-body">
-                <h3 class="card-title text-danger mb-1">{{ client.name }}</h3>
-                <p class="text-muted mb-3"><b>Тип:</b> {{ client.buyer_type or 'Не вказано' }}</p>
-                
-                <p>🚜 <strong>Пріоритетні бренди:</strong> <br><span class="text-primary">{{ client.brands or 'Не вказано' }}</span></p>
-                <p>🌐 <strong>Веб-сайт:</strong> {% if client.website %}<a href="http://{{ client.website }}" target="_blank">{{ client.website }}</a>{% else %}Не вказано{% endif %}</p>
-                <p>🌍 <strong>Країна:</strong> {{ client.country or 'Не вказано' }}</p>
-                <p>📍 <strong>Адреса:</strong> {{ client.address or 'Не вказано' }}</p>
-
-                <div class="card bg-light mt-3">
-                    <div class="card-body py-2">
-                        <h5>👤 Контактна особа №1</h5>
-                        <p class="mb-1"><b>Ім'я:</b> {{ client.contact_person or '-' }}</p>
-                        <p class="mb-1"><b>Телефон:</b> {{ client.phone or '-' }}</p>
-                        <p class="mb-0"><b>Email:</b> {{ client.email or '-' }}</p>
-                    </div>
-                </div>
-
-                <div class="card bg-light mt-2">
-                    <div class="card-body py-2">
-                        <h5>👤 Контактна особа №2</h5>
-                        <p class="mb-1"><b>Ім'я:</b> {{ client.contact_person_2 or '-' }}</p>
-                        <p class="mb-1"><b>Посада:</b> {{ client.position_2 or '-' }}</p>
-                        <p class="mb-1"><b>Телефон:</b> {{ client.phone_2 or '-' }}</p>
-                        <p class="mb-0"><b>Email:</b> {{ client.email_2 or '-' }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-7">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0">✍️ Додати запис про перемовини</h5>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <textarea name="result" class="form-control" rows="3" placeholder="Результат дзвінка, домовленості..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Додати запис</button>
-                </form>
-            </div>
-        </div>
-
-        <h4 class="mb-3">📜 Історія комунікацій</h4>
-        {% for item in history %}
-        <div class="card shadow-sm mb-2">
-            <div class="card-body">
-                <div class="d-flex justify-content-between text-muted mb-2">
-                    <small>📅 {{ item.date }}</small>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-link text-primary p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#editNegModal{{ item.id }}">✏️ Редагувати</button>
-                        <form action="{{ url_for('delete_negotiation', neg_id=item.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Ви впевнені?');">
-                            <input type="hidden" name="client_id" value="{{ client.id }}">
-                            <button type="submit" class="btn btn-sm btn-link text-danger p-0 text-decoration-none">🗑️ Видалити</button>
-                        </form>
-                    </div>
-                </div>
-                <p class="mb-0" style="white-space: pre-wrap;">{{ item.result }}</p>
-            </div>
-        </div>
-
-        <div class="modal fade" id="editNegModal{{ item.id }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <form action="{{ url_for('edit_negotiation', neg_id=item.id) }}" method="POST">
-                        <input type="hidden" name="client_id" value="{{ client.id }}">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Редагувати запис</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <textarea name="result" class="form-control" rows="4" required>{{ item.result }}</textarea>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-                            <button type="submit" class="btn btn-primary">Зберегти</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-
 <div class="modal fade" id="editClientModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Редагувати картку компанії</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="font-size: 0.9rem;">
+            <div class="modal-header bg-dark text-white py-2">
+                <h5 class="modal-title" style="font-size: 1.1rem;">✏️ Редагувати картку компанії</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('edit_client', client_id=client.id) }}" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Назва компанії</label>
-                        <input type="text" name="name" class="form-control" value="{{ client.name }}" required>
+            <form action="{{ url_for('edit_client', client_id=client.id) }}" method="POST" class="d-flex flex-column" style="max-height: 75vh;">
+                <div class="modal-body p-3">
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">Назва компанії</label>
+                        <input type="text" name="name" class="form-control form-control-sm" value="{{ client.name }}" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Тип покупця</label>
-                        <select name="buyer_type" class="form-select">
+                    
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">Тип покупця</label>
+                        <select name="buyer_type" class="form-select form-select-sm">
                             <option value="" {% if not client.buyer_type %}selected{% endif %}>-- Оберіть тип --</option>
                             {% for t in ['інтернет-магазин', 'гуртовий клієнт', 'фермерське господарство', 'виробник', 'надання послуг', 'роздрібний покупець', 'Дилер сг техніки'] %}
                             <option value="{{ t }}" {% if client.buyer_type == t %}selected{% endif %}>{{ t }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Пріоритетні бренди</label>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">Пріоритетні бренди</label>
                         {% set cb = client.brands or '' %}
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Vaderstad" {% if 'Vaderstad' in cb %}checked{% endif %}><label class="form-check-label">Vaderstad</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Gaspardo" {% if 'Gaspardo' in cb %}checked{% endif %}><label class="form-check-label">Gaspardo</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Pottinger" {% if 'Pottinger' in cb %}checked{% endif %}><label class="form-check-label">Pottinger</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Kverneland" {% if 'Kverneland' in cb %}checked{% endif %}><label class="form-check-label">Kverneland</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="HORSCH" {% if 'HORSCH' in cb %}checked{% endif %}><label class="form-check-label">HORSCH</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="інший" {% if 'інший' in cb %}checked{% endif %}><label class="form-check-label">інший</label></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Веб-сайт</label>
-                        <input type="text" name="website" class="form-control" value="{{ client.website or '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Країна</label>
-                        <input type="text" name="country" class="form-control" value="{{ client.country or '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Адреса</label>
-                        <input type="text" name="address" class="form-control" value="{{ client.address or '' }}">
+                        <div class="d-flex flex-wrap gap-2 bg-white p-2 border rounded">
+                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Vaderstad" {% if 'Vaderstad' in cb %}checked{% endif %}><label class="form-check-label small">Vaderstad</label></div>
+                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Gaspardo" {% if 'Gaspardo' in cb %}checked{% endif %}><label class="form-check-label small">Gaspardo</label></div>
+                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Pottinger" {% if 'Pottinger' in cb %}checked{% endif %}><label class="form-check-label small">Pottinger</label></div>
+                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Kverneland" {% if 'Kverneland' in cb %}checked{% endif %}><label class="form-check-label small">Kverneland</label></div>
+                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="HORSCH" {% if 'HORSCH' in cb %}checked{% endif %}><label class="form-check-label small">HORSCH</label></div>
+                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="інший" {% if 'інший' in cb %}checked{% endif %}><label class="form-check-label small">інший</label></div>
+                        </div>
                     </div>
 
-                    <h5 class="text-danger mt-4 border-bottom pb-1">👤 Особа №1</h5>
-                    <div class="mb-2"><label class="small text-muted">Ім'я</label><input type="text" name="contact_person" class="form-control" value="{{ client.contact_person or '' }}"></div>
-                    <div class="mb-2"><label class="small text-muted">Телефон</label><input type="text" name="phone" class="form-control" value="{{ client.phone or '' }}"></div>
-                    <div class="mb-2"><label class="small text-muted">Email</label><input type="email" name="email" class="form-control" value="{{ client.email or '' }}"></div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">Веб-сайт</label>
+                        <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website or '' }}">
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">Країна</label>
+                        <input type="text" name="country" class="form-control form-control-sm" value="{{ client.country or '' }}">
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">Адреса</label>
+                        <input type="text" name="address" class="form-control form-control-sm" value="{{ client.address or '' }}">
+                    </div>
 
-                    <h5 class="text-danger mt-4 border-bottom pb-1">👤 Особа №2</h5>
-                    <div class="mb-2"><label class="small text-muted">Ім'я</label><input type="text" name="contact_person_2" class="form-control" value="{{ client.contact_person_2 or '' }}"></div>
-                    <div class="mb-2"><label class="small text-muted">Посада</label><input type="text" name="position_2" class="form-control" value="{{ client.position_2 or '' }}"></div>
-                    <div class="mb-2"><label class="small text-muted">Телефон</label><input type="text" name="phone_2" class="form-control" value="{{ client.phone_2 or '' }}"></div>
-                    <div class="mb-2"><label class="small text-muted">Email</label><input type="email" name="email_2" class="form-control" value="{{ client.email_2 or '' }}"></div>
+                    <div class="p-2 border rounded bg-light mb-2">
+                        <span class="badge bg-danger mb-2">👤 Контактна особа №1</span>
+                        <div class="row g-2">
+                            <div class="col-12"><input type="text" name="contact_person" class="form-control form-control-sm" placeholder="Ім'я" value="{{ client.contact_person or '' }}"></div>
+                            <div class="col-6"><input type="text" name="phone" class="form-control form-control-sm" placeholder="Телефон" value="{{ client.phone or '' }}"></div>
+                            <div class="col-6"><input type="email" name="email" class="form-control form-control-sm" placeholder="Email" value="{{ client.email or '' }}"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-2 border rounded bg-light">
+                        <span class="badge bg-danger mb-2">👤 Контактна особа №2</span>
+                        <div class="row g-2">
+                            <div class="col-6"><input type="text" name="contact_person_2" class="form-control form-control-sm" placeholder="Ім'я" value="{{ client.contact_person_2 or '' }}"></div>
+                            <div class="col-6"><input type="text" name="position_2" class="form-control form-control-sm" placeholder="Посада" value="{{ client.position_2 or '' }}"></div>
+                            <div class="col-6"><input type="text" name="phone_2" class="form-control form-control-sm" placeholder="Телефон" value="{{ client.phone_2 or '' }}"></div>
+                            <div class="col-6"><input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email" value="{{ client.email_2 or '' }}"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
-                    <button type="submit" class="btn btn-danger w-100">Зберегти зміни</button>
+                
+                <div class="modal-footer bg-light py-2 w-100">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                    <button type="submit" class="btn btn-sm btn-danger px-4 fw-bold">Зберегти зміни</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-{% endblock %}
