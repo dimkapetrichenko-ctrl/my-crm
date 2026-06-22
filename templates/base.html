@@ -10,14 +10,14 @@
 </head>
 <body class="bg-light">
 
-    <nav class="navbar navbar-dark bg-dark mb-4 py-2 shadow-sm">
+    <nav class="navbar navbar-dark mb-4 py-2 shadow-sm" style="background-color: #dc3545;">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="/">
-                <img src="https://mayer-pro.com/wp-content/themes/mayerpro/assets/images/logo.png" alt="MAYER-PRO Logo" height="35" class="d-inline-block align-top me-3" style="filter: brightness(0) invert(1);">
-                <span class="fw-bold text-white border-start ps-3 ms-1" style="font-size: 1.2rem; letter-spacing: 0.5px;">CRM</span>
+                <img src="https://mayer-pro.com/wp-content/themes/mayerpro/assets/images/logo.png" alt="MAYER-PRO Logo" height="38" class="d-inline-block align-top me-3" style="filter: brightness(0) invert(1);">
+                <span class="fw-bold text-white border-start ps-3 ms-1" style="font-size: 1.3rem; letter-spacing: 0.5px;">CRM</span>
             </a>
             {% if session.get('logged_in') %}
-                <a href="/logout" class="btn btn-sm btn-outline-light px-3">Вийти</a>
+                <a href="/logout" class="btn btn-sm btn-outline-light px-3 fw-bold">Вийти</a>
             {% endif %}
         </div>
     </nav>
