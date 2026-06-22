@@ -42,7 +42,6 @@ def init_db():
         )
     ''')
     
-    # Автоматична міграція для нових полів
     cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='clients'")
     existing_columns = [row[0] for row in cursor.fetchall()]
     
@@ -60,7 +59,6 @@ def init_db():
         if field not in existing_columns:
             cursor.execute(f"ALTER TABLE clients ADD COLUMN {field} {f_type};")
 
-    # Таблиця історії
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS negotiations (
             id SERIAL PRIMARY KEY,
@@ -141,22 +139,21 @@ def index():
 @login_required
 def add_client():
     name = request.form.get('name')
-    country = request.form.get('country')
-    address = request.form.get('address')
-    contact_person = request.form.get('contact_person')
-    phone = request.form.get('phone')
-    email = request.form.get('email')
-    website = request.form.get('website')
-    buyer_type = request.form.get('buyer_type')
+    country = request.form.get('country', '')
+    address = request.form.get('address', '')
+    contact_person = request.form.get('contact_person', '')
+    phone = request.form.get('phone', '')
+    email = request.form.get('email', '')
+    website = request.form.get('website', '')
+    buyer_type = request.form.get('buyer_type', '')
     
-    # Збір кількох обраних брендів з чекбоксів в один рядок через кому
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
     
-    contact_person_2 = request.form.get('contact_person_2')
-    position_2 = request.form.get('position_2')
-    phone_2 = request.form.get('phone_2')
-    email_2 = request.form.get('email_2')
+    contact_person_2 = request.form.get('contact_person_2', '')
+    position_2 = request.form.get('position_2', '')
+    phone_2 = request.form.get('phone_2', '')
+    email_2 = request.form.get('email_2', '')
     
     if name:
         conn = get_db_connection()
@@ -177,21 +174,21 @@ def add_client():
 @login_required
 def edit_client(client_id):
     name = request.form.get('name')
-    country = request.form.get('country')
-    address = request.form.get('address')
-    contact_person = request.form.get('contact_person')
-    phone = request.form.get('phone')
-    email = request.form.get('email')
-    website = request.form.get('website')
-    buyer_type = request.form.get('buyer_type')
+    country = request.form.get('country', '')
+    address = request.form.get('address', '')
+    contact_person = request.form.get('contact_person', '')
+    phone = request.form.get('phone', '')
+    email = request.form.get('email', '')
+    website = request.form.get('website', '')
+    buyer_type = request.form.get('buyer_type', '')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
     
-    contact_person_2 = request.form.get('contact_person_2')
-    position_2 = request.form.get('position_2')
-    phone_2 = request.form.get('phone_2')
-    email_2 = request.form.get('email_2')
+    contact_person_2 = request.form.get('contact_person_2', '')
+    position_2 = request.form.get('position_2', '')
+    phone_2 = request.form.get('phone_2', '')
+    email_2 = request.form.get('email_2', '')
     
     if name:
         conn = get_db_connection()
