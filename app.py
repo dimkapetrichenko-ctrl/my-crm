@@ -225,7 +225,6 @@ def client_detail(client_id):
     cursor.execute("SELECT * FROM clients WHERE id = %s", (client_id,))
     raw_client = cursor.fetchone()
     
-    # Створюємо безпечну копію даних клієнта, щоб уникнути помилок через пусті поля (None/NULL) у старих записах
     client = dict(raw_client) if raw_client else {}
     fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
                        'contact_person', 'phone', 'email', 
