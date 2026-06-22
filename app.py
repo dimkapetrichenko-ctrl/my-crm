@@ -38,7 +38,8 @@ def init_db():
             contact_person_2 TEXT,
             position_2 TEXT,
             phone_2 TEXT,
-            email_2 TEXT
+            email_2 TEXT,
+            interest_level TEXT
         )
     ''')
     
@@ -52,7 +53,8 @@ def init_db():
         'contact_person_2': 'TEXT',
         'position_2': 'TEXT',
         'phone_2': 'TEXT',
-        'email_2': 'TEXT'
+        'email_2': 'TEXT',
+        'interest_level': 'TEXT'
     }
     
     for field, f_type in new_fields.items():
@@ -146,6 +148,7 @@ def add_client():
     email = request.form.get('email', '')
     website = request.form.get('website', '')
     buyer_type = request.form.get('buyer_type', '')
+    interest_level = request.form.get('interest_level', 'немає зацікавленості')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
@@ -160,10 +163,10 @@ def add_client():
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, phone, email, website, buyer_type, brands, 
-                                   contact_person_2, position_2, phone_2, email_2) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                   contact_person_2, position_2, phone_2, email_2, interest_level) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (name, country, address, contact_person, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2)
+             contact_person_2, position_2, phone_2, email_2, interest_level)
         )
         conn.commit()
         cursor.close()
@@ -181,6 +184,7 @@ def edit_client(client_id):
     email = request.form.get('email', '')
     website = request.form.get('website', '')
     buyer_type = request.form.get('buyer_type', '')
+    interest_level = request.form.get('interest_level', 'немає зацікавленості')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
@@ -196,9 +200,9 @@ def edit_client(client_id):
         cursor.execute(
             """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, phone=%s, email=%s, 
                                   website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
-                                  phone_2=%s, email_2=%s WHERE id=%s""",
+                                  phone_2=%s, email_2=%s, interest_level=%s WHERE id=%s""",
             (name, country, address, contact_person, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, client_id)
+             contact_person_2, position_2, phone_2, email_2, interest_level, client_id)
         )
         conn.commit()
         cursor.close()
@@ -228,10 +232,13 @@ def client_detail(client_id):
     client = dict(raw_client) if raw_client else {}
     fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
                        'contact_person', 'phone', 'email', 
-                       'contact_person_2', 'position_2', 'phone_2', 'email_2']
+                       'contact_person_2', 'position_2', 'phone_2', 'email_2', 'interest_level']
     for field in fields_to_check:
         if field not in client or client[field] is None:
-            client[field] = ''
+            if field == 'interest_level':
+                client[field] = 'немає зацікавленості'
+            else:
+                client[field] = ''
     
     cursor.execute("SELECT * FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
     history = cursor.fetchall()
@@ -274,7 +281,7 @@ def export_excel():
     conn = get_db_connection()
     
     query = """
-        SELECT c.name AS "Назва компанії", c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
+        SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
                c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
                c.contact_person AS "Контактна особа 1", c.phone AS "Телефон 1", c.email AS "Email 1",
                c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.email_2 AS "Email 2"
