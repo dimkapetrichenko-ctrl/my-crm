@@ -17,6 +17,7 @@
             <div class="card-body">
                 <h3 class="card-title text-danger mb-3">{{ client.name }}</h3>
                 <p>🌍 <strong>Країна:</strong> {{ client.country or 'Не вказано' }}</p>
+                <p>📍 <strong>Адреса:</strong> {{ client.address or 'Не вказано' }}</p>
                 <p>👤 <strong>Відповідальна особа:</strong> {{ client.contact_person or 'Не вказано' }}</p>
                 <p>📞 <strong>Телефон:</strong> {{ client.phone or 'Не вказано' }}</p>
                 <p>✉️ <strong>Email:</strong> {{ client.email or 'Не вказано' }}</p>
