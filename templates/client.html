@@ -42,11 +42,16 @@
         <h4 class="mb-3">📜 Історія комунікацій</h4>
         {% for item in history %}
         <div class="card shadow-sm mb-2">
-            <div class="card-body">
-                <div class="d-flex justify-content-between text-muted mb-2">
-                    <small>📅 {{ item.date }}</small>
-                    <button class="btn btn-sm btn-link text-primary p-0" data-bs-toggle="modal" data-bs-target="#editNegModal{{ item.id }}">Редагувати запис</button>
-                </div>
+           <div class="d-flex justify-content-between text-muted mb-2">
+    <small>📅 {{ item.date }}</small>
+    <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-link text-primary p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#editNegModal{{ item.id }}">✏️ Редагувати</button>
+        <form action="{{ url_for('delete_negotiation', neg_id=item.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Ви впевнені, що хочете видалити цей запис?');">
+            <input type="hidden" name="client_id" value="{{ client.id }}">
+            <button type="submit" class="btn btn-sm btn-link text-danger p-0 text-decoration-none">🗑️ Видалити</button>
+        </form>
+    </div>
+</div>
                 <p class="mb-0 card-text" style="white-space: pre-wrap;">{{ item.result }}</p>
             </div>
         </div>
