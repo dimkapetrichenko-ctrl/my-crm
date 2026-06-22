@@ -1,28 +1,66 @@
 {% extends 'base.html' %}
 {% block content %}
+
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2>📋 База клієнтів</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('export_excel') }}" class="btn btn-success">🟢 Експорт в Excel (.xlsx)</a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('index') }}" class="row g-3">
+            <div class="col-md-5">
+                <input type="text" name="search" class="form-control" placeholder="Пошук за назвою компанії або особою..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-4">
+                <select name="country" class="form-select">
+                    <option value="">-- Фільтр за країною (Всі) --</option>
+                    {% for c in countries %}
+                        <option value="{{ c }}" {% if country_filter == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-grid gap-2 d-md-flex">
+                <button type="submit" class="btn btn-primary w-100">Застосувати</button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Скинути</a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-4 mb-4">
         <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">Додати клієнта</div>
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">➕ Додати нового клієнта</h5>
+            </div>
             <div class="card-body">
                 <form action="{{ url_for('add_client') }}" method="POST">
                     <div class="mb-3">
-                        <label class="form-label">Назва / Ім'я *</label>
-                        <input type="text" name="name" class="form-control" required>
+                        <label class="form-label">Назва компанії</label>
+                        <input type="text" name="name" class="form-control" required placeholder="ТОВ Агропром...">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Адреса</label>
-                        <input type="text" name="address" class="form-control">
+                        <label class="form-label">Країна</label>
+                        <input type="text" name="country" class="form-control" placeholder="Польща, Україна...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ім'я відповідальної особи</label>
+                        <input type="text" name="contact_person" class="form-control" placeholder="Іван Іванов...">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Телефон</label>
-                        <input type="text" name="phone" class="form-control">
+                        <input type="text" name="phone" class="form-control" placeholder="+380...">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control">
+                        <input type="email" name="email" class="form-control" placeholder="example@mail.com">
                     </div>
-                    <button type="submit" class="btn btn-success w-100">Зберегти клієнта</button>
+                    <button type="submit" class="btn btn-danger w-100">Зберегти компанію</button>
                 </form>
             </div>
         </div>
@@ -30,38 +68,44 @@
 
     <div class="col-md-8">
         <div class="card shadow-sm">
-            <div class="card-header bg-secondary text-white">База клієнтів</div>
-            <div class="card-body">
-                {% if clients %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th>Назва</th>
-                                <th>Телефон</th>
-                                <th>Email</th>
-                                <th>Дія</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for client in clients %}
-                            <tr>
-                                <td><strong>{{ client.name }}</strong></td>
-                                <td>{{ client.phone or '-' }}</td>
-                                <td>{{ client.email or '-' }}</td>
-                                <td>
-                                    <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary">Картка & Перемовини</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted my-3 text-center">Клієнтів поки немає. Додайте першого!</p>
-                {% endif %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Назва компанії</th>
+                            <th>Країна</th>
+                            <th>Відповідальна особа</th>
+                            <th>Контакти</th>
+                            <th>Дія</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in clients %}
+                        <tr>
+                            <td><strong>{{ client.name }}</strong></td>
+                            <td><span class="badge bg-secondary">{{ client.country or '-' }}</span></td>
+                            <td>{{ client.contact_person or '-' }}</td>
+                            <td>
+                                <small>
+                                    📞 {{ client.phone or '-' }}<br>
+                                    ✉️ {{ client.email or '-' }}
+                                </small>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary">Картка / Історія</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not clients %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Клієнтів не знайдено за вказаними фільтрами</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
