@@ -45,6 +45,14 @@
                         <input type="text" name="name" class="form-control" required placeholder="ТОВ Агропром...">
                     </div>
                     <div class="mb-3">
+                        <label class="form-label"><b>Ступінь зацікавленості *</b></label>
+                        <select name="interest_level" class="form-select" required>
+                            <option value="немає зацікавленості">Синій — немає зацікавленості</option>
+                            <option value="середня зацікавленість">Жовтий — середня зацікавленість</option>
+                            <option value="зацікавленість">Зелений — зацікавленість</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Тип покупця</label>
                         <select name="buyer_type" class="form-select">
                             <option value="">-- Оберіть тип --</option>
@@ -80,36 +88,15 @@
                     </div>
                     
                     <h5 class="text-danger mt-4 border-bottom pb-2">👤 Контактна особа №1</h5>
-                    <div class="mb-2">
-                        <label class="form-label text-muted small">Ім'я</label>
-                        <input type="text" name="contact_person" class="form-control">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label text-muted small">Телефон</label>
-                        <input type="text" name="phone" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Email</label>
-                        <input type="email" name="email" class="form-control">
-                    </div>
+                    <div class="mb-2"><label class="small text-muted">Ім'я</label><input type="text" name="contact_person" class="form-control"></div>
+                    <div class="mb-2"><label class="small text-muted">Телефон</label><input type="text" name="phone" class="form-control"></div>
+                    <div class="mb-3"><label class="small text-muted">Email</label><input type="email" name="email" class="form-control"></div>
 
                     <h5 class="text-danger mt-4 border-bottom pb-2">👤 Контактна особа №2</h5>
-                    <div class="mb-2">
-                        <label class="form-label text-muted small">Ім'я</label>
-                        <input type="text" name="contact_person_2" class="form-control">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label text-muted small">Посада</label>
-                        <input type="text" name="position_2" class="form-control" placeholder="Закупник, директор...">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label text-muted small">Телефон</label>
-                        <input type="text" name="phone_2" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Email</label>
-                        <input type="email" name="email_2" class="form-control">
-                    </div>
+                    <div class="mb-2"><label class="small text-muted">Ім'я</label><input type="text" name="contact_person_2" class="form-control"></div>
+                    <div class="mb-2"><label class="small text-muted">Посада</label><input type="text" name="position_2" class="form-control" placeholder="Закупник, директор..."></div>
+                    <div class="mb-2"><label class="small text-muted">Телефон</label><input type="text" name="phone_2" class="form-control"></div>
+                    <div class="mb-3"><label class="small text-muted">Email</label><input type="email" name="email_2" class="form-control"></div>
 
                     <button type="submit" class="btn btn-danger w-100 mt-2">Зберегти компанію</button>
                 </form>
@@ -134,12 +121,18 @@
                         {% for client in clients %}
                         <tr>
                             <td>
+                                {% if client.interest_level == 'зацікавленість' %}
+                                    <span class="badge bg-success mb-1">зацікавленість</span>
+                                {% elif client.interest_level == 'середня зацікавленість' %}
+                                    <span class="badge bg-warning text-dark mb-1">середня зацікавленість</span>
+                                {% else %}
+                                    <span class="badge bg-primary mb-1">немає зацікавленості</span>
+                                {% endif %}
+                                <br>
                                 <strong>{{ client.name }}</strong><br>
                                 <span class="badge bg-info text-dark small" style="font-size: 0.75rem;">{{ client.buyer_type or 'не вказано' }}</span>
                             </td>
-                            <td>
-                                <small class="text-muted">{{ client.brands or '-' }}</small>
-                            </td>
+                            <td><small class="text-muted">{{ client.brands or '-' }}</small></td>
                             <td><span class="badge bg-secondary">{{ client.country or '-' }}</span></td>
                             <td>
                                 <small>
