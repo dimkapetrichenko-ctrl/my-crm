@@ -220,7 +220,7 @@ def export_excel():
                c.contact_person AS "Відповідальна особа", c.phone AS "Телефон", c.email AS "Email"
         FROM clients c ORDER BY c.name ASC
     """
-    df = pd.read_sql_out(query, conn)
+    df = pd.read_sql(query, conn)
     conn.close()
     
     # Створюємо Excel файл в пам'яті
