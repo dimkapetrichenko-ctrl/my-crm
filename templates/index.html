@@ -14,7 +14,7 @@
     <div class="card-body">
         <form method="GET" action="{{ url_for('index') }}" class="row g-3">
             <div class="col-md-5">
-                <input type="text" name="search" class="form-control" placeholder="Пошук за назвою компанії або особою..." value="{{ search_query }}">
+                <input type="text" name="search" class="form-control" placeholder="Пошук за назвою, брендом або контактом..." value="{{ search_query }}">
             </div>
             <div class="col-md-4">
                 <select name="country" class="form-select">
@@ -34,15 +34,39 @@
 
 <div class="row">
     <div class="col-md-4 mb-4">
-        <div class="card shadow-sm">
+        <div class="card shadow-sm" style="max-height: 85vh; overflow-y: auto;">
             <div class="card-header bg-dark text-white">
                 <h5 class="mb-0">➕ Додати нового клієнта</h5>
             </div>
             <div class="card-body">
                 <form action="{{ url_for('add_client') }}" method="POST">
                     <div class="mb-3">
-                        <label class="form-label">Назва компанії</label>
+                        <label class="form-label"><b>Назва компанії *</b></label>
                         <input type="text" name="name" class="form-control" required placeholder="ТОВ Агропром...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Тип покупця</label>
+                        <select name="buyer_type" class="form-select">
+                            <option value="">-- Оберіть тип --</option>
+                            <option value="інтернет-магазин">інтернет-магазин</option>
+                            <option value="гуртовий клієнт">гуртовий клієнт</option>
+                            <option value="фермерське господарство">фермерське господарство</option>
+                            <option value="виробник">виробник</option>
+                            <option value="надання послуг">надання послуг</option>
+                            <option value="роздрібний покупець">роздрібний покупець</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Пріоритетний бренд (можна декілька)</label>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Vaderstad"><label class="form-check-label">Vaderstad</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Gaspardo"><label class="form-check-label">Gaspardo</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Pottinger"><label class="form-check-label">Pottinger</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Kverneland"><label class="form-check-label">Kverneland</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="інший"><label class="form-check-label">інший</label></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Веб-сайт</label>
+                        <input type="text" name="website" class="form-control" placeholder="www.example.com">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Країна</label>
@@ -50,21 +74,42 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Адреса компанії</label>
-                        <input type="text" name="address" class="form-control" placeholder="Місто, вулиця, індекс...">
+                        <input type="text" name="address" class="form-control" placeholder="Місто, вулиця...">
+                    </div>
+                    
+                    <h5 class="text-danger mt-4 border-bottom pb-2">👤 Контактна особа №1</h5>
+                    <div class="mb-2">
+                        <label class="form-label text-muted small">Ім'я</label>
+                        <input type="text" name="contact_person" class="form-control">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label text-muted small">Телефон</label>
+                        <input type="text" name="phone" class="form-control">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Ім'я відповідальної особи</label>
-                        <input type="text" name="contact_person" class="form-control" placeholder="Іван Іванов...">
+                        <label class="form-label text-muted small">Email</label>
+                        <input type="email" name="email" class="form-control">
+                    </div>
+
+                    <h5 class="text-danger mt-4 border-bottom pb-2">👤 Контактна особа №2</h5>
+                    <div class="mb-2">
+                        <label class="form-label text-muted small">Ім'я</label>
+                        <input type="text" name="contact_person_2" class="form-control">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label text-muted small">Посада</label>
+                        <input type="text" name="position_2" class="form-control" placeholder="Закупник, директор...">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label text-muted small">Телефон</label>
+                        <input type="text" name="phone_2" class="form-control">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Телефон</label>
-                        <input type="text" name="phone" class="form-control" placeholder="+380...">
+                        <label class="form-label text-muted small">Email</label>
+                        <input type="email" name="email_2" class="form-control">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control" placeholder="example@mail.com">
-                    </div>
-                    <button type="submit" class="btn btn-danger w-100">Зберегти компанію</button>
+
+                    <button type="submit" class="btn btn-danger w-100 mt-2">Зберегти компанію</button>
                 </form>
             </div>
         </div>
@@ -76,33 +121,38 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
-                            <th>Назва компанії</th>
+                            <th>Компанія / Тип</th>
+                            <th>Бренди</th>
                             <th>Країна</th>
-                            <th>Відповідальна особа</th>
-                            <th>Контакти</th>
+                            <th>Контактна особа №1</th>
                             <th>Дія</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for client in clients %}
                         <tr>
-                            <td><strong>{{ client.name }}</strong></td>
+                            <td>
+                                <strong>{{ client.name }}</strong><br>
+                                <span class="badge bg-info text-dark small" style="font-size: 0.75rem;">{{ client.buyer_type or 'не вказано' }}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ client.brands or '-' }}</small>
+                            </td>
                             <td><span class="badge bg-secondary">{{ client.country or '-' }}</span></td>
-                            <td>{{ client.contact_person or '-' }}</td>
                             <td>
                                 <small>
-                                    📞 {{ client.phone or '-' }}<br>
-                                    ✉️ {{ client.email or '-' }}
+                                    👤 {{ client.contact_person or '-' }}<br>
+                                    📞 {{ client.phone or '-' }}
                                 </small>
                             </td>
                             <td>
-                                <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary">Картка / Історія</a>
+                                <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary">Картка</a>
                             </td>
                         </tr>
                         {% endfor %}
                         {% if not clients %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">Клієнтів не знайдено за вказаними фільтрами</td>
+                            <td colspan="5" class="text-center text-muted py-4">Клієнти відсутні за вказаними параметрами</td>
                         </tr>
                         {% endif %}
                     </tbody>
