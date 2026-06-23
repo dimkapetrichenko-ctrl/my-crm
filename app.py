@@ -73,6 +73,18 @@ def init_db():
         )
     ''')
     
+    cursor.execute("""
+        UPDATE clients 
+        SET country = CASE 
+            WHEN LOWER(country) IN ('польша', 'polska') THEN 'Польща'
+            WHEN LOWER(country) IN ('украина', 'ukraine') THEN 'Україна'
+            WHEN LOWER(country) IN ('германия', 'deutschland') THEN 'Німеччина'
+            WHEN LOWER(country) IN ('словакия', 'slovakia') THEN 'Словаччина'
+            ELSE country 
+        END
+        WHERE country IS NOT NULL;
+    """)
+    
     conn.commit()
     cursor.close()
     conn.close()
