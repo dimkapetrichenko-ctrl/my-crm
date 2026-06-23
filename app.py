@@ -1,7 +1,8 @@
+
 import os
 import psycopg2
 from psycopg2.extras import DictCursor
-from flask import Flask, render_template, request, redirect, url_for, session, send_file, flash
+from flask import Flask, render_template, request, redirect, url_for, session, send_file
 from datetime import datetime
 import pandas as pd
 import io
@@ -116,10 +117,11 @@ def index():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
     
+    # Виправлено: звернення за текстовим ключем 'country'
     cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
-    countries = [row[0] for row in cursor.fetchall()]
+    countries = [row['country'] for row in cursor.fetchall()]
     
-    # Конвертуємо MAX(date) в TEXT прямо на рівні бази даних через ::TEXT
+    # Виправлено: MAX(n.date) приводиться до TEXT на рівні бази даних
     sql = """
         SELECT c.*, 
                (SELECT MAX(n.date)::TEXT FROM negotiations n WHERE n.client_id = c.id) AS last_activity 
@@ -141,7 +143,7 @@ def index():
     cursor.execute(sql, params)
     raw_clients = cursor.fetchall()
     
-    # Безпечна збірка по текстових ключах (захист від будь-яких None значень)
+    # Безпечна збірка словників
     clients = []
     for row in raw_clients:
         clients.append({
@@ -405,6 +407,7 @@ def import_excel():
                 existing = cursor.fetchone()
                 
                 if existing:
+                    # Виправлено звернення за ключем 'id' замість індексу
                     cursor.execute(
                         """UPDATE clients SET country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s,
                                               website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s,
