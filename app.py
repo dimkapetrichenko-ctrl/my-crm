@@ -119,18 +119,25 @@ def index():
     cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
     countries = [row['country'] for row in cursor.fetchall()]
     
-    sql = "SELECT * FROM clients WHERE 1=1"
+    # Оновлений SQL-запит: вибираємо клієнта та максимальну (останню) дату перемовин
+    sql = """
+        SELECT c.*, MAX(n.date) AS last_activity 
+        FROM clients c 
+        LEFT JOIN negotiations n ON c.id = n.client_id 
+        WHERE 1=1
+    """
     params = []
     
     if search_query:
-        sql += " AND (LOWER(name) LIKE LOWER(%s) OR LOWER(contact_person) LIKE LOWER(%s) OR LOWER(brands) LIKE LOWER(%s))"
+        sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s))"
         params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
         
     if country_filter:
-        sql += " AND country = %s"
+        sql += " AND c.country = %s"
         params.append(country_filter)
         
-    sql += " ORDER BY name ASC"
+    # Групуємо за ID клієнта, щоб коректно працювала функція MAX()
+    sql += " GROUP BY c.id ORDER BY c.name ASC"
     
     cursor.execute(sql, params)
     clients = cursor.fetchall()
