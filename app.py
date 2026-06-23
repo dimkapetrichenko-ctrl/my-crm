@@ -109,6 +109,8 @@ def logout():
 
 @app.route('/')
 @login_required
+@app.route('/')
+@login_required
 def index():
     search_query = request.args.get('search', '').strip()
     country_filter = request.args.get('country', '').strip()
@@ -119,7 +121,6 @@ def index():
     cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
     countries = [row['country'] for row in cursor.fetchall()]
     
-    # Виправлений SQL-запит через підзапит для повної сумісності з PostgreSQL
     sql = """
         SELECT c.*, 
                (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) AS last_activity 
@@ -139,12 +140,20 @@ def index():
     sql += " ORDER BY c.name ASC"
     
     cursor.execute(sql, params)
-    clients = cursor.fetchall()
+    raw_clients = cursor.fetchall()
+    
+    # Конвертуємо результати у звичайні словники та безпечно обробляємо None для шаблонізатора Jinja
+    clients = []
+    for row in raw_clients:
+        client_dict = dict(row)
+        if client_dict.get('last_activity') is None:
+            client_dict['last_activity'] = ''
+        clients.append(client_dict)
     
     cursor.close()
     conn.close()
     return render_template('index.html', clients=clients, countries=countries, search_query=search_query, country_filter=country_filter)
-
+    
 @app.route('/add_client', methods=['POST'])
 @login_required
 def add_client():
