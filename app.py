@@ -109,26 +109,20 @@ def logout():
 
 @app.route('/')
 @login_required
-@app.route('/')
-@login_required
-@app.route('/')
-@login_required
 def index():
     search_query = request.args.get('search', '').strip()
     country_filter = request.args.get('country', '').strip()
     
     conn = get_db_connection()
-    # Використовуємо звичайний курсор замість DictCursor для 100% контролю над типами даних
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=DictCursor)
     
     cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
     countries = [row[0] for row in cursor.fetchall()]
     
-    # Явно перераховуємо всі потрібні колонки по індексах
+    # Конвертуємо MAX(date) в TEXT прямо на рівні бази даних через ::TEXT
     sql = """
-        SELECT c.id, c.name, c.country, c.address, c.contact_person, c.position, c.phone, c.email, 
-               c.website, c.buyer_type, c.brands, c.interest_level,
-               (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) AS last_activity 
+        SELECT c.*, 
+               (SELECT MAX(n.date)::TEXT FROM negotiations n WHERE n.client_id = c.id) AS last_activity 
         FROM clients c 
         WHERE 1=1
     """
@@ -147,29 +141,29 @@ def index():
     cursor.execute(sql, params)
     raw_clients = cursor.fetchall()
     
-    # Ручна збірка гарантовано чистих словників із текстовими даними
+    # Безпечна збірка по текстових ключах (захист від будь-яких None значень)
     clients = []
     for row in raw_clients:
         clients.append({
-            'id': row[0],
-            'name': str(row[1]) if row[1] else '',
-            'country': str(row[2]) if row[2] else '',
-            'address': str(row[3]) if row[3] else '',
-            'contact_person': str(row[4]) if row[4] else '',
-            'position': str(row[5]) if row[5] else '',
-            'phone': str(row[6]) if row[6] else '',
-            'email': str(row[7]) if row[7] else '',
-            'website': str(row[8]) if row[8] else '',
-            'buyer_type': str(row[9]) if row[9] else '',
-            'brands': str(row[10]) if row[10] else '',
-            'interest_level': str(row[11]) if row[11] else 'немає зацікавленості',
-            'last_activity': str(row[12]) if row[12] else ''  # Перетворюємо дату на чистий рядок тут
+            'id': row['id'],
+            'name': row['name'] if row['name'] else '',
+            'country': row['country'] if row['country'] else '',
+            'address': row['address'] if row['address'] else '',
+            'contact_person': row['contact_person'] if row['contact_person'] else '',
+            'position': row['position'] if row['position'] else '',
+            'phone': row['phone'] if row['phone'] else '',
+            'email': row['email'] if row['email'] else '',
+            'website': row['website'] if row['website'] else '',
+            'buyer_type': row['buyer_type'] if row['buyer_type'] else '',
+            'brands': row['brands'] if row['brands'] else '',
+            'interest_level': row['interest_level'] if row['interest_level'] else 'немає зацікавленості',
+            'last_activity': row['last_activity'] if row['last_activity'] else ''
         })
     
     cursor.close()
     conn.close()
     return render_template('index.html', clients=clients, countries=countries, search_query=search_query, country_filter=country_filter)
-    
+
 @app.route('/add_client', methods=['POST'])
 @login_required
 def add_client():
@@ -383,7 +377,7 @@ def import_excel():
                 return "Помилка: У файлі Excel не знайдено колонку з назвою компанії ('Назва компанії')"
             
             conn = get_db_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(cursor_factory=DictCursor)
             
             for _, row in df.iterrows():
                 name = str(row['name']).strip() if pd.notnull(row['name']) else ''
@@ -416,7 +410,7 @@ def import_excel():
                                               website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s,
                                               phone_2=%s, email_2=%s, interest_level=%s WHERE id=%s""",
                         (country, address, contact_person, position, phone, email, website, buyer_type, brands,
-                         contact_person_2, position_2, phone_2, email_2, interest_level, existing[0])
+                         contact_person_2, position_2, phone_2, email_2, interest_level, existing['id'])
                     )
                 else:
                     cursor.execute(
