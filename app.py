@@ -119,11 +119,11 @@ def index():
     cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
     countries = [row['country'] for row in cursor.fetchall()]
     
-    # Оновлений SQL-запит: вибираємо клієнта та максимальну (останню) дату перемовин
+    # Виправлений SQL-запит через підзапит для повної сумісності з PostgreSQL
     sql = """
-        SELECT c.*, MAX(n.date) AS last_activity 
+        SELECT c.*, 
+               (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) AS last_activity 
         FROM clients c 
-        LEFT JOIN negotiations n ON c.id = n.client_id 
         WHERE 1=1
     """
     params = []
@@ -136,8 +136,7 @@ def index():
         sql += " AND c.country = %s"
         params.append(country_filter)
         
-    # Групуємо за ID клієнта, щоб коректно працювала функція MAX()
-    sql += " GROUP BY c.id ORDER BY c.name ASC"
+    sql += " ORDER BY c.name ASC"
     
     cursor.execute(sql, params)
     clients = cursor.fetchall()
@@ -329,7 +328,6 @@ def import_excel():
         try:
             df = pd.read_excel(file)
             
-            # Мапінг можливих назв колонок в Excel до внутрішніх імен полів бази даних
             mapping = {
                 'Назва компанії': 'name', 'Company Name': 'name', 'Назва': 'name', 'Name': 'name',
                 'Зацікавленість': 'interest_level', 'Interest Level': 'interest_level',
@@ -348,7 +346,6 @@ def import_excel():
                 'Email 2': 'email_2', 'Mail 2': 'email_2'
             }
             
-            # Перейменовуємо знайдені колонки
             renamed_cols = {}
             for col in df.columns:
                 cleaned_col = str(col).strip()
@@ -358,20 +355,16 @@ def import_excel():
             df = df.rename(columns=renamed_cols)
             
             if 'name' not in df.columns:
-                return "Помилка: У файлі Excel не знайдено колонку з назвою компанії ('Назва компанії' або 'Name')"
+                return "Помилка: У файлі Excel не знайдено колонку з назвою компанії ('Назва компанії')"
             
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            imported_count = 0
-            updated_count = 0
-            
             for _, row in df.iterrows():
                 name = str(row['name']).strip() if pd.notnull(row['name']) else ''
                 if not name:
-                    continue  # пропускаємо рядки без назви компанії
+                    continue
                 
-                # Читання інших колонок з дефолтними значеннями
                 interest_level = str(row['interest_level']).strip() if 'interest_level' in df.columns and pd.notnull(row['interest_level']) else 'немає зацікавленості'
                 buyer_type = str(row['buyer_type']).strip() if 'buyer_type' in df.columns and pd.notnull(row['buyer_type']) else ''
                 brands = str(row['brands']).strip() if 'brands' in df.columns and pd.notnull(row['brands']) else ''
@@ -389,12 +382,10 @@ def import_excel():
                 phone_2 = str(row['phone_2']).strip() if 'phone_2' in df.columns and pd.notnull(row['phone_2']) else ''
                 email_2 = str(row['email_2']).strip() if 'email_2' in df.columns and pd.notnull(row['email_2']) else ''
                 
-                # Перевіряємо, чи існує вже компанія з такою назвою
                 cursor.execute("SELECT id FROM clients WHERE LOWER(name) = LOWER(%s)", (name,))
                 existing = cursor.fetchone()
                 
                 if existing:
-                    # Оновлюємо дані існуючого клієнта
                     cursor.execute(
                         """UPDATE clients SET country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s,
                                               website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s,
@@ -402,9 +393,7 @@ def import_excel():
                         (country, address, contact_person, position, phone, email, website, buyer_type, brands,
                          contact_person_2, position_2, phone_2, email_2, interest_level, existing[0])
                     )
-                    updated_count += 1
                 else:
-                    # Створюємо новий запис
                     cursor.execute(
                         """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
                                                contact_person_2, position_2, phone_2, email_2, interest_level)
@@ -412,7 +401,6 @@ def import_excel():
                         (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
                          contact_person_2, position_2, phone_2, email_2, interest_level)
                     )
-                    imported_count += 1
             
             conn.commit()
             cursor.close()
