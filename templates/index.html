@@ -116,6 +116,7 @@
                             <th style="border-bottom: 3px solid #495057;">Бренди</th>
                             <th style="border-bottom: 3px solid #495057;">Країна</th>
                             <th style="border-bottom: 3px solid #495057;">Контактна особа №1</th>
+                            <th style="border-bottom: 3px solid #495057;">Остання дія</th>
                             <th style="border-bottom: 3px solid #495057;">Дія</th>
                         </tr>
                     </thead>
@@ -143,6 +144,13 @@
                                     📞 {{ client.phone or '-' }}
                                 </small>
                             </td>
+                            <td style="border-right: 1.5px solid #6c757d;">
+                                {% if client.last_activity %}
+                                    <span class="badge bg-dark text-white font-monospace" style="font-size: 0.85rem;">🕒 {{ client.last_activity }}</span>
+                                {% else %}
+                                    <span class="text-muted small"><i>активностей немає</i></span>
+                                {% endif %}
+                            </td>
                             <td>
                                 <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary fw-bold">Картка</a>
                             </td>
@@ -150,7 +158,7 @@
                         {% endfor %}
                         {% if not clients %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">Клієнти відсутні за вказаними параметрами</td>
+                            <td colspan="6" class="text-center text-muted py-4">Клієнти відсутні за вказаними параметрами</td>
                         </tr>
                         {% endif %}
                     </tbody>
@@ -158,32 +166,3 @@
             </div>
         </div>
     </div>
-</div>
-
-<div class="modal fade" id="importExcelModal" tabindex="-1" aria-labelledby="importExcelModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-white py-2">
-                <h5 class="modal-title" id="importExcelModalLabel">📥 Імпорт клієнтів з Excel</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ url_for('import_excel') }}" method="POST" enctype="multipart/form-data">
-                <div class="modal-body p-3">
-                    <p class="text-muted small mb-3">
-                        <b>Порада:</b> Найпростіший спосіб завантажити базу — спочатку вивантажити її за допомогою кнопки <b>«Експорт в Excel»</b>, додати нові рядки до отриманого файлу та завантажити його назад через цю форму.
-                    </p>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Оберіть файл Excel (.xlsx або .xls)</label>
-                        <input type="file" name="excel_file" class="form-control" accept=".xlsx, .xls" required>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-                    <button type="submit" class="btn btn-sm btn-primary fw-bold px-4">Почати імпорт</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{% endblock %}
