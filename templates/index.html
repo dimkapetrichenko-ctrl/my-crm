@@ -5,7 +5,8 @@
     <div class="col-md-6">
         <h2>📋 База клієнтів</h2>
     </div>
-    <div class="col-md-6 text-end">
+    <div class="col-md-6 text-end d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importExcelModal">📥 Імпорт з Excel (.xlsx)</button>
         <a href="{{ url_for('export_excel') }}" class="btn btn-success">🟢 Експорт в Excel (.xlsx)</a>
     </div>
 </div>
@@ -87,7 +88,7 @@
                         <input type="text" name="address" class="form-control" placeholder="Місто, вулиця...">
                     </div>
                     
-                    <h5 class="text-danger mt-4 border-bottom pb-2">👤 Контактна особа №1</h5>
+                    <h5 class="text-danger mt-4 border-bottom pb-2">👤 icons Контактна особа №1</h5>
                     <div class="mb-2"><label class="small text-muted">Ім'я</label><input type="text" name="contact_person" class="form-control"></div>
                     <div class="mb-2"><label class="small text-muted">Посада</label><input type="text" name="position" class="form-control" placeholder="Закупник, директор..."></div>
                     <div class="mb-2"><label class="small text-muted">Телефон</label><input type="text" name="phone" class="form-control"></div>
@@ -155,6 +156,32 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="importExcelModal" tabindex="-1" aria-labelledby="importExcelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white py-2">
+                <h5 class="modal-title" id="importExcelModalLabel">📥 Імпорт клієнтів з Excel</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('import_excel') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body p-3">
+                    <p class="text-muted small mb-3">
+                        <b>Порада:</b> Найпростіший спосіб завантажити базу — спочатку вивантажити її за допомогою кнопки <b>«Експорт в Excel»</b>, додати нові рядки до отриманого файлу та завантажити його назад через цю форму.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Оберіть файл Excel (.xlsx або .xls)</label>
+                        <input type="file" name="excel_file" class="form-control" accept=".xlsx, .xls" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-sm btn-primary fw-bold px-4">Почати імпорт</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
