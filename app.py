@@ -1,4 +1,3 @@
-
 import os
 import psycopg2
 from psycopg2.extras import DictCursor
@@ -115,13 +114,15 @@ def index():
     country_filter = request.args.get('country', '').strip()
     
     conn = get_db_connection()
+    
+    # 1. Окремий простий курсор для збору списку унікальних країн
+    country_cursor = conn.cursor()
+    country_cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
+    countries = [row[0] for row in country_cursor.fetchall()]
+    country_cursor.close()
+    
+    # 2. Використовуємо DictCursor для безпечного читання повнотекстових ключів клієнтів
     cursor = conn.cursor(cursor_factory=DictCursor)
-    
-    # Виправлено: звернення за текстовим ключем 'country'
-    cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
-    countries = [row['country'] for row in cursor.fetchall()]
-    
-    # Виправлено: MAX(n.date) приводиться до TEXT на рівні бази даних
     sql = """
         SELECT c.*, 
                (SELECT MAX(n.date)::TEXT FROM negotiations n WHERE n.client_id = c.id) AS last_activity 
@@ -143,7 +144,7 @@ def index():
     cursor.execute(sql, params)
     raw_clients = cursor.fetchall()
     
-    # Безпечна збірка словників
+    # Безпечне копіювання значень з перевіркою на None
     clients = []
     for row in raw_clients:
         clients.append({
@@ -407,7 +408,6 @@ def import_excel():
                 existing = cursor.fetchone()
                 
                 if existing:
-                    # Виправлено звернення за ключем 'id' замість індексу
                     cursor.execute(
                         """UPDATE clients SET country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s,
                                               website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s,
