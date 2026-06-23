@@ -1,7 +1,7 @@
 import os
 import psycopg2
 from psycopg2.extras import DictCursor
-from flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, send_file, flash
 from datetime import datetime
 import pandas as pd
 import io
@@ -30,6 +30,7 @@ def init_db():
             country TEXT,
             address TEXT,
             contact_person TEXT,
+            position TEXT,
             phone TEXT,
             email TEXT,
             website TEXT,
@@ -50,6 +51,7 @@ def init_db():
         'website': 'TEXT',
         'buyer_type': 'TEXT',
         'brands': 'TEXT',
+        'position': 'TEXT',
         'contact_person_2': 'TEXT',
         'position_2': 'TEXT',
         'phone_2': 'TEXT',
@@ -143,15 +145,17 @@ def add_client():
     name = request.form.get('name')
     country = request.form.get('country', '')
     address = request.form.get('address', '')
-    contact_person = request.form.get('contact_person', '')
-    phone = request.form.get('phone', '')
-    email = request.form.get('email', '')
-    website = request.form.get('website', '')
     buyer_type = request.form.get('buyer_type', '')
     interest_level = request.form.get('interest_level', 'немає зацікавленості')
+    website = request.form.get('website', '')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
+    
+    contact_person = request.form.get('contact_person', '')
+    position = request.form.get('position', '')
+    phone = request.form.get('phone', '')
+    email = request.form.get('email', '')
     
     contact_person_2 = request.form.get('contact_person_2', '')
     position_2 = request.form.get('position_2', '')
@@ -162,10 +166,10 @@ def add_client():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """INSERT INTO clients (name, country, address, contact_person, phone, email, website, buyer_type, brands, 
+            """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
                                    contact_person_2, position_2, phone_2, email_2, interest_level) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-            (name, country, address, contact_person, phone, email, website, buyer_type, brands,
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
              contact_person_2, position_2, phone_2, email_2, interest_level)
         )
         conn.commit()
@@ -179,15 +183,17 @@ def edit_client(client_id):
     name = request.form.get('name')
     country = request.form.get('country', '')
     address = request.form.get('address', '')
-    contact_person = request.form.get('contact_person', '')
-    phone = request.form.get('phone', '')
-    email = request.form.get('email', '')
-    website = request.form.get('website', '')
     buyer_type = request.form.get('buyer_type', '')
     interest_level = request.form.get('interest_level', 'немає зацікавленості')
+    website = request.form.get('website', '')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
+    
+    contact_person = request.form.get('contact_person', '')
+    position = request.form.get('position', '')
+    phone = request.form.get('phone', '')
+    email = request.form.get('email', '')
     
     contact_person_2 = request.form.get('contact_person_2', '')
     position_2 = request.form.get('position_2', '')
@@ -198,10 +204,10 @@ def edit_client(client_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, phone=%s, email=%s, 
+            """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
                                   website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
                                   phone_2=%s, email_2=%s, interest_level=%s WHERE id=%s""",
-            (name, country, address, contact_person, phone, email, website, buyer_type, brands,
+            (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
              contact_person_2, position_2, phone_2, email_2, interest_level, client_id)
         )
         conn.commit()
@@ -231,7 +237,7 @@ def client_detail(client_id):
     
     client = dict(raw_client) if raw_client else {}
     fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
-                       'contact_person', 'phone', 'email', 
+                       'contact_person', 'position', 'phone', 'email', 
                        'contact_person_2', 'position_2', 'phone_2', 'email_2', 'interest_level']
     for field in fields_to_check:
         if field not in client or client[field] is None:
@@ -283,7 +289,7 @@ def export_excel():
     query = """
         SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
                c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
-               c.contact_person AS "Контактна особа 1", c.phone AS "Телефон 1", c.email AS "Email 1",
+               c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.email AS "Email 1",
                c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.email_2 AS "Email 2"
         FROM clients c ORDER BY c.name ASC
     """
@@ -301,6 +307,114 @@ def export_excel():
         as_attachment=True,
         download_name=f'Mayer_CRM_Clients_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
     )
+
+@app.route('/import_excel', methods=['POST'])
+@login_required
+def import_excel():
+    if 'excel_file' not in request.files:
+        return redirect(url_for('index'))
+    
+    file = request.files['excel_file']
+    if file.filename == '':
+        return redirect(url_for('index'))
+        
+    if file and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+        try:
+            df = pd.read_excel(file)
+            
+            # Мапінг можливих назв колонок в Excel до внутрішніх імен полів бази даних
+            mapping = {
+                'Назва компанії': 'name', 'Company Name': 'name', 'Назва': 'name', 'Name': 'name',
+                'Зацікавленість': 'interest_level', 'Interest Level': 'interest_level',
+                'Тип покупця': 'buyer_type', 'Buyer Type': 'buyer_type',
+                'Пріоритетні бренди': 'brands', 'Brands': 'brands', 'Бренди': 'brands',
+                'Веб-сайт': 'website', 'Website': 'website', 'Сайт': 'website',
+                'Країна': 'country', 'Country': 'country',
+                'Адреса': 'address', 'Address': 'address',
+                'Контактна особа 1': 'contact_person', 'Contact Person 1': 'contact_person', 'Контакт 1': 'contact_person',
+                'Посада 1': 'position', 'Position 1': 'position',
+                'Телефон 1': 'phone', 'Phone 1': 'phone',
+                'Email 1': 'email', 'Mail 1': 'email',
+                'Контактна особа 2': 'contact_person_2', 'Contact Person 2': 'contact_person_2', 'Контакт 2': 'contact_person_2',
+                'Посада 2': 'position_2', 'Position 2': 'position_2',
+                'Телефон 2': 'phone_2', 'Phone 2': 'phone_2',
+                'Email 2': 'email_2', 'Mail 2': 'email_2'
+            }
+            
+            # Перейменовуємо знайдені колонки
+            renamed_cols = {}
+            for col in df.columns:
+                cleaned_col = str(col).strip()
+                if cleaned_col in mapping:
+                    renamed_cols[col] = mapping[cleaned_col]
+            
+            df = df.rename(columns=renamed_cols)
+            
+            if 'name' not in df.columns:
+                return "Помилка: У файлі Excel не знайдено колонку з назвою компанії ('Назва компанії' або 'Name')"
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            imported_count = 0
+            updated_count = 0
+            
+            for _, row in df.iterrows():
+                name = str(row['name']).strip() if pd.notnull(row['name']) else ''
+                if not name:
+                    continue  # пропускаємо рядки без назви компанії
+                
+                # Читання інших колонок з дефолтними значеннями
+                interest_level = str(row['interest_level']).strip() if 'interest_level' in df.columns and pd.notnull(row['interest_level']) else 'немає зацікавленості'
+                buyer_type = str(row['buyer_type']).strip() if 'buyer_type' in df.columns and pd.notnull(row['buyer_type']) else ''
+                brands = str(row['brands']).strip() if 'brands' in df.columns and pd.notnull(row['brands']) else ''
+                website = str(row['website']).strip() if 'website' in df.columns and pd.notnull(row['website']) else ''
+                country = str(row['country']).strip() if 'country' in df.columns and pd.notnull(row['country']) else ''
+                address = str(row['address']).strip() if 'address' in df.columns and pd.notnull(row['address']) else ''
+                
+                contact_person = str(row['contact_person']).strip() if 'contact_person' in df.columns and pd.notnull(row['contact_person']) else ''
+                position = str(row['position']).strip() if 'position' in df.columns and pd.notnull(row['position']) else ''
+                phone = str(row['phone']).strip() if 'phone' in df.columns and pd.notnull(row['phone']) else ''
+                email = str(row['email']).strip() if 'email' in df.columns and pd.notnull(row['email']) else ''
+                
+                contact_person_2 = str(row['contact_person_2']).strip() if 'contact_person_2' in df.columns and pd.notnull(row['contact_person_2']) else ''
+                position_2 = str(row['position_2']).strip() if 'position_2' in df.columns and pd.notnull(row['position_2']) else ''
+                phone_2 = str(row['phone_2']).strip() if 'phone_2' in df.columns and pd.notnull(row['phone_2']) else ''
+                email_2 = str(row['email_2']).strip() if 'email_2' in df.columns and pd.notnull(row['email_2']) else ''
+                
+                # Перевіряємо, чи існує вже компанія з такою назвою
+                cursor.execute("SELECT id FROM clients WHERE LOWER(name) = LOWER(%s)", (name,))
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # Оновлюємо дані існуючого клієнта
+                    cursor.execute(
+                        """UPDATE clients SET country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s,
+                                              website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s,
+                                              phone_2=%s, email_2=%s, interest_level=%s WHERE id=%s""",
+                        (country, address, contact_person, position, phone, email, website, buyer_type, brands,
+                         contact_person_2, position_2, phone_2, email_2, interest_level, existing[0])
+                    )
+                    updated_count += 1
+                else:
+                    # Створюємо новий запис
+                    cursor.execute(
+                        """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
+                                               contact_person_2, position_2, phone_2, email_2, interest_level)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                        (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
+                         contact_person_2, position_2, phone_2, email_2, interest_level)
+                    )
+                    imported_count += 1
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+        except Exception as e:
+            return f"Помилка при обробці файлу: {str(e)}"
+            
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
