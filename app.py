@@ -123,7 +123,7 @@ def index():
     with conn.cursor() as fix_cursor:
         fix_cursor.execute("""
             UPDATE clients 
-            SET country = CASE 
+            SET country = CASE
                 WHEN LOWER(country) IN ('польша', 'polska', 'poland') THEN 'Польща'
                 WHEN LOWER(country) IN ('украина', 'ukraine') THEN 'Україна'
                 WHEN LOWER(country) IN ('германия', 'deutschland', 'germany') THEN 'Німеччина'
@@ -148,7 +148,7 @@ def index():
                 ELSE country 
             END
             WHERE country IS NOT NULL AND country != '';
-        """)
+""")
         conn.commit()
     
     # 1. Окремий простий курсор для збору списку унікальних країн
@@ -156,6 +156,29 @@ def index():
     country_cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
     countries = [row[0] for row in country_cursor.fetchall()]
     country_cursor.close()
+    
+    # --- ЛІЧИЛЬНИКИ ДЛЯ СТАТИСТИКИ ---
+    stats_cursor = conn.cursor()
+    
+    # Загальна кількість
+    stats_cursor.execute("SELECT COUNT(*) FROM clients")
+    total_clients = stats_cursor.fetchone()[0]
+    
+    # Кількість по рівнях зацікавленості
+    stats_cursor.execute("SELECT interest_level, COUNT(*) FROM clients GROUP BY interest_level")
+    raw_interest = stats_cursor.fetchall()
+    interest_stats = {'немає зацікавленості': 0, 'середня зацікавленість': 0, 'зацікавленість': 0}
+    for row in raw_interest:
+        status = row[0] if row[0] else 'немає зацікавленості'
+        if status in interest_stats:
+            interest_stats[status] = row[1]
+            
+    # Кількість по країнах
+    stats_cursor.execute("SELECT country, COUNT(*) FROM clients WHERE country IS NOT NULL AND country != '' GROUP BY country ORDER BY COUNT(*) DESC")
+    country_stats = stats_cursor.fetchall() # поверне список кортежів [('Польща', 5), ('Україна', 3)]
+    
+    stats_cursor.close()
+    # ---------------------------------
     
     # 2. Використовуємо DictCursor для безпечного читання повнотекстових ключів клієнтів
     cursor = conn.cursor(cursor_factory=DictCursor)
@@ -175,7 +198,6 @@ def index():
         sql += " AND c.country = %s"
         params.append(country_filter)
         
-    # Сортування: клієнти з активностями (найсвіжіші) зверху, решта — за алфавітом
     sql += " ORDER BY (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) IS NULL THEN 1 ELSE 0 END), (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) DESC, c.name ASC"
     
     cursor.execute(sql, params)
@@ -203,7 +225,16 @@ def index():
     
     cursor.close()
     conn.close()
-    return render_template('index.html', clients=clients, countries=countries, search_query=search_query, country_filter=country_filter)
+    
+    return render_template(
+        'index.html', 
+        clients=clients, 
+        countries=countries, 
+        search_query=search_query, 
+        country_filter=country_filter,
+        total_clients=total_clients,
+        interest_stats=interest_stats,
+        country_stats=country_stats
 
 @app.route('/add_client', methods=['POST'])
 @login_required
