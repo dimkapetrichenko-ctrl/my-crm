@@ -34,28 +34,28 @@
 </div>
 
 <div class="row">
-    <div class="col-md-4 mb-4">
+    <div class="col-md-3 mb-4">
         <div class="card shadow-sm" style="max-height: 85vh; overflow-y: auto;">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">➕ Додати нового клієнта</h5>
+            <div class="card-header bg-dark text-white py-2">
+                <h5 class="mb-0 text-truncate" style="font-size: 1rem;">➕ Новий клієнт</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-2" style="font-size: 0.85rem;">
                 <form action="{{ url_for('add_client') }}" method="POST">
-                    <div class="mb-3">
-                        <label class="form-label"><b>Назва компанії *</b></label>
-                        <input type="text" name="name" class="form-control" required placeholder="ТОВ Агропром...">
+                    <div class="mb-2">
+                        <label class="form-label mb-1"><b>Назва компанії *</b></label>
+                        <input type="text" name="name" class="form-control form-control-sm" required placeholder="ТОВ Агропром...">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label"><b>Ступінь зацікавленості *</b></label>
-                        <select name="interest_level" class="form-select" required>
-                            <option value="немає зацікавленості">Синій — немає зацікавленості</option>
-                            <option value="середня зацікавленість">Жовтий — середня зацікавленість</option>
-                            <option value="зацікавленість">Зелений — зацікавленість</option>
+                    <div class="mb-2">
+                        <label class="form-label mb-1"><b>Зацікавленість *</b></label>
+                        <select name="interest_level" class="form-select form-select-sm" required>
+                            <option value="немає зацікавленості">Синій — немає</option>
+                            <option value="середня зацікавленість">Жовтий — середня</option>
+                            <option value="зацікавленість">Зелений — висока</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Тип покупця</label>
-                        <select name="buyer_type" class="form-select">
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Тип покупця</label>
+                        <select name="buyer_type" class="form-select form-select-sm">
                             <option value="">-- Оберіть тип --</option>
                             <option value="інтернет-магазин">інтернет-магазин</option>
                             <option value="гуртовий клієнт">гуртовий клієнт</option>
@@ -66,57 +66,58 @@
                             <option value="Дилер сг техніки">Дилер сг техніки</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Пріоритетний бренд (можна декілька)</label>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Vaderstad"><label class="form-check-label">Vaderstad</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Gaspardo"><label class="form-check-label">Gaspardo</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Pottinger"><label class="form-check-label">Pottinger</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="Kverneland"><label class="form-check-label">Kverneland</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="HORSCH"><label class="form-check-label">HORSCH</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="brands" value="інший"><label class="form-check-label">інший</label></div>
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Бренди</label>
+                        <div class="form-check small mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Vaderstad"><label class="form-check-label">Vaderstad</label></div>
+                        <div class="form-check small mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Gaspardo"><label class="form-check-label">Gaspardo</label></div>
+                        <div class="form-check small mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Pottinger"><label class="form-check-label">Pottinger</label></div>
+                        <div class="form-check small mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Kverneland"><label class="form-check-label">Kverneland</label></div>
+                        <div class="form-check small mb-0"><input class="form-check-input" type="checkbox" name="brands" value="HORSCH"><label class="form-check-label">HORSCH</label></div>
+                        <div class="form-check small mb-0"><input class="form-check-input" type="checkbox" name="brands" value="інший"><label class="form-check-label">інший</label></div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Веб-сайт</label>
-                        <input type="text" name="website" class="form-control" placeholder="www.example.com">
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Веб-сайт</label>
+                        <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Країна</label>
-                        <input type="text" name="country" class="form-control" placeholder="Польща, Україна...">
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Країна</label>
+                        <input type="text" name="country" class="form-control form-control-sm" placeholder="Польща...">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Адреса компанії</label>
-                        <input type="text" name="address" class="form-control" placeholder="Місто, вулиця...">
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Адреса</label>
+                        <input type="text" name="address" class="form-control form-control-sm" placeholder="Місто...">
                     </div>
                     
-                    <h5 class="text-danger mt-4 border-bottom pb-2">👤 Контактна особа №1</h5>
-                    <div class="mb-2"><label class="small text-muted">Ім'я</label><input type="text" name="contact_person" class="form-control"></div>
-                    <div class="mb-2"><label class="small text-muted">Посада</label><input type="text" name="position" class="form-control" placeholder="Закупник, директор..."></div>
-                    <div class="mb-2"><label class="small text-muted">Телефон</label><input type="text" name="phone" class="form-control"></div>
-                    <div class="mb-3"><label class="small text-muted">Email</label><input type="email" name="email" class="form-control"></div>
+                    <h6 class="text-danger mt-2 border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контакт №1</h6>
+                    <div class="mb-1"><input type="text" name="contact_person" class="form-control form-control-sm" placeholder="Ім'я"></div>
+                    <div class="mb-1"><input type="text" name="position" class="form-control form-control-sm" placeholder="Посада"></div>
+                    <div class="mb-1"><input type="text" name="phone" class="form-control form-control-sm" placeholder="Телефон"></div>
+                    <div class="mb-2"><input type="email" name="email" class="form-control form-control-sm" placeholder="Email"></div>
 
-                    <h5 class="text-danger mt-4 border-bottom pb-2">👤 Контактна особа №2</h5>
-                    <div class="mb-2"><label class="small text-muted">Ім'я</label><input type="text" name="contact_person_2" class="form-control"></div>
-                    <div class="mb-2"><label class="small text-muted">Посада</label><input type="text" name="position_2" class="form-control" placeholder="Закупник, директор..."></div>
-                    <div class="mb-2"><label class="small text-muted">Телефон</label><input type="text" name="phone_2" class="form-control"></div>
-                    <div class="mb-3"><label class="small text-muted">Email</label><input type="email" name="email_2" class="form-control"></div>
+                    <h6 class="text-danger mt-2 border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контакт №2</h6>
+                    <div class="mb-1"><input type="text" name="contact_person_2" class="form-control form-control-sm" placeholder="Ім'я"></div>
+                    <div class="mb-1"><input type="text" name="position_2" class="form-control form-control-sm" placeholder="Посада"></div>
+                    <div class="mb-1"><input type="text" name="phone_2" class="form-control form-control-sm" placeholder="Телефон"></div>
+                    <div class="mb-2"><input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email"></div>
 
-                    <button type="submit" class="btn btn-danger w-100 mt-2">Зберегти компанію</button>
+                    <button type="submit" class="btn btn-sm btn-danger w-100 mt-1">Зберегти</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <div class="col-md-8">
+    <div class="col-md-9">
         <div class="card shadow-sm">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle mb-0" style="border: 2px solid #6c757d;">
+                <table class="table table-bordered table-hover align-middle mb-0" style="border: 2px solid #6c757d; font-size: 0.9rem;">
                     <thead class="table-dark">
                         <tr>
                             <th style="border-bottom: 3px solid #495057;">Компанія / Тип</th>
                             <th style="border-bottom: 3px solid #495057;">Бренди</th>
                             <th style="border-bottom: 3px solid #495057;">Країна</th>
                             <th style="border-bottom: 3px solid #495057;">Контактна особа №1</th>
-                            <th style="border-bottom: 3px solid #495057;">Остання дія</th>
+                            <th style="border-bottom: 3px solid #495057;">Остання подія</th>
+                            <th style="border-bottom: 3px solid #495057; background-color: #0d6efd;">Наступна подія</th>
                             <th style="border-bottom: 3px solid #495057;">Дія</th>
                         </tr>
                     </thead>
@@ -125,15 +126,15 @@
                         <tr style="{% if loop.index0 % 2 == 1 %}background-color: #e9ecef;{% else %}background-color: #ffffff;{% endif %} border-bottom: 1.5px solid #6c757d;">
                             <td style="border-right: 1.5px solid #6c757d;">
                                 {% if client.interest_level == 'зацікавленість' %}
-                                    <span class="badge bg-success mb-1">зацікавленість</span>
+                                    <span class="badge bg-success mb-1" style="font-size: 0.75rem;">зацікавленість</span>
                                 {% elif client.interest_level == 'середня зацікавленість' %}
-                                    <span class="badge bg-warning text-dark mb-1">середня зацікавленість</span>
+                                    <span class="badge bg-warning text-dark mb-1" style="font-size: 0.75rem;">середня зацікавленість</span>
                                 {% else %}
-                                    <span class="badge bg-primary mb-1">немає зацікавленості</span>
+                                    <span class="badge bg-primary mb-1" style="font-size: 0.75rem;">немає зацікавленості</span>
                                 {% endif %}
                                 <br>
                                 <strong>{{ client.name }}</strong><br>
-                                <span class="badge bg-info text-dark small" style="font-size: 0.75rem;">{{ client.buyer_type or 'не вказано' }}</span>
+                                <span class="badge bg-info text-dark" style="font-size: 0.7rem;">{{ client.buyer_type or 'не вказано' }}</span>
                             </td>
                             <td style="border-right: 1.5px solid #6c757d;"><small class="text-dark fw-medium">{{ client.brands or '-' }}</small></td>
                             <td style="border-right: 1.5px solid #6c757d;"><span class="badge bg-secondary">{{ client.country or '-' }}</span></td>
@@ -146,19 +147,32 @@
                             </td>
                             <td style="border-right: 1.5px solid #6c757d;">
                                 {% if client.last_activity %}
-                                    <span class="badge bg-dark text-white font-monospace" style="font-size: 0.85rem;">🕒 {{ client.last_activity }}</span>
+                                    <span class="badge bg-dark text-white font-monospace" style="font-size: 0.8rem;">🕒 {{ client.last_activity }}</span>
                                 {% else %}
-                                    <span class="text-muted small"><i>активностей немає</i></span>
+                                    <span class="text-muted small"><i>немає дій</i></span>
+                                {% endif %}
+                            </td>
+                            <td style="border-right: 1.5px solid #6c757d; background-color: #f8f9fa;">
+                                {% if client.next_event_date %}
+                                    <div class="fw-bold text-primary" style="font-size: 0.85rem;">📅 {{ client.next_event_date }}</div>
+                                    <span class="badge bg-outline-primary border border-primary text-primary text-capitalize px-1 py-0 mt-1" style="font-size: 0.7rem;">
+                                        {% if client.next_event_type == 'call' %}📞 Дзвінок
+                                        {% elif client.next_event_type == 'visit' %}🚗 Візит
+                                        {% elif client.next_event_type == 'email' %}✉️ Лист
+                                        {% else %}{{ client.next_event_type }}{% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small"><i>не заплановано</i></span>
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary fw-bold">Картка</a>
+                                <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary fw-bold" style="font-size: 0.8rem; padding: 2px 6px;">Картка</a>
                             </td>
                         </tr>
                         {% endfor %}
                         {% if not clients %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Клієнти відсутні за вказаними параметрами</td>
+                            <td colspan="7" class="text-center text-muted py-4">Клієнти відсутні за вказаними параметрами</td>
                         </tr>
                         {% endif %}
                     </tbody>
