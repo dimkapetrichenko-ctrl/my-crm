@@ -136,6 +136,15 @@ def index():
                 WHEN LOWER(country) IN ('румыния', 'romania') THEN 'Румунія'
                 WHEN LOWER(country) IN ('молдова', 'moldova') THEN 'Молдова'
                 WHEN LOWER(country) IN ('болгария', 'bulgary') THEN 'Болгарія'
+                WHEN LOWER(country) IN ('греция', 'greece') THEN 'Греція'
+                WHEN LOWER(country) IN ('израиль', 'israel') THEN 'Ізраїль'
+                WHEN LOWER(country) IN ('индия', 'india') THEN 'Індія'
+                WHEN LOWER(country) IN ('испания', 'spain') THEN 'Іспанія'
+                WHEN LOWER(country) IN ('италия', 'italy') THEN 'Італія'
+                WHEN LOWER(country) IN ('португалия', 'portugal') THEN 'Португалія'
+                WHEN LOWER(country) IN ('сербия', 'serbia') THEN 'Сербія'
+                WHEN LOWER(country) IN ('турция', 'turkey') THEN 'Туреччина'
+                WHEN LOWER(country) IN ('франция', 'france') THEN 'Франція'
                 ELSE country 
             END
             WHERE country IS NOT NULL AND country != '';
