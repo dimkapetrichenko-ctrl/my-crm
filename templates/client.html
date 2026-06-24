@@ -27,6 +27,25 @@
                 <h3 class="card-title text-danger mb-1" style="font-size: 1.5rem;">{{ client.name }}</h3>
                 <p class="text-muted mb-2"><b>Тип:</b> {{ client.buyer_type or 'Не вказано' }}</p>
                 
+                <div class="card border-primary bg-light mb-3">
+                    <div class="card-body py-2 px-3">
+                        <h6 class="card-subtitle mb-1 text-primary fw-bold">🎯 Наступна подія:</h6>
+                        {% if client.next_event_date %}
+                            <p class="mb-0" style="font-size: 0.95rem;">
+                                📅 <b>{{ client.next_event_date }}</b> — 
+                                <span class="badge bg-primary text-capitalize" style="font-size: 0.85rem;">
+                                    {% if client.next_event_type == 'call' %}📞 Дзвінок
+                                    {% elif client.next_event_type == 'visit' %}🚗 Візит
+                                    {% elif client.next_event_type == 'email' %}✉️ Електронний лист
+                                    {% else %}{{ client.next_event_type }}{% endif %}
+                                </span>
+                            </p>
+                        {% else %}
+                            <p class="mb-0 text-muted"><i>Не заплановано</i></p>
+                        {% endif %}
+                    </div>
+                </div>
+
                 <p class="mb-1">🚜 <strong>Пріоритетні бренди:</strong></p>
                 <p class="text-primary mb-2" style="white-space: pre-wrap;">{{ client.brands or 'Не вказано' }}</p>
                 
@@ -135,6 +154,25 @@
                             <option value="середня зацікавленість" {% if client.interest_level == 'середня зацікавленість' %}selected{% endif %}>Жовтий — середня зацікавленість</option>
                             <option value="зацікавленість" {% if client.interest_level == 'зацікавленість' %}selected{% endif %}>Зелений — зацікавленість</option>
                         </select>
+                    </div>
+
+                    <div class="p-2 border border-primary rounded bg-light mb-2">
+                        <h6 class="text-primary mb-2 fw-bold">🎯 Планування наступної події</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="small text-muted mb-1">Дата події</label>
+                                <input type="date" name="next_event_date" class="form-control form-control-sm" value="{{ client.next_event_date or '' }}" style="font-size: 0.9rem;">
+                            </div>
+                            <div class="col-6">
+                                <label class="small text-muted mb-1">Вид події</label>
+                                <select name="next_event_type" class="form-select form-select-sm" style="font-size: 0.9rem;">
+                                    <option value="" {% if not client.next_event_type %}selected{% endif %}>-- Оберіть вид --</option>
+                                    <option value="call" {% if client.next_event_type == 'call' %}selected{% endif %}>📞 Дзвінок</option>
+                                    <option value="visit" {% if client.next_event_type == 'visit' %}selected{% endif %}>🚗 Візит</option>
+                                    <option value="email" {% if client.next_event_type == 'email' %}selected{% endif %}>✉️ Електронний лист</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="mb-2">
