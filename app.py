@@ -123,7 +123,7 @@ def index():
     with conn.cursor() as fix_cursor:
         fix_cursor.execute("""
             UPDATE clients 
-            SET country = CASE
+            SET country = CASE 
                 WHEN LOWER(country) IN ('польша', 'polska', 'poland') THEN 'Польща'
                 WHEN LOWER(country) IN ('украина', 'ukraine') THEN 'Україна'
                 WHEN LOWER(country) IN ('германия', 'deutschland', 'germany') THEN 'Німеччина'
@@ -135,20 +135,10 @@ def index():
                 WHEN LOWER(country) IN ('венгрия', 'hungary') THEN 'Угорщина'
                 WHEN LOWER(country) IN ('румыния', 'romania') THEN 'Румунія'
                 WHEN LOWER(country) IN ('молдова', 'moldova') THEN 'Молдова'
-                WHEN LOWER(country) IN ('болгария', 'bulgary') THEN 'Болгарія'
-                WHEN LOWER(country) IN ('греция', 'greece') THEN 'Греція'
-                WHEN LOWER(country) IN ('израиль', 'israel') THEN 'Ізраїль'
-                WHEN LOWER(country) IN ('индия', 'india') THEN 'Індія'
-                WHEN LOWER(country) IN ('испания', 'spain') THEN 'Іспанія'
-                WHEN LOWER(country) IN ('италия', 'italy') THEN 'Італія'
-                WHEN LOWER(country) IN ('португалия', 'portugal') THEN 'Португалія'
-                WHEN LOWER(country) IN ('сербия', 'serbia') THEN 'Сербія'
-                WHEN LOWER(country) IN ('турция', 'turkey') THEN 'Туреччина'
-                WHEN LOWER(country) IN ('франция', 'france') THEN 'Франція'
                 ELSE country 
             END
             WHERE country IS NOT NULL AND country != '';
-""")
+        """)
         conn.commit()
     
     # 1. Окремий простий курсор для збору списку унікальних країн
@@ -175,7 +165,7 @@ def index():
             
     # Кількість по країнах
     stats_cursor.execute("SELECT country, COUNT(*) FROM clients WHERE country IS NOT NULL AND country != '' GROUP BY country ORDER BY COUNT(*) DESC")
-    country_stats = stats_cursor.fetchall() # поверне список кортежів [('Польща', 5), ('Україна', 3)]
+    country_stats = stats_cursor.fetchall()
     
     stats_cursor.close()
     # ---------------------------------
@@ -235,6 +225,7 @@ def index():
         total_clients=total_clients,
         interest_stats=interest_stats,
         country_stats=country_stats
+    )
 
 @app.route('/add_client', methods=['POST'])
 @login_required
