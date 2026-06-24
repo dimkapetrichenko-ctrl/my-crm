@@ -40,7 +40,9 @@ def init_db():
             position_2 TEXT,
             phone_2 TEXT,
             email_2 TEXT,
-            interest_level TEXT
+            interest_level TEXT,
+            next_event_date TEXT,
+            next_event_type TEXT
         )
     ''')
     
@@ -56,7 +58,9 @@ def init_db():
         'position_2': 'TEXT',
         'phone_2': 'TEXT',
         'email_2': 'TEXT',
-        'interest_level': 'TEXT'
+        'interest_level': 'TEXT',
+        'next_event_date': 'TEXT',
+        'next_event_type': 'TEXT'
     }
     
     for field, f_type in new_fields.items():
@@ -72,18 +76,6 @@ def init_db():
             FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
         )
     ''')
-    
-    cursor.execute("""
-        UPDATE clients 
-        SET country = CASE 
-            WHEN LOWER(country) IN ('польша', 'polska') THEN 'Польща'
-            WHEN LOWER(country) IN ('украина', 'ukraine') THEN 'Україна'
-            WHEN LOWER(country) IN ('германия', 'deutschland') THEN 'Німеччина'
-            WHEN LOWER(country) IN ('словакия', 'slovakia') THEN 'Словаччина'
-            ELSE country 
-        END
-        WHERE country IS NOT NULL;
-    """)
     
     conn.commit()
     cursor.close()
@@ -126,6 +118,7 @@ def index():
     country_filter = request.args.get('country', '').strip()
     
     conn = get_db_connection()
+    
     # Автоматичний переклад країн з російської на українську на рівні бази
     with conn.cursor() as fix_cursor:
         fix_cursor.execute("""
@@ -172,13 +165,12 @@ def index():
         sql += " AND c.country = %s"
         params.append(country_filter)
         
-   # Спочатку показуємо тих, у кого є активність (свіжі зверху), потім інші за алфавітом
-sql += " ORDER BY (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) IS NULL THEN 1 ELSE 0 END), (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) DESC, c.name ASC"
+    # Сортування: клієнти з активностями (найсвіжіші) зверху, решта — за алфавітом
+    sql += " ORDER BY (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) IS NULL THEN 1 ELSE 0 END), (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) DESC, c.name ASC"
     
     cursor.execute(sql, params)
     raw_clients = cursor.fetchall()
     
-    # Безпечне копіювання значень з перевіркою на None
     clients = []
     for row in raw_clients:
         clients.append({
@@ -194,7 +186,9 @@ sql += " ORDER BY (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.cli
             'buyer_type': row['buyer_type'] if row['buyer_type'] else '',
             'brands': row['brands'] if row['brands'] else '',
             'interest_level': row['interest_level'] if row['interest_level'] else 'немає зацікавленості',
-            'last_activity': row['last_activity'] if row['last_activity'] else ''
+            'last_activity': row['last_activity'] if row['last_activity'] else '',
+            'next_event_date': row['next_event_date'] if row['next_event_date'] else '',
+            'next_event_type': row['next_event_type'] if row['next_event_type'] else ''
         })
     
     cursor.close()
@@ -210,6 +204,8 @@ def add_client():
     buyer_type = request.form.get('buyer_type', '')
     interest_level = request.form.get('interest_level', 'немає зацікавленості')
     website = request.form.get('website', '')
+    next_event_date = request.form.get('next_event_date', '')
+    next_event_type = request.form.get('next_event_type', '')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
@@ -229,10 +225,10 @@ def add_client():
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
-                                   contact_person_2, position_2, phone_2, email_2, interest_level) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type)
         )
         conn.commit()
         cursor.close()
@@ -248,6 +244,8 @@ def edit_client(client_id):
     buyer_type = request.form.get('buyer_type', '')
     interest_level = request.form.get('interest_level', 'немає зацікавленості')
     website = request.form.get('website', '')
+    next_event_date = request.form.get('next_event_date', '')
+    next_event_type = request.form.get('next_event_type', '')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
@@ -268,9 +266,9 @@ def edit_client(client_id):
         cursor.execute(
             """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
                                   website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
-                                  phone_2=%s, email_2=%s, interest_level=%s WHERE id=%s""",
+                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s WHERE id=%s""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, client_id)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, client_id)
         )
         conn.commit()
         cursor.close()
@@ -300,7 +298,8 @@ def client_detail(client_id):
     client = dict(raw_client) if raw_client else {}
     fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
                        'contact_person', 'position', 'phone', 'email', 
-                       'contact_person_2', 'position_2', 'phone_2', 'email_2', 'interest_level']
+                       'contact_person_2', 'position_2', 'phone_2', 'email_2', 
+                       'interest_level', 'next_event_date', 'next_event_type']
     for field in fields_to_check:
         if field not in client or client[field] is None:
             if field == 'interest_level':
@@ -352,7 +351,8 @@ def export_excel():
         SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
                c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
                c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.email AS "Email 1",
-               c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.email_2 AS "Email 2"
+               c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.email_2 AS "Email 2",
+               c.next_event_date AS "Дата наступної події", c.next_event_type AS "Вид наступної події"
         FROM clients c ORDER BY c.name ASC
     """
     df = pd.read_sql(query, conn)
@@ -399,7 +399,9 @@ def import_excel():
                 'Контактна особа 2': 'contact_person_2', 'Contact Person 2': 'contact_person_2', 'Контакт 2': 'contact_person_2',
                 'Посада 2': 'position_2', 'Position 2': 'position_2',
                 'Телефон 2': 'phone_2', 'Phone 2': 'phone_2',
-                'Email 2': 'email_2', 'Mail 2': 'email_2'
+                'Email 2': 'email_2', 'Mail 2': 'email_2',
+                'Дата наступної події': 'next_event_date',
+                'Вид наступної події': 'next_event_type'
             }
             
             renamed_cols = {}
@@ -438,6 +440,9 @@ def import_excel():
                 phone_2 = str(row['phone_2']).strip() if 'phone_2' in df.columns and pd.notnull(row['phone_2']) else ''
                 email_2 = str(row['email_2']).strip() if 'email_2' in df.columns and pd.notnull(row['email_2']) else ''
                 
+                next_event_date = str(row['next_event_date']).strip() if 'next_event_date' in df.columns and pd.notnull(row['next_event_date']) else ''
+                next_event_type = str(row['next_event_type']).strip() if 'next_event_type' in df.columns and pd.notnull(row['next_event_type']) else ''
+                
                 cursor.execute("SELECT id FROM clients WHERE LOWER(name) = LOWER(%s)", (name,))
                 existing = cursor.fetchone()
                 
@@ -445,17 +450,17 @@ def import_excel():
                     cursor.execute(
                         """UPDATE clients SET country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s,
                                               website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s,
-                                              phone_2=%s, email_2=%s, interest_level=%s WHERE id=%s""",
+                                              phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s WHERE id=%s""",
                         (country, address, contact_person, position, phone, email, website, buyer_type, brands,
-                         contact_person_2, position_2, phone_2, email_2, interest_level, existing['id'])
+                         contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, existing['id'])
                     )
                 else:
                     cursor.execute(
                         """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-                                               contact_person_2, position_2, phone_2, email_2, interest_level)
-                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                               contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                         (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-                         contact_person_2, position_2, phone_2, email_2, interest_level)
+                         contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type)
                     )
             
             conn.commit()
