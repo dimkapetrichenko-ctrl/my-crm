@@ -135,6 +135,7 @@ def index():
                 WHEN LOWER(country) IN ('венгрия', 'hungary') THEN 'Угорщина'
                 WHEN LOWER(country) IN ('румыния', 'romania') THEN 'Румунія'
                 WHEN LOWER(country) IN ('молдова', 'moldova') THEN 'Молдова'
+                WHEN LOWER(country) IN ('болгария', 'bulgary') THEN 'Болгарія'
                 ELSE country 
             END
             WHERE country IS NOT NULL AND country != '';
