@@ -34,8 +34,8 @@
 </div>
 
 <div class="row">
-    <div class="col-md-3 mb-4">
-        <div class="card shadow-sm" style="max-height: 85vh; overflow-y: auto;">
+<div class="col-md-3 mb-4">
+        <div class="card shadow-sm mb-3" style="max-height: 60vh; overflow-y: auto;">
             <div class="card-header bg-dark text-white py-2">
                 <h5 class="mb-0 text-truncate" style="font-size: 1rem;">➕ Новий клієнт</h5>
             </div>
@@ -102,6 +102,53 @@
 
                     <button type="submit" class="btn btn-sm btn-danger w-100 mt-1">Зберегти</button>
                 </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm" style="max-height: 40vh; overflow-y: auto;">
+            <div class="card-header bg-secondary text-white py-1">
+                <h6 class="mb-0" style="font-size: 0.9rem;">📊 Аналітика бази</h6>
+            </div>
+            <div class="card-body p-2" style="font-size: 0.85rem;">
+                
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                    <span class="fw-bold">Всього клієнтів:</span>
+                    <span class="badge bg-dark px-2 py-1" style="font-size: 0.9rem;">{{ total_clients }}</span>
+                </div>
+
+                <div class="mb-2">
+                    <div class="text-muted small fw-bold mb-1">Ступені зацікавленості:</div>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between align-items-center bg-white px-2 py-05 border rounded">
+                            <span><small>🟢</small> Висока:</span>
+                            <span class="fw-bold text-success">{{ interest_stats['зацікавленість'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center bg-white px-2 py-05 border rounded">
+                            <span><small>💛</small> Середня:</span>
+                            <span class="fw-bold text-warning bg-dark px-1 rounded">{{ interest_stats['середня зацікавленість'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center bg-white px-2 py-05 border rounded">
+                            <span><small>🔵</small> Немає:</span>
+                            <span class="fw-bold text-primary">{{ interest_stats['немає зацікавленості'] }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-muted small fw-bold mb-1">Географія клієнтів:</div>
+                    <div class="d-flex flex-column gap-1" style="max-height: 15vh; overflow-y: auto;">
+                        {% for row in country_stats %}
+                        <div class="d-flex justify-content-between align-items-center bg-light px-2 py-05 border rounded">
+                            <span class="text-truncate" style="max-width: 75%;">📍 {{ row[0] }}</span>
+                            <span class="badge bg-secondary">{{ row[1] }}</span>
+                        </div>
+                        {% endfor %}
+                        {% if not country_stats %}
+                        <div class="text-muted small text-center italic py-1">Країни не вказані</div>
+                        {% endif %}
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
