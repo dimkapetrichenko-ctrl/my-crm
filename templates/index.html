@@ -109,16 +109,16 @@
     <div class="col-md-9">
         <div class="card shadow-sm">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle mb-0" style="border: 2px solid #6c757d; font-size: 0.9rem;">
+<table class="table table-bordered table-hover align-middle mb-0" style="border: 2px solid #6c757d; font-size: 0.9rem;">
                     <thead class="table-dark">
                         <tr>
                             <th style="border-bottom: 3px solid #495057;">Компанія / Тип</th>
-                            <th style="border-bottom: 3px solid #495057;">Бренди</th>
-                            <th style="border-bottom: 3px solid #495057;">Країна</th>
+                            <th style="border-bottom: 3px solid #495057; width: 12%;">Бренди</th>
+                            <th style="border-bottom: 3px solid #495057; width: 10%;">Країна</th>
                             <th style="border-bottom: 3px solid #495057;">Контактна особа №1</th>
-                            <th style="border-bottom: 3px solid #495057;">Остання подія</th>
-                            <th style="border-bottom: 3px solid #495057; background-color: #0d6efd;">Наступна подія</th>
-                            <th style="border-bottom: 3px solid #495057;">Дія</th>
+                            <th style="border-bottom: 3px solid #495057; width: 15%;">Остання подія</th>
+                            <th style="border-bottom: 3px solid #495057; background-color: #0d6efd; width: 18%;">Наступна подія</th>
+                            <th style="border-bottom: 3px solid #495057; width: 8%;">Дія</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -155,7 +155,7 @@
                             <td style="border-right: 1.5px solid #6c757d; background-color: #f8f9fa;">
                                 {% if client.next_event_date %}
                                     <div class="fw-bold text-primary" style="font-size: 0.85rem;">📅 {{ client.next_event_date }}</div>
-                                    <span class="badge bg-outline-primary border border-primary text-primary text-capitalize px-1 py-0 mt-1" style="font-size: 0.7rem;">
+                                    <span class="badge bg-outline-primary border border-primary text-primary text-capitalize px-2 py-05 mt-1" style="font-size: 0.75rem; display: inline-block;">
                                         {% if client.next_event_type == 'call' %}📞 Дзвінок
                                         {% elif client.next_event_type == 'visit' %}🚗 Візит
                                         {% elif client.next_event_type == 'email' %}✉️ Лист
