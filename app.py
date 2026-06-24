@@ -172,7 +172,8 @@ def index():
         sql += " AND c.country = %s"
         params.append(country_filter)
         
-    sql += " ORDER BY c.name ASC"
+   # Спочатку показуємо тих, у кого є активність (свіжі зверху), потім інші за алфавітом
+sql += " ORDER BY (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) IS NULL THEN 1 ELSE 0 END), (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) DESC, c.name ASC"
     
     cursor.execute(sql, params)
     raw_clients = cursor.fetchall()
