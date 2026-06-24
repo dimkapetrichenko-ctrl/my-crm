@@ -126,6 +126,27 @@ def index():
     country_filter = request.args.get('country', '').strip()
     
     conn = get_db_connection()
+    # Автоматичний переклад країн з російської на українську на рівні бази
+    with conn.cursor() as fix_cursor:
+        fix_cursor.execute("""
+            UPDATE clients 
+            SET country = CASE 
+                WHEN LOWER(country) IN ('польша', 'polska', 'poland') THEN 'Польща'
+                WHEN LOWER(country) IN ('украина', 'ukraine') THEN 'Україна'
+                WHEN LOWER(country) IN ('германия', 'deutschland', 'germany') THEN 'Німеччина'
+                WHEN LOWER(country) IN ('словакия', 'slovakia') THEN 'Словаччина'
+                WHEN LOWER(country) IN ('чехия', 'czechia', 'czech republic') THEN 'Чехія'
+                WHEN LOWER(country) IN ('литва', 'lithuania') THEN 'Литва'
+                WHEN LOWER(country) IN ('латвия', 'latvia') THEN 'Латвія'
+                WHEN LOWER(country) IN ('эстония', 'estonia') THEN 'Естонія'
+                WHEN LOWER(country) IN ('венгрия', 'hungary') THEN 'Угорщина'
+                WHEN LOWER(country) IN ('румыния', 'romania') THEN 'Румунія'
+                WHEN LOWER(country) IN ('молдова', 'moldova') THEN 'Молдова'
+                ELSE country 
+            END
+            WHERE country IS NOT NULL AND country != '';
+        """)
+        conn.commit()
     
     # 1. Окремий простий курсор для збору списку унікальних країн
     country_cursor = conn.cursor()
