@@ -224,7 +224,8 @@ def index():
         country_filter=country_filter,
         total_clients=total_clients,
         interest_stats=interest_stats,
-        country_stats=country_stats
+        country_stats=country_stats,
+        today_date=datetime.now().strftime("%Y-%m-%d")
     )
 
 @app.route('/add_client', methods=['POST'])
