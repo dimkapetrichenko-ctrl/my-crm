@@ -168,10 +168,10 @@
                             <th style="border-bottom: 3px solid #495057; width: 8%;">Дія</th>
                         </tr>
                     </thead>
-                    <tbody>
+                  <tbody>
                         {% for client in clients %}
-                        <tr style="{% if client.next_event_date == today_date %}background-color: #fff3cd; font-weight: 500;{% elif loop.index0 % 2 == 1 %}background-color: #e9ecef;{% else %}background-color: #ffffff;{% endif %} border-bottom: 1.5px solid #6c757d;">
-                            <td style="border-right: 1.5px solid #6c757d;">
+                        <tr style="{% if client.next_event_date == today_date %}background-color: #fff3cd !important; font-weight: 500; border: 2px solid #ffc107;{% elif loop.index0 % 2 == 1 %}background-color: #e9ecef;{% else %}background-color: #ffffff;{% endif %} border-bottom: 1.5px solid #6c757d;">
+                            <td style="border-right: 1.5px solid #6c757d; background-color: inherit;">
                                 {% if client.interest_level == 'зацікавленість' %}
                                     <span class="badge bg-success mb-1" style="font-size: 0.75rem;">зацікавленість</span>
                                 {% elif client.interest_level == 'середня зацікавленість' %}
@@ -183,23 +183,23 @@
                                 <strong>{{ client.name }}</strong><br>
                                 <span class="badge bg-info text-dark" style="font-size: 0.7rem;">{{ client.buyer_type or 'не вказано' }}</span>
                             </td>
-                            <td style="border-right: 1.5px solid #6c757d;"><small class="text-dark fw-medium">{{ client.brands or '-' }}</small></td>
-                            <td style="border-right: 1.5px solid #6c757d;"><span class="badge bg-secondary">{{ client.country or '-' }}</span></td>
-                            <td style="border-right: 1.5px solid #6c757d;">
+                            <td style="border-right: 1.5px solid #6c757d; background-color: inherit;"><small class="text-dark fw-medium">{{ client.brands or '-' }}</small></td>
+                            <td style="border-right: 1.5px solid #6c757d; background-color: inherit;"><span class="badge bg-secondary">{{ client.country or '-' }}</span></td>
+                            <td style="border-right: 1.5px solid #6c757d; background-color: inherit;">
                                 <small>
                                     👤 <b>{{ client.contact_person or '-' }}</b> 
                                     {% if client.position %}<span class="text-muted">({{ client.position }})</span>{% endif %}<br>
                                     📞 {{ client.phone or '-' }}
                                 </small>
                             </td>
-                            <td style="border-right: 1.5px solid #6c757d;">
+                            <td style="border-right: 1.5px solid #6c757d; background-color: inherit;">
                                 {% if client.last_activity %}
                                     <span class="badge bg-dark text-white font-monospace" style="font-size: 0.8rem;">🕒 {{ client.last_activity }}</span>
                                 {% else %}
                                     <span class="text-muted small"><i>немає дій</i></span>
                                 {% endif %}
                             </td>
-                            <td style="border-right: 1.5px solid #6c757d; {% if client.next_event_date == today_date %}background-color: #ffeeba;{% else %}background-color: #f8f9fa;{% endif %}">
+                            <td style="border-right: 1.5px solid #6c757d; background-color: inherit;">
                                 {% if client.next_event_date %}
                                     <div class="fw-bold text-primary" style="font-size: 0.85rem;">📅 {{ client.next_event_date }}</div>
                                     <span class="badge bg-outline-primary border border-primary text-primary text-capitalize px-2 py-05 mt-1" style="font-size: 0.75rem; display: inline-block;">
@@ -212,7 +212,7 @@
                                     <span class="text-muted small"><i>не заплановано</i></span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td style="background-color: inherit;">
                                 <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary fw-bold" style="font-size: 0.8rem; padding: 2px 6px;">Картка</a>
                             </td>
                         </tr>
