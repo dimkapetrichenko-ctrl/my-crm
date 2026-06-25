@@ -188,7 +188,9 @@ def index():
         sql += " AND c.country = %s"
         params.append(country_filter)
         
-    sql += " ORDER BY (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) IS NULL THEN 1 ELSE 0 END), (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) DESC, c.name ASC"
+    # Сортування: спочатку завдання на сьогодні, потім клієнти з активностями, далі решта за алфавітом
+today_str = datetime.now().strftime("%Y-%m-%d")
+sql += f" ORDER BY (CASE WHEN c.next_event_date = '{today_str}' THEN 0 ELSE 1 END), (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) IS NULL THEN 1 ELSE 0 END), (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) DESC, c.name ASC"
     
     cursor.execute(sql, params)
     raw_clients = cursor.fetchall()
