@@ -188,9 +188,8 @@ def index():
         sql += " AND c.country = %s"
         params.append(country_filter)
         
-    # Сортування: спочатку завдання на сьогодні, потім клієнти з активностями, далі решта за алфавітом
-today_str = datetime.now().strftime("%Y-%m-%d")
-sql += f" ORDER BY (CASE WHEN c.next_event_date = '{today_str}' THEN 0 ELSE 1 END), (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) IS NULL THEN 1 ELSE 0 END), (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) DESC, c.name ASC"
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    sql += f" ORDER BY (CASE WHEN c.next_event_date = '{today_str}' THEN 0 ELSE 1 END), (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) IS NULL THEN 1 ELSE 0 END), (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) DESC, c.name ASC"
     
     cursor.execute(sql, params)
     raw_clients = cursor.fetchall()
@@ -227,7 +226,7 @@ sql += f" ORDER BY (CASE WHEN c.next_event_date = '{today_str}' THEN 0 ELSE 1 EN
         total_clients=total_clients,
         interest_stats=interest_stats,
         country_stats=country_stats,
-        today_date=datetime.now().strftime("%Y-%m-%d")
+        today_date=today_str
     )
 
 @app.route('/add_client', methods=['POST'])
@@ -448,7 +447,7 @@ def import_excel():
             df = df.rename(columns=renamed_cols)
             
             if 'name' not in df.columns:
-                return "Помилка: У файлі Excel не знайдено колонку з назвою компанії ('Назва компанії')"
+                return "Помилка: У файлі Excel не знайдено оголошення компанії ('Назва компанії')"
             
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=DictCursor)
