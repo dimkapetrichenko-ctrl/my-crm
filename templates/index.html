@@ -78,7 +78,7 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1">Веб-сайт</label>
-                        <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
+                        <input type="text" name="website" class="form-control" placeholder="www.example.com">
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1">Країна</label>
@@ -170,7 +170,7 @@
                     </thead>
                     <tbody>
                         {% for client in clients %}
-                        <tr style="{% if loop.index0 % 2 == 1 %}background-color: #e9ecef;{% else %}background-color: #ffffff;{% endif %} border-bottom: 1.5px solid #6c757d;">
+                        <tr style="{% if client.next_event_date == today_date %}background-color: #fff3cd; font-weight: 500;{% elif loop.index0 % 2 == 1 %}background-color: #e9ecef;{% else %}background-color: #ffffff;{% endif %} border-bottom: 1.5px solid #6c757d;">
                             <td style="border-right: 1.5px solid #6c757d;">
                                 {% if client.interest_level == 'зацікавленість' %}
                                     <span class="badge bg-success mb-1" style="font-size: 0.75rem;">зацікавленість</span>
@@ -199,7 +199,7 @@
                                     <span class="text-muted small"><i>немає дій</i></span>
                                 {% endif %}
                             </td>
-                            <td style="border-right: 1.5px solid #6c757d; background-color: #f8f9fa;">
+                            <td style="border-right: 1.5px solid #6c757d; {% if client.next_event_date == today_date %}background-color: #ffeeba;{% else %}background-color: #f8f9fa;{% endif %}">
                                 {% if client.next_event_date %}
                                     <div class="fw-bold text-primary" style="font-size: 0.85rem;">📅 {{ client.next_event_date }}</div>
                                     <span class="badge bg-outline-primary border border-primary text-primary text-capitalize px-2 py-05 mt-1" style="font-size: 0.75rem; display: inline-block;">
