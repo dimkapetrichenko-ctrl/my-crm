@@ -5,102 +5,15 @@
     <div class="col-12">
         <div class="card shadow-sm bg-dark text-white">
             <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center">
-                <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-warning fw-bold px-4 shadow">🔥 Заплановані дії на сьогодні</button>
+                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋 Загальний список клієнтів</button>
+                <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
-                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-outline-light fw-bold px-4">📋 Загальний список клієнтів</button>
             </div>
         </div>
     </div>
 </div>
 
-<div id="window-today-win" class="crm-window">
-    <div class="card shadow-sm border-warning mb-4">
-        <div class="card-header bg-warning text-dark fw-bold py-2">
-            🚀 Завдання на сьогодні ({{ today_date }})
-        </div>
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle mb-0" style="font-size: 0.95rem;">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Компанія / Тип</th>
-                        <th>Бренди</th>
-                        <th>Країна</th>
-                        <th>Контактна особа №1</th>
-                        <th style="background-color: #0d6efd;">Тип дії</th>
-                        <th>Дія</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% set today_count = namespace(value=0) %}
-                    {% for client in clients %}
-                        {% if client.next_event_date == today_date %}
-                        {% set today_count.value = today_count.value + 1 %}
-                        <tr style="background-color: #fff3cd !important; border: 2px solid #ffc107;">
-                            <td><strong>{{ client.name }}</strong><br><span class="badge bg-info text-dark small">{{ client.buyer_type }}</span></td>
-                            <td>{{ client.brands or '-' }}</td>
-                            <td><span class="badge bg-secondary">{{ client.country }}</span></td>
-                            <td>👤 <b>{{ client.contact_person }}</b><br>📞 {{ client.phone }}</td>
-                            <td>
-                                <span class="badge bg-primary text-capitalize p-2" style="font-size: 0.85rem;">
-                                    {% if client.next_event_type == 'call' %}📞 Дзвінок
-                                    {% elif client.next_event_type == 'visit' %}🚗 Візит
-                                    {% elif client.next_event_type == 'email' %}✉️ Лист
-                                    {% else %}{{ client.next_event_type }}{% endif %}
-                                </span>
-                            </td>
-                            <td><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-dark fw-bold">Картка</a></td>
-                        </tr>
-                        {% endif %}
-                    {% endfor %}
-                    {% if today_count.value == 0 %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4 fw-bold">🌴 На сьогодні завдань не заплановано. Гарного дня!</td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div id="window-calendar-win" class="crm-window" style="display: none;">
-    <div class="row">
-        <div class="col-md-5 mb-4">
-            <div class="card shadow-sm border-dark">
-                <div class="card-header bg-dark text-white text-center py-2 d-flex justify-content-between align-items-center">
-                    <button class="btn btn-sm btn-outline-light py-0" onclick="changeMonth(-1)">◀</button>
-                    <h5 class="mb-0 fw-bold" id="calendar-month-year"></h5>
-                    <button class="btn btn-sm btn-outline-light py-0" onclick="changeMonth(1)">▶</button>
-                </div>
-                <div class="card-body p-2">
-                    <table class="table table-sm table-bordered text-center mb-0" id="calendar-table">
-                        <thead>
-                            <tr class="table-secondary">
-                                <th style="width: 14%;">Пн</th><th style="width: 14%;">Вт</th><th style="width: 14%;">Ср</th>
-                                <th style="width: 14%;">Чт</th><th style="width: 14%;">Пт</th><th style="width: 14%;">Сб</th>
-                                <th style="width: 14%;">Нд</th>
-                            </tr>
-                        </thead>
-                        <tbody id="calendar-grid"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-7">
-            <div class="card shadow-sm border-primary">
-                <div class="card-header bg-primary text-white py-2 fw-bold" id="selected-date-title">
-                    🎯 Оберіть дату в календарі ліворуч
-                </div>
-                <div class="card-body p-0" id="calendar-tasks-box">
-                    <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у календарі, щоб побачити заплановані перемовини.</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="window-all-win" class="crm-window" style="display: none;">
+<div id="window-all-win" class="crm-window">
     <div class="card shadow-sm mb-4">
         <div class="card-body py-2">
             <form method="GET" action="{{ url_for('index') }}" class="row g-2">
@@ -216,8 +129,108 @@
     </div>
 </div>
 
+<div id="window-today-win" class="crm-window" style="display: none;">
+    <div class="card shadow-sm border-warning mb-4">
+        <div class="card-header bg-warning text-dark fw-bold py-2">
+            🚀 Завдання на сьогодні ({{ today_date }})
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0" style="font-size: 0.95rem;">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Компанія / Тип</th>
+                        <th>Бренди</th>
+                        <th>Країна</th>
+                        <th>Контактна особа №1</th>
+                        <th style="background-color: #0d6efd;">Тип дії</th>
+                        <th>Дія</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set today_count = namespace(value=0) %}
+                    {% for client in clients %}
+                        {% if client.next_event_date == today_date %}
+                        {% set today_count.value = today_count.value + 1 %}
+                        <tr style="background-color: #fff3cd !important; border: 2px solid #ffc107;">
+                            <td><strong>{{ client.name }}</strong><br><span class="badge bg-info text-dark small">{{ client.buyer_type }}</span></td>
+                            <td>{{ client.brands or '-' }}</td>
+                            <td><span class="badge bg-secondary">{{ client.country }}</span></td>
+                            <td>👤 <b>{{ client.contact_person }}</b><br>📞 {{ client.phone }}</td>
+                            <td>
+                                <span class="badge bg-primary text-capitalize p-2" style="font-size: 0.85rem;">
+                                    {% if client.next_event_type == 'call' %}📞 Дзвінок
+                                    {% elif client.next_event_type == 'visit' %}🚗 Візит
+                                    {% elif client.next_event_type == 'email' %}✉️ Лист
+                                    {% else %}{{ client.next_event_type }}{% endif %}
+                                </span>
+                            </td>
+                            <td><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-dark fw-bold">Картка</a></td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                    {% if today_count.value == 0 %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4 fw-bold">🌴 На сьогодні завдань не заплановано. Гарного дня!</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="window-calendar-win" class="crm-window" style="display: none;">
+    <div class="row">
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm border-dark">
+                <div class="card-header bg-dark text-white text-center py-2 d-flex justify-content-between align-items-center">
+                    <button class="btn btn-sm btn-outline-light py-0" onclick="changeMonth(-1)">◀</button>
+                    <h5 class="mb-0 fw-bold" id="calendar-month-year"></h5>
+                    <button class="btn btn-sm btn-outline-light py-0" onclick="changeMonth(1)">▶</button>
+                </div>
+                <div class="card-body p-2">
+                    <table class="table table-sm table-bordered text-center mb-0" id="calendar-table">
+                        <thead>
+                            <tr class="table-secondary">
+                                <th style="width: 14%;">Пн</th><th style="width: 14%;">Вт</th><th style="width: 14%;">Ср</th>
+                                <th style="width: 14%;">Чт</th><th style="width: 14%;">Пт</th><th style="width: 14%;">Сб</th>
+                                <th style="width: 14%;">Нд</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendar-grid"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-7">
+            <div class="card shadow-sm border-primary">
+                <div class="card-header bg-primary text-white py-2 fw-bold" id="selected-date-title">
+                    🎯 Оберіть дату в календарі ліворуч
+                </div>
+                <div class="card-body p-0" id="calendar-tasks-box">
+                    <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у календарі, щоб побачити заплановані перемовини.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="importExcelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white py-2"><h5>📥 Імпорт з Excel</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('import_excel') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body p-3">
+                    <input type="file" name="excel_file" class="form-control" accept=".xlsx, .xls" required>
+                </div>
+                <div class="modal-footer py-1"><button type="submit" class="btn btn-sm btn-primary">Почати імпорт</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
-// Абсолютно безпечне зчитування масивів без ризику зламати синтаксис JS
 const allClients = {{ clients | tojson | safe }};
 const busyDates = {{ busy_dates | tojson | safe }};
 
@@ -255,82 +268,3 @@ function renderCalendar() {
     for (let i = 0; i < shiftDay; i++) {
         gridHtml += "<td></td>";
     }
-    
-    let currentDayCount = shiftDay;
-    for (let day = 1; day <= totalDays; day++) {
-        if (currentDayCount === 7) {
-            gridHtml += "</tr><tr>";
-            currentDayCount = 0;
-        }
-        
-        let mNum = currentMonth + 1;
-        let mStr = mNum < 10 ? "0" + mNum : mNum;
-        let dStr = day < 10 ? "0" + day : day;
-        let dateKey = `${currentYear}-${mStr}-${dStr}`;
-        
-        let cellStyle = "cursor: pointer; padding: 10px 0; font-weight: normal;";
-        let badgeDot = "";
-        
-        if (busyDates.includes(dateKey)) {
-            cellStyle += " background-color: #d1e7dd; font-weight: bold; color: #0f5132; border: 1.5px solid #badbcc;";
-            badgeDot = "<br><span class='badge bg-danger' style='font-size:0.6rem; padding: 1px 3px;'>дія</span>";
-        }
-        
-        gridHtml += `<td style="${cellStyle}" onclick="showTasksForDate('${dateKey}')">${day}${badgeDot}</td>`;
-        currentDayCount++;
-    }
-    
-    while (currentDayCount < 7 && currentDayCount > 0) {
-        gridHtml += "<td></td>";
-        currentDayCount++;
-    }
-    gridHtml += "</tr>";
-    
-    const gridEl = document.getElementById('calendar-grid');
-    if (gridEl) gridEl.innerHTML = gridHtml;
-}
-
-function changeMonth(direction) {
-    currentMonth += direction;
-    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    renderCalendar();
-}
-
-function showTasksForDate(dateStr) {
-    const titleEl = document.getElementById('selected-date-title');
-    if (titleEl) titleEl.innerHTML = `📅 Заплановані дії на: <span class="bg-white text-dark px-2 rounded">${dateStr}</span>`;
-    
-    const filtered = allClients.filter(c => c.next_event_date === dateStr);
-    const box = document.getElementById('calendar-tasks-box');
-    if (!box) return;
-    
-    if (filtered.length === 0) {
-        box.innerHTML = `<div class="alert alert-info text-center m-3 fw-bold">ℹ️ Дії не заплановано</div>`;
-        return;
-    }
-    
-    let html = `<ul class="list-group list-group-flush" style="font-size:0.9rem;">`;
-    filtered.forEach(c => {
-        let icon = c.next_event_type === 'call' ? '📞 Дзвінок' : c.next_event_type === 'visit' ? '🚗 Візит' : '✉️ Лист';
-        html += `
-            <li class="list-group-item d-flex justify-content-between align-items-center p-3 border-bottom">
-                <div>
-                    <h6 class="mb-1 text-danger fw-bold">${c.name}</h6>
-                    <small class="text-muted">🌍 ${c.country} | 👤 ${c.contact_person} (${c.phone})</small>
-                </div>
-                <div class="text-end">
-                    <span class="badge bg-primary text-uppercase p-2 mb-1 d-block">${icon}</span>
-                    <a href="/client/${c.id}" class="btn btn-sm btn-outline-dark fw-bold py-0 px-2" style="font-size:0.8rem;">Картка</a>
-                </div>
-            </li>`;
-    });
-    html += `</ul>`;
-    box.innerHTML = html;
-}
-
-window.onload = function() {
-    renderCalendar();
-};
-</script>
-{% endblock %}
