@@ -22,7 +22,7 @@
             <table class="table table-bordered table-hover align-middle mb-0" style="font-size: 0.95rem;">
                 <thead class="table-dark">
                     <tr>
-                        <th>Компанія</th>
+                        <th>Компанія / Тип</th>
                         <th>Бренди</th>
                         <th>Країна</th>
                         <th>Контактна особа №1</th>
@@ -81,8 +81,7 @@
                                 <th style="width: 14%;">Нд</th>
                             </tr>
                         </thead>
-                        <tbody id="calendar-grid">
-                            </tbody>
+                        <tbody id="calendar-grid"></tbody>
                     </table>
                 </div>
             </div>
@@ -106,7 +105,7 @@
         <div class="card-body py-2">
             <form method="GET" action="{{ url_for('index') }}" class="row g-2">
                 <div class="col-md-5">
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Пошук..." value="{{ search_query }}">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Пошук за назвою, брендом..." value="{{ search_query }}">
                 </div>
                 <div class="col-md-4">
                     <select name="country" class="form-select form-select-sm">
@@ -126,7 +125,7 @@
 
     <div class="row">
         <div class="col-md-3 mb-4">
-            <div class="card shadow-sm mb-3" style="max-height: 40vh; overflow-y: auto;">
+            <div class="card shadow-sm mb-3">
                 <div class="card-header bg-dark text-white py-1"><h6 class="mb-0 small">➕ Новий клієнт</h6></div>
                 <div class="card-body p-2" style="font-size: 0.8rem;">
                     <form action="{{ url_for('add_client') }}" method="POST">
@@ -139,12 +138,12 @@
                         <input type="text" name="country" class="form-control form-control-sm mb-1" placeholder="Країна">
                         <input type="text" name="contact_person" class="form-control form-control-sm mb-1" placeholder="Контактна особа">
                         <input type="text" name="phone" class="form-control form-control-sm mb-2" placeholder="Телефон">
-                        <button type="submit" class="btn btn-xs btn-danger w-100 font-weight-bold py-1">Зберегти</button>
+                        <button type="submit" class="btn btn-sm btn-danger w-100 py-1">Зберегти</button>
                     </form>
                 </div>
             </div>
 
-            <div class="card shadow-sm" style="max-height: 45vh; overflow-y: auto;">
+            <div class="card shadow-sm">
                 <div class="card-header bg-secondary text-white py-1"><h6 class="mb-0 small">📊 Аналітика бази</h6></div>
                 <div class="card-body p-2" style="font-size: 0.85rem;">
                     <div class="d-flex justify-content-between mb-2 border-bottom"><span>Всього:</span><span class="badge bg-dark">{{ total_clients }}</span></div>
@@ -217,55 +216,40 @@
     </div>
 </div>
 
-<div class="modal fade" id="importExcelModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-white py-2"><h5>📥 Імпорт з Excel</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('import_excel') }}" method="POST" enctype="multipart/form-data">
-                <div class="modal-body p-3">
-                    <input type="file" name="excel_file" class="form-control" accept=".xlsx, .xls" required>
-                </div>
-                <div class="modal-footer py-1"><button type="submit" class="btn btn-sm btn-primary">Почати імпорт</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
-// Передаємо дані з Flask у JS
+// Абсолютно безпечне зчитування масивів без ризику зламати синтаксис JS
 const allClients = {{ clients | tojson | safe }};
 const busyDates = {{ busy_dates | tojson | safe }};
 
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 
-// 1. Функція перемикання вікон-вкладок
 function switchWindow(targetWinId) {
     document.querySelectorAll('.crm-window').forEach(win => win.style.display = 'none');
     document.getElementById('window-' + targetWinId).style.display = 'block';
     
-    // Скидаємо стилі кнопок
     ['today-win', 'calendar-win', 'all-win'].forEach(id => {
         let btn = document.getElementById('btn-' + id);
-        btn.className = "btn btn-md btn-outline-light fw-bold px-4";
+        if (btn) btn.className = "btn btn-md btn-outline-light fw-bold px-4";
     });
     
-    // Активуємо обрану кнопку
     let activeBtn = document.getElementById('btn-' + targetWinId);
-    if(targetWinId === 'today-win') activeBtn.className = "btn btn-md btn-warning fw-bold px-4 shadow";
-    if(targetWinId === 'calendar-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-4 shadow";
-    if(targetWinId === 'all-win') activeBtn.className = "btn btn-md btn-success fw-bold px-4 shadow";
+    if (activeBtn) {
+        if(targetWinId === 'today-win') activeBtn.className = "btn btn-md btn-warning fw-bold px-4 shadow";
+        if(targetWinId === 'calendar-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-4 shadow";
+        if(targetWinId === 'all-win') activeBtn.className = "btn btn-md btn-success fw-bold px-4 shadow";
+    }
 }
 
-// 2. Генерація та робота календаря
 const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
 function renderCalendar() {
     const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
-    const shiftDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1; // Коригування під Пн-Нд
+    const shiftDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
     const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
     
-    document.getElementById('calendar-month-year').innerText = monthNames[currentMonth] + " " + currentYear;
+    const labelEl = document.getElementById('calendar-month-year');
+    if (labelEl) labelEl.innerText = monthNames[currentMonth] + " " + currentYear;
     
     let gridHtml = "<tr>";
     for (let i = 0; i < shiftDay; i++) {
@@ -279,18 +263,17 @@ function renderCalendar() {
             currentDayCount = 0;
         }
         
-        // Форматуємо дату у вигляд YYYY-MM-DD
-        let mStr = (currentMonth + 1) < 10 ? "0" + (currentMonth + 1) : (currentMonth + 1);
+        let mNum = currentMonth + 1;
+        let mStr = mNum < 10 ? "0" + mNum : mNum;
         let dStr = day < 10 ? "0" + day : day;
         let dateKey = `${currentYear}-${mStr}-${dStr}`;
         
         let cellStyle = "cursor: pointer; padding: 10px 0; font-weight: normal;";
         let badgeDot = "";
         
-        // Перевіряємо, чи є завдання на цю дату
         if (busyDates.includes(dateKey)) {
             cellStyle += " background-color: #d1e7dd; font-weight: bold; color: #0f5132; border: 1.5px solid #badbcc;";
-            badgeDot = "<br><span class='badge bg-danger' style='font-size:0.6rem; padding: 2px 4px;'>дія</span>";
+            badgeDot = "<br><span class='badge bg-danger' style='font-size:0.6rem; padding: 1px 3px;'>дія</span>";
         }
         
         gridHtml += `<td style="${cellStyle}" onclick="showTasksForDate('${dateKey}')">${day}${badgeDot}</td>`;
@@ -303,7 +286,8 @@ function renderCalendar() {
     }
     gridHtml += "</tr>";
     
-    document.getElementById('calendar-grid').innerHTML = gridHtml;
+    const gridEl = document.getElementById('calendar-grid');
+    if (gridEl) gridEl.innerHTML = gridHtml;
 }
 
 function changeMonth(direction) {
@@ -313,13 +297,13 @@ function changeMonth(direction) {
     renderCalendar();
 }
 
-// 3. Відображення списку задач при кліку на дату календаря
 function showTasksForDate(dateStr) {
-    document.getElementById('selected-date-title').innerHTML = `📅 Заплановані дії на: <span class="bg-white text-dark px-2 rounded">${dateStr}</span>`;
+    const titleEl = document.getElementById('selected-date-title');
+    if (titleEl) titleEl.innerHTML = `📅 Заплановані дії на: <span class="bg-white text-dark px-2 rounded">${dateStr}</span>`;
     
-    // Фільтруємо клієнтів
     const filtered = allClients.filter(c => c.next_event_date === dateStr);
     const box = document.getElementById('calendar-tasks-box');
+    if (!box) return;
     
     if (filtered.length === 0) {
         box.innerHTML = `<div class="alert alert-info text-center m-3 fw-bold">ℹ️ Дії не заплановано</div>`;
@@ -337,7 +321,7 @@ function showTasksForDate(dateStr) {
                 </div>
                 <div class="text-end">
                     <span class="badge bg-primary text-uppercase p-2 mb-1 d-block">${icon}</span>
-                    <a href="/client/${c.id}" class="btn btn-xs btn-outline-dark fw-bold py-0 px-2" style="font-size:0.8rem;">Картка</a>
+                    <a href="/client/${c.id}" class="btn btn-sm btn-outline-dark fw-bold py-0 px-2" style="font-size:0.8rem;">Картка</a>
                 </div>
             </li>`;
     });
@@ -345,8 +329,8 @@ function showTasksForDate(dateStr) {
     box.innerHTML = html;
 }
 
-// Запуск календаря при завантаженні
 window.onload = function() {
     renderCalendar();
 };
 </script>
+{% endblock %}
