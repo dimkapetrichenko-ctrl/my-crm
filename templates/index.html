@@ -57,7 +57,7 @@
             </div>
 
             <div class="card shadow-sm">
-                <div class="card-header bg-secondary text-white py-1"><h6 class="mb-0 small">📊 Аналітика бази</h6></div>
+                <div class="card-header bg-secondary text-white py-1"><h6 class="mb-0 small">📊 </b style="font-weight: bold;">Аналітика бази</b></h6></div>
                 <div class="card-body p-2" style="font-size: 0.85rem;">
                     <div class="d-flex justify-content-between mb-2 border-bottom"><span>Всього:</span><span class="badge bg-dark">{{ total_clients }}</span></div>
                     <div class="mb-2">
@@ -231,8 +231,8 @@
 </div>
 
 <script>
-const allClients = {{ clients | tojson | safe }};
-const busyDates = {{ busy_dates | tojson | safe }};
+const allClients = JSON.parse({{ json_clients | tojson | safe }});
+const busyDates = JSON.parse({{ json_busy_dates | tojson | safe }});
 
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
@@ -254,7 +254,7 @@ function switchWindow(targetWinId) {
     }
 }
 
-const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жочень", "Листопад", "Грудень"];
 
 function renderCalendar() {
     const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
@@ -268,3 +268,82 @@ function renderCalendar() {
     for (let i = 0; i < shiftDay; i++) {
         gridHtml += "<td></td>";
     }
+    
+    let currentDayCount = shiftDay;
+    for (let day = 1; day <= totalDays; day++) {
+        if (currentDayCount === 7) {
+            gridHtml += "</tr><tr>";
+            currentDayCount = 0;
+        }
+        
+        let mNum = currentMonth + 1;
+        let mStr = mNum < 10 ? "0" + mNum : mNum;
+        let dStr = day < 10 ? "0" + day : day;
+        let dateKey = `${currentYear}-${mStr}-${dStr}`;
+        
+        let cellStyle = "cursor: pointer; padding: 10px 0; font-weight: normal;";
+        let badgeDot = "";
+        
+        if (busyDates.includes(dateKey)) {
+            cellStyle += " background-color: #d1e7dd; font-weight: bold; color: #0f5132; border: 1.5px solid #badbcc;";
+            badgeDot = "<br><span class='badge bg-danger' style='font-size:0.6rem; padding: 1px 3px;'>дія</span>";
+        }
+        
+        gridHtml += `<td style="${cellStyle}" onclick="showTasksForDate('${dateKey}')">${day}${badgeDot}</td>`;
+        currentDayCount++;
+    }
+    
+    while (currentDayCount < 7 && currentDayCount > 0) {
+        gridHtml += "<td></td>";
+        currentDayCount++;
+    }
+    gridHtml += "</tr>";
+    
+    const gridEl = document.getElementById('calendar-grid');
+    if (gridEl) gridEl.innerHTML = gridHtml;
+}
+
+function changeMonth(direction) {
+    currentMonth += direction;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    renderCalendar();
+}
+
+function showTasksForDate(dateStr) {
+    const titleEl = document.getElementById('selected-date-title');
+    if (titleEl) titleEl.innerHTML = `📅 Заплановані дії на: <span class="bg-white text-dark px-2 rounded">${dateStr}</span>`;
+    
+    const filtered = allClients.filter(c => c.next_event_date === dateStr);
+    const box = document.getElementById('calendar-tasks-box');
+    if (!box) return;
+    
+    if (filtered.length === 0) {
+        box.innerHTML = `<div class="alert alert-info text-center m-3 fw-bold">ℹ️ Дії не заплановано</div>`;
+        return;
+    }
+    
+    let html = `<ul class="list-group list-group-flush" style="font-size:0.9rem;">`;
+    filtered.forEach(c => {
+        let icon = c.next_event_type === 'call' ? '📞 Дзвінок' : c.next_event_type === 'visit' ? '🚗 Візит' : '✉️ Лист';
+        html += `
+            <li class="list-group-item d-flex justify-content-between align-items-center p-3 border-bottom">
+                <div>
+                    <h6 class="mb-1 text-danger fw-bold">${c.name}</h6>
+                    <small class="text-muted">🌍 ${c.country} | 👤 ${c.contact_person} (${c.phone})</small>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-primary text-uppercase p-2 mb-1 d-block">${icon}</span>
+                    <a href="/client/${c.id}" class="btn btn-sm btn-outline-dark fw-bold py-0 px-2" style="font-size:0.8rem;">Картка</a>
+                </div>
+            </li>`;
+    });
+    html += `</ul>`;
+    box.innerHTML = html;
+}
+
+window.onload = function() {
+    renderCalendar();
+};
+</script>
+{% endblock %}
