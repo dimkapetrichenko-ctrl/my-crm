@@ -119,7 +119,7 @@ def index():
     
     conn = get_db_connection()
     
-    # Автоматичний переклад країн з російської на українську на рівні бази
+    # Автоматичний переклад країн
     with conn.cursor() as fix_cursor:
         fix_cursor.execute("""
             UPDATE clients 
@@ -141,20 +141,16 @@ def index():
         """)
         conn.commit()
     
-    # 1. Окремий простий курсор для збору списку унікальних країн
     country_cursor = conn.cursor()
     country_cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
     countries = [row[0] for row in country_cursor.fetchall()]
     country_cursor.close()
     
-    # --- ЛІЧИЛЬНИКИ ДЛЯ СТАТИСТИКИ ---
+    # СТАТИСТИКА
     stats_cursor = conn.cursor()
-    
-    # Загальна кількість
     stats_cursor.execute("SELECT COUNT(*) FROM clients")
     total_clients = stats_cursor.fetchone()[0]
     
-    # Кількість по рівнях зацікавленості
     stats_cursor.execute("SELECT interest_level, COUNT(*) FROM clients GROUP BY interest_level")
     raw_interest = stats_cursor.fetchall()
     interest_stats = {'немає зацікавленості': 0, 'середня зацікавленість': 0, 'зацікавленість': 0}
@@ -163,14 +159,16 @@ def index():
         if status in interest_stats:
             interest_stats[status] = row[1]
             
-    # Кількість по країнах
     stats_cursor.execute("SELECT country, COUNT(*) FROM clients WHERE country IS NOT NULL AND country != '' GROUP BY country ORDER BY COUNT(*) DESC")
     country_stats = stats_cursor.fetchall()
     
-    stats_cursor.close()
-    # ---------------------------------
+    # Збір унікальних дат із запланованими подіями для календаря
+    stats_cursor.execute("SELECT DISTINCT next_event_date FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != ''")
+    busy_dates = [row[0] for row in stats_cursor.fetchall()]
     
-    # 2. Використовуємо DictCursor для безпечного читання повнотекстових ключів клієнтів
+    stats_cursor.close()
+    
+    # ВИБІРКА КЛІЄНТІВ
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = """
         SELECT c.*, 
@@ -226,6 +224,7 @@ def index():
         total_clients=total_clients,
         interest_stats=interest_stats,
         country_stats=country_stats,
+        busy_dates=busy_dates,
         today_date=today_str
     )
 
@@ -447,7 +446,7 @@ def import_excel():
             df = df.rename(columns=renamed_cols)
             
             if 'name' not in df.columns:
-                return "Помилка: У файлі Excel не знайдено оголошення компанії ('Назва компанії')"
+                return "Помилка: У файлі Excel не знайдено колонку з назвою компанії ('Назва компанії')"
             
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=DictCursor)
