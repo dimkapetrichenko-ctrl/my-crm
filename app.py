@@ -1,4 +1,5 @@
 import os
+import json
 import psycopg2
 from psycopg2.extras import DictCursor
 from flask import Flask, render_template, request, redirect, url_for, session, send_file
@@ -134,7 +135,7 @@ def index():
                 WHEN LOWER(country) IN ('эстония', 'estonia') THEN 'Естонія'
                 WHEN LOWER(country) IN ('венгрия', 'hungary') THEN 'Угорщина'
                 WHEN LOWER(country) IN ('румыния', 'romania') THEN 'Румунія'
-                WHEN LOWER(country) IN ('молдова', 'moldova') THEN 'Moldova'
+                WHEN LOWER(country) IN ('молдова', 'moldova') THEN 'Молдова'
                 ELSE country 
             END
             WHERE country IS NOT NULL AND country != '';
@@ -192,27 +193,53 @@ def index():
     raw_clients = cursor.fetchall()
     
     clients = []
+    clients_js_data = [] # Безпечний масив суто для JS-календаря
+    
     for row in raw_clients:
+        # Безпечні текстові змінні (очищені від лапок та переносів)
+        clean_name = str(row['name']).replace('"', '\\"').replace("'", "\\'") if row['name'] else ''
+        clean_country = str(row['country']).replace('"', '\\"').replace("'", "\\'") if row['country'] else ''
+        clean_contact = str(row['contact_person']).replace('"', '\\"').replace("'", "\\'") if row['contact_person'] else ''
+        clean_phone = str(row['phone']) if row['phone'] else ''
+        clean_date = str(row['next_event_date']) if row['next_event_date'] else ''
+        clean_type = str(row['next_event_type']) if row['next_event_type'] else ''
+        
+        # 1. Основний список для рендерингу HTML
         clients.append({
             'id': int(row['id']),
-            'name': str(row['name']) if row['name'] else '',
-            'country': str(row['country']) if row['country'] else '',
-            'address': str(row['address']).replace("\n", " ").replace("\r", "") if row['address'] else '',
-            'contact_person': str(row['contact_person']) if row['contact_person'] else '',
-            'position': str(row['position']) if row['position'] else '',
-            'phone': str(row['phone']) if row['phone'] else '',
-            'email': str(row['email']) if row['email'] else '',
-            'website': str(row['website']) if row['website'] else '',
-            'buyer_type': str(row['buyer_type']) if row['buyer_type'] else 'не вказано',
-            'brands': str(row['brands']) if row['brands'] else '-',
-            'interest_level': str(row['interest_level']) if row['interest_level'] else 'немає зацікавленості',
-            'last_activity': str(row['last_activity']) if row['last_activity'] else '',
-            'next_event_date': str(row['next_event_date']) if row['next_event_date'] else '',
-            'next_event_type': str(row['next_event_type']) if row['next_event_type'] else ''
+            'name': row['name'] if row['name'] else '',
+            'country': row['country'] if row['country'] else '',
+            'address': row['address'] if row['address'] else '',
+            'contact_person': row['contact_person'] if row['contact_person'] else '',
+            'position': row['position'] if row['position'] else '',
+            'phone': row['phone'] if row['phone'] else '',
+            'email': row['email'] if row['email'] else '',
+            'website': row['website'] if row['website'] else '',
+            'buyer_type': row['buyer_type'] if row['buyer_type'] else 'не вказано',
+            'brands': row['brands'] if row['brands'] else '-',
+            'interest_level': row['interest_level'] if row['interest_level'] else 'немає зацікавленості',
+            'last_activity': row['last_activity'] if row['last_activity'] else '',
+            'next_event_date': clean_date,
+            'next_event_type': clean_type
+        })
+        
+        # 2. Полегшений масив для JS без ризику зламати JSON-парсер
+        clients_js_data.append({
+            'id': int(row['id']),
+            'name': clean_name,
+            'country': clean_country,
+            'contact_person': clean_contact,
+            'phone': clean_phone,
+            'next_event_date': clean_date,
+            'next_event_type': clean_type
         })
     
     cursor.close()
     conn.close()
+    
+    # Попередньо перетворюємо масиви в стрічки на рівні Python
+    json_clients = json.dumps(clients_js_data, ensure_ascii=False)
+    json_busy_dates = json.dumps(busy_dates, ensure_ascii=False)
     
     return render_template(
         'index.html', 
@@ -223,7 +250,8 @@ def index():
         total_clients=total_clients,
         interest_stats=interest_stats,
         country_stats=country_stats,
-        busy_dates=busy_dates,
+        json_clients=json_clients,
+        json_busy_dates=json_busy_dates,
         today_date=today_str
     )
 
