@@ -172,7 +172,7 @@
                     {% set today_count = namespace(value=0) %}
                     {% for client in clients %}
                         {% if client.next_event_date == today_date %}
-                        {% set today_count.value = today_count.value + 1 %}
+                        {% if client.next_event_date == today_date %}{% set today_count.value = today_count.value + 1 %}{% endif %}
                         <tr style="background-color: #fff3cd !important; border: 2px solid #ffc107;">
                             <td>
                                 <strong>{{ client.name }}</strong>
