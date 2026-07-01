@@ -57,7 +57,7 @@
             </div>
 
             <div class="card shadow-sm">
-                <div class="card-header bg-secondary text-white py-1"><h6 class="mb-0 small">📊 </b style="font-weight: bold;">Аналітика бази</b></h6></div>
+                <div class="card-header bg-secondary text-white py-1"><h6 class="mb-0 small">📊 <b>Аналітика бази</b></h6></div>
                 <div class="card-body p-2" style="font-size: 0.85rem;">
                     <div class="d-flex justify-content-between mb-2 border-bottom"><span>Всього:</span><span class="badge bg-dark">{{ total_clients }}</span></div>
                     <div class="mb-2">
@@ -104,7 +104,10 @@
                                     {% else %}
                                         <span class="badge bg-primary mb-1" style="font-size: 0.7rem;">немає зацікавленості</span>
                                     {% endif %}<br>
-                                    <strong>{{ client.name }}</strong><br><span class="badge bg-info text-dark" style="font-size: 0.65rem;">{{ client.buyer_type }}</span>
+                                    <strong style="font-size: 1rem; color: #111;">{{ client.name }}</strong>
+                                    {% if client.buyer_type and client.buyer_type != 'не вказано' %}
+                                        <div class="mt-1"><span class="badge bg-info text-dark fw-bold" style="font-size: 0.75rem; letter-spacing: 0.3px;">💼 {{ client.buyer_type }}</span></div>
+                                    {% endif %}
                                 </td>
                                 <td style="background-color: inherit;"><small class="fw-medium text-dark">{{ client.brands or '-' }}</small></td>
                                 <td style="background-color: inherit;"><span class="badge bg-secondary">{{ client.country or '-' }}</span></td>
@@ -152,7 +155,12 @@
                         {% if client.next_event_date == today_date %}
                         {% set today_count.value = today_count.value + 1 %}
                         <tr style="background-color: #fff3cd !important; border: 2px solid #ffc107;">
-                            <td><strong>{{ client.name }}</strong><br><span class="badge bg-info text-dark small">{{ client.buyer_type }}</span></td>
+                            <td>
+                                <strong>{{ client.name }}</strong>
+                                {% if client.buyer_type and client.buyer_type != 'не вказано' %}
+                                    <br><span class="badge bg-info text-dark small">💼 {{ client.buyer_type }}</span>
+                                {% endif %}
+                            </td>
                             <td>{{ client.brands or '-' }}</td>
                             <td><span class="badge bg-secondary">{{ client.country }}</span></td>
                             <td>👤 <b>{{ client.contact_person }}</b><br>📞 {{ client.phone }}</td>
@@ -254,7 +262,7 @@ function switchWindow(targetWinId) {
     }
 }
 
-const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жочень", "Листопад", "Грудень"];
+const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
 function renderCalendar() {
     const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
