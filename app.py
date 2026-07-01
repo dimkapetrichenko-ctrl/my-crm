@@ -484,7 +484,7 @@ def import_excel():
             df = df.rename(columns=renamed_cols)
             
             if 'name' not in df.columns:
-                return "Помилка: У файлі Excel не знайдено колонку з назвою компанії ('Назва компанії')"
+                return "Помилка: Un файлі Excel не знайдено колонку з назвою компанії ('Назва компанії')"
             
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=DictCursor)
@@ -502,7 +502,7 @@ def import_excel():
                 address = str(row['address']).strip() if 'address' in df.columns and pd.notnull(row['address']) else ''
                 
                 contact_person = str(row['contact_person']).strip() if 'contact_person' in df.columns and pd.notnull(row['contact_person']) else ''
-                position = str(row['position']).strip() if 'position' in df.columns protect_col and pd.notnull(row['position']) else ''
+                position = str(row['position']).strip() if 'position' in df.columns and pd.notnull(row['position']) else ''
                 phone = str(row['phone']).strip() if 'phone' in df.columns and pd.notnull(row['phone']) else ''
                 email = str(row['email']).strip() if 'email' in df.columns and pd.notnull(row['email']) else ''
                 
