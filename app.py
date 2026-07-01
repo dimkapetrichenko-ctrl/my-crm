@@ -120,7 +120,7 @@ def index():
     
     conn = get_db_connection()
     
-    # Автоматичний переклад країн
+    # Автоматичний переклад країн та скидання статусів
     with conn.cursor() as fix_cursor:
         fix_cursor.execute("""
             UPDATE clients 
@@ -140,6 +140,14 @@ def index():
             END
             WHERE country IS NOT NULL AND country != '';
         """)
+        
+        # АВТОМАТИЧНИЙ СКИД СТАТУСУ НА "НЕ ОПРАЦЬОВАНО" ДЛЯ КЛІЄНТІВ БЕЗ ІСТОРІЇ ДІЙ
+        fix_cursor.execute("""
+            UPDATE clients 
+            SET interest_level = 'не опрацьовано' 
+            WHERE id NOT IN (SELECT DISTINCT client_id FROM negotiations);
+        """)
+        
         conn.commit()
     
     country_cursor = conn.cursor()
@@ -155,7 +163,6 @@ def index():
     stats_cursor.execute("SELECT interest_level, COUNT(*) FROM clients GROUP BY interest_level")
     raw_interest = stats_cursor.fetchall()
     
-    # Сюди додано 'не опрацьовано'
     interest_stats = {'не опрацьовано': 0, 'немає зацікавленості': 0, 'середня зацікавленість': 0, 'зацікавленість': 0}
     for row in raw_interest:
         status = row[0] if row[0] else 'не опрацьовано'
