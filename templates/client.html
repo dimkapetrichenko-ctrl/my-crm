@@ -52,10 +52,36 @@
                         </select>
                     </div>
 
-                    <div class="mb-2">
-                        <label class="form-label mb-1">Бренди</label>
-                        <input type="text" name="brands" class="form-control form-control-sm" value="{{ client.brands }}" placeholder="Vaderstad, HORSCH...">
-                    </div>
+                   <div class="mb-2">
+    <label class="form-label mb-1"><b>Пріоритетні бренди</b></label>
+    <div class="p-2 border rounded bg-light d-flex flex-wrap gap-3" style="font-size: 0.85rem;">
+        {% set cb = client.brands or '' %}
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="brands" value="Vaderstad" id="b_vaderstad" {% if 'Vaderstad' in cb %}checked{% endif %}>
+            <label class="form-check-label" for="b_vaderstad">Vaderstad</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="brands" value="Gaspardo" id="b_gaspardo" {% if 'Gaspardo' in cb %}checked{% endif %}>
+            <label class="form-check-label" for="b_gaspardo">Gaspardo</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="brands" value="Horsch" id="b_horsch" {% if 'Horsch' in cb or 'HORSCH' in cb %}checked{% endif %}>
+            <label class="form-check-label" for="b_horsch">Horsch</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="brands" value="Kverneland" id="b_kverneland" {% if 'Kverneland' in cb %}checked{% endif %}>
+            <label class="form-check-label" for="b_kverneland">Kverneland</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="brands" value="Pottinger" id="b_pottinger" {% if 'Pottinger' in cb %}checked{% endif %}>
+            <label class="form-check-label" for="b_pottinger">Pottinger</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="brands" value="Інші" id="b_other" {% if 'Інші' in cb %}checked{% endif %}>
+            <label class="form-check-label" for="b_other">Інші</label>
+        </div>
+    </div>
+</div>
                     <div class="mb-2">
                         <label class="form-label mb-1">Веб-сайт</label>
                         <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website }}">
