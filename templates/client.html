@@ -157,6 +157,14 @@
                         </select>
                     </div>
 
+                    <div class="mb-2">
+    <label class="form-label mb-1"><b>Реєстрація на сайті MAYER PRO</b></label>
+    <select name="mayer_reg" class="form-select form-select-sm">
+        <option value="Так" {% if client.mayer_reg == 'Так' %}selected{% endif %}>Так</option>
+        <option value="Ні" {% if client.mayer_reg == 'Ні' or not client.mayer_reg %}selected{% endif %}>Ні</option>
+    </select>
+</div>
+
                     <div class="p-2 border border-primary rounded bg-light mb-2">
                         <h6 class="text-primary mb-2 fw-bold">🎯 Планування наступної події</h6>
                         <div class="row g-2">
