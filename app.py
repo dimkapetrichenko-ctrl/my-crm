@@ -118,6 +118,7 @@ def logout():
 @login_required
 def index():
     search_query = request.args.get('search', '').strip()
+    interest_filter = request.args.get('interest', '').strip()
     country_filter = request.args.get('country', '').strip()
     
     conn = get_db_connection()
@@ -143,7 +144,6 @@ def index():
             WHERE country IS NOT NULL AND country != '';
         """)
         
-        # Автоматичний скид статусу на "не опрацьовано" для клієнтів без історії дій
         fix_cursor.execute("""
             UPDATE clients 
             SET interest_level = 'не опрацьовано' 
@@ -157,7 +157,7 @@ def index():
     countries = [row[0] for row in country_cursor.fetchall()]
     country_cursor.close()
     
-    # СТАТИСТИКА
+    # СТАТИСТИКА (завжди рахується по всій базі без врахування поточних фільтрів)
     stats_cursor = conn.cursor()
     stats_cursor.execute("SELECT COUNT(*) FROM clients")
     total_clients = stats_cursor.fetchone()[0]
@@ -178,7 +178,7 @@ def index():
     busy_dates = [row[0] for row in stats_cursor.fetchall()]
     stats_cursor.close()
     
-    # ВИБІРКА КЛІЄНТІВ
+    # ВИБІРКА КЛІЄНТІВ (З ФІЛЬТРАЦІЄЮ)
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = """
         SELECT c.*, 
@@ -191,6 +191,14 @@ def index():
     if search_query:
         sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s))"
         params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
+        
+    if interest_filter:
+        sql += " AND c.interest_level = %s"
+        params.append(interest_filter)
+        
+    if country_filter:
+        sql += " AND c.country = %s"
+        params.append(country_filter)
         
     today_str = datetime.now().strftime("%Y-%m-%d")
     sql += f" ORDER BY (CASE WHEN c.next_event_date = '{today_str}' THEN 0 ELSE 1 END), (CASE WHEN (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) IS NULL THEN 1 ELSE 0 END), (SELECT MAX(n.date) FROM negotiations n WHERE n.client_id = c.id) DESC, c.name ASC"
@@ -249,6 +257,7 @@ def index():
         clients=clients, 
         countries=countries, 
         search_query=search_query, 
+        interest_filter=interest_filter,
         country_filter=country_filter,
         total_clients=total_clients,
         interest_stats=interest_stats,
@@ -480,7 +489,7 @@ def import_excel():
             df = df.rename(columns=renamed_cols)
             
             if 'name' not in df.columns:
-                return "Помилка: Un файлі Excel не знайдено колонку з назвою компанії ('Назва компанії')"
+                return "Помилка: У файлі Excel не знайдено колонку з назвою компанії ('Назва компанії')"
             
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=DictCursor)
