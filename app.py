@@ -316,7 +316,6 @@ def edit_client(client_id):
     next_event_type = request.form.get('next_event_type', '')
     mayer_reg = request.form.get('mayer_reg', 'Ні')
     
-    # Змінюємо отримання брендів на зчитування списку галочок:
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
     
@@ -503,7 +502,7 @@ def import_excel():
                 address = str(row['address']).strip() if 'address' in df.columns and pd.notnull(row['address']) else ''
                 
                 contact_person = str(row['contact_person']).strip() if 'contact_person' in df.columns and pd.notnull(row['contact_person']) else ''
-                position = str(row['position']).strip() if 'position' in df.columns and pd.notnull(row['position']) else ''
+                position = str(row['position']).strip() if 'position' in df.columns protect_col and pd.notnull(row['position']) else ''
                 phone = str(row['phone']).strip() if 'phone' in df.columns and pd.notnull(row['phone']) else ''
                 email = str(row['email']).strip() if 'email' in df.columns and pd.notnull(row['email']) else ''
                 
