@@ -1,253 +1,157 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="row mb-4">
-    <div class="col">
-        <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">← Назад до списку</a>
+<div class="row mb-3">
+    <div class="col-md-12">
+        <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">◀ Назад до списку</a>
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-5 mb-4">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
-                <h5 class="mb-0" style="font-size: 1.1rem;">🏢 Дані компанії</h5>
-                <button class="btn btn-sm btn-light py-0 px-2" data-bs-toggle="modal" data-bs-target="#editClientModal" style="font-size: 0.8rem;">✏️ Редагувати</button>
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white py-2">
+                <h5 class="mb-0">⚙️ Редагувати картку: {{ client.name }}</h5>
             </div>
             <div class="card-body p-3" style="font-size: 0.9rem;">
-                
-                {% if client.interest_level == 'зацікавленість' %}
-                    <span class="badge bg-success mb-2" style="font-size: 0.85rem;">🔥 зацікавленість</span>
-                {% elif client.interest_level == 'середня зацікавленість' %}
-                    <span class="badge bg-warning text-dark mb-2" style="font-size: 0.85rem;">⚡ середня зацікавленість</span>
-                {% else %}
-                    <span class="badge bg-primary mb-2" style="font-size: 0.85rem;">❄️ немає зацікавленості</span>
-                {% endif %}
-
-                <h3 class="card-title text-danger mb-1" style="font-size: 1.5rem;">{{ client.name }}</h3>
-                <p class="text-muted mb-2"><b>Тип:</b> {{ client.buyer_type or 'Не вказано' }}</p>
-                
-                <div class="card border-primary bg-light mb-3">
-                    <div class="card-body py-2 px-3">
-                        <h6 class="card-subtitle mb-1 text-primary fw-bold">🎯 Наступна подія:</h6>
-                        {% if client.next_event_date %}
-                            <p class="mb-0" style="font-size: 0.95rem;">
-                                📅 <b>{{ client.next_event_date }}</b> — 
-                                <span class="badge bg-primary text-capitalize" style="font-size: 0.85rem;">
-                                    {% if client.next_event_type == 'call' %}📞 Дзвінок
-                                    {% elif client.next_event_type == 'visit' %}🚗 Візит
-                                    {% elif client.next_event_type == 'email' %}✉️ Електронний лист
-                                    {% else %}{{ client.next_event_type }}{% endif %}
-                                </span>
-                            </p>
-                        {% else %}
-                            <p class="mb-0 text-muted"><i>Не заплановано</i></p>
-                        {% endif %}
+                <form action="{{ url_for('edit_client', client_id=client.id) }}" method="POST">
+                    <div class="mb-2">
+                        <label class="form-label mb-1"><b>Назва компанії *</b></label>
+                        <input type="text" name="name" class="form-control form-control-sm" value="{{ client.name }}" required>
                     </div>
-                </div>
-
-                <p class="mb-1">🚜 <strong>Пріоритетні бренди:</strong></p>
-                <p class="text-primary mb-2" style="white-space: pre-wrap;">{{ client.brands or 'Не вказано' }}</p>
-                
-                <p class="mb-1">🌐 <strong>Веб-сайт:</strong> {% if client.website %}<a href="http://{{ client.website }}" target="_blank">{{ client.website }}</a>{% else %}Не вказано{% endif %}</p>
-                <p class="mb-1">🌍 <strong>Країна:</strong> {{ client.country or 'Не вказано' }}</p>
-                <p class="mb-3">📍 <strong>Адреса:</strong> {{ client.address or 'Не вказано' }}</p>
-
-                <div class="card bg-light mt-2 mb-2">
-                    <div class="card-body py-2 px-3">
-                        <h6 class="card-subtitle mb-2 text-danger">👤 Контактна особа №1</h6>
-                        <p class="mb-1"><b>Ім'я:</b> {{ client.contact_person or '-' }}</p>
-                        <p class="mb-1"><b>Посада:</b> {{ client.position or '-' }}</p>
-                        <p class="mb-1"><b>Телефон:</b> {{ client.phone or '-' }}</p>
-                        <p class="mb-0"><b>Email:</b> {{ client.email or '-' }}</p>
+                    
+                    <div class="mb-2">
+                        <label class="form-label mb-1"><b>Зацікавленість *</b></label>
+                        <select name="interest_level" class="form-select form-select-sm" required>
+                            <option value="не опрацьовано" {% if client.interest_level == 'не опрацьовано' %}selected{% endif %}>Прозорий — не опрацьовано</option>
+                            <option value="немає зацікавленості" {% if client.interest_level == 'немає зацікавленості' %}selected{% endif %}>Синій — немає</option>
+                            <option value="середня зацікавленість" {% if client.interest_level == 'середня зацікавленість' %}selected{% endif %}>Жовтий — середня</option>
+                            <option value="зацікавленість" {% if client.interest_level == 'зацікавленість' %}selected{% endif %}>Зелений — висока</option>
+                        </select>
                     </div>
-                </div>
 
-                <div class="card bg-light">
-                    <div class="card-body py-2 px-3">
-                        <h6 class="card-subtitle mb-2 text-danger">👤 Контактна особа №2</h6>
-                        <p class="mb-1"><b>Ім'я:</b> {{ client.contact_person_2 or '-' }}</p>
-                        <p class="mb-1"><b>Посада:</b> {{ client.position_2 or '-' }}</p>
-                        <p class="mb-1"><b>Телефон:</b> {{ client.phone_2 or '-' }}</p>
-                        <p class="mb-0"><b>Email:</b> {{ client.email_2 or '-' }}</p>
+                    <div class="mb-2">
+                        <label class="form-label mb-1"><b>Реєстрація на сайті MAYER PRO</b></label>
+                        <select name="mayer_reg" class="form-select form-select-sm">
+                            <option value="Так" {% if client.mayer_reg == 'Так' %}selected{% endif %}>Так</option>
+                            <option value="Ні" {% if client.mayer_reg == 'Ні' or not client.mayer_reg %}selected{% endif %}>Ні</option>
+                        </select>
                     </div>
-                </div>
+
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Тип покупця</label>
+                        <select name="buyer_type" class="form-select form-select-sm">
+                            <option value="не вказано" {% if client.buyer_type == 'не вказано' or not client.buyer_type %}selected{% endif %}>не вказано</option>
+                            <option value="інтернет-магазин" {% if client.buyer_type == 'інтернет-магазин' %}selected{% endif %}>інтернет-магазин</option>
+                            <option value="гуртовий клієнт" {% if client.buyer_type == 'гуртовий клієнт' %}selected{% endif %}>гуртовий клієнт</option>
+                            <option value="фермерське господарство" {% if client.buyer_type == 'фермерське господарство' %}selected{% endif %}>фермерське господарство</option>
+                            <option value="виробник" {% if client.buyer_type == 'виробник' %}selected{% endif %}>виробник</option>
+                            <option value="надання послуг" {% if client.buyer_type == 'надання послуг' %}selected{% endif %}>надання послуг</option>
+                            <option value="роздрібний покупець" {% if client.buyer_type == 'роздрібний покупець' %}selected{% endif %}>роздрібний покупець</option>
+                            <option value="Дилер сг техніки" {% if client.buyer_type == 'Дилер сг техніки' %}selected{% endif %}>Дилер сг техніки</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Бренди</label>
+                        <input type="text" name="brands" class="form-control form-control-sm" value="{{ client.brands }}" placeholder="Vaderstad, HORSCH...">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Веб-сайт</label>
+                        <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website }}">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Країна</label>
+                        <input type="text" name="country" class="form-control form-control-sm" value="{{ client.country }}">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-1">Адреса</label>
+                        <input type="text" name="address" class="form-control form-control-sm" value="{{ client.address }}">
+                    </div>
+
+                    <h6 class="text-danger mt-3 border-bottom pb-1 mb-1">👤 Контактна особа №1</h6>
+                    <div class="mb-1"><input type="text" name="contact_person" class="form-control form-control-sm" value="{{ client.contact_person }}" placeholder="Ім'я"></div>
+                    <div class="mb-1"><input type="text" name="position" class="form-control form-control-sm" value="{{ client.position }}" placeholder="Посада"></div>
+                    <div class="mb-1"><input type="text" name="phone" class="form-control form-control-sm" value="{{ client.phone }}" placeholder="Телефон"></div>
+                    <div class="mb-2"><input type="email" name="email" class="form-control form-control-sm" value="{{ client.email }}" placeholder="Email"></div>
+
+                    <h6 class="text-danger mt-3 border-bottom pb-1 mb-1">👤 Контактна особа №2</h6>
+                    <div class="mb-1"><input type="text" name="contact_person_2" class="form-control form-control-sm" value="{{ client.contact_person_2 }}" placeholder="Ім'я"></div>
+                    <div class="mb-1"><input type="text" name="position_2" class="form-control form-control-sm" value="{{ client.position_2 }}" placeholder="Посада"></div>
+                    <div class="mb-1"><input type="text" name="phone_2" class="form-control form-control-sm" value="{{ client.phone_2 }}" placeholder="Телефон"></div>
+                    <div class="mb-2"><input type="email" name="email_2" class="form-control form-control-sm" value="{{ client.email_2 }}" placeholder="Email"></div>
+
+                    <h6 class="text-primary mt-3 border-bottom pb-1 mb-1">📅 Планування наступної дії</h6>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="date" name="next_event_date" class="form-control form-control-sm" value="{{ client.next_event_date }}">
+                        </div>
+                        <div class="col-6">
+                            <select name="next_event_type" class="form-select form-select-sm">
+                                <option value="" {% if not client.next_event_type %}selected{% endif %}>-- Оберіть дію --</option>
+                                <option value="call" {% if client.next_event_type == 'call' %}selected{% endif %}>📞 Дзвінок</option>
+                                <option value="visit" {% if client.next_event_type == 'visit' %}selected{% endif %}>🚗 Візит</option>
+                                <option value="email" {% if client.next_event_type == 'email' %}selected{% endif %}>✉️ Лист</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-sm btn-danger w-100 mt-3 fw-bold">Зберегти зміни</button>
+                </form>
             </div>
         </div>
     </div>
 
     <div class="col-md-7">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-danger text-white py-2">
-                <h5 class="mb-0" style="font-size: 1.1rem;">✍️ Додати запис про перемовини</h5>
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-dark text-white py-2">
+                <h5 class="mb-0">✍️ Додати результат розмови</h5>
             </div>
             <div class="card-body p-3">
                 <form method="POST">
                     <div class="mb-2">
-                        <textarea name="result" class="form-control form-control-sm" rows="3" placeholder="Результат дзвінка, домовленості..." required style="font-size: 0.9rem;"></textarea>
+                        <textarea name="result" class="form-control" rows="3" required placeholder="Наприклад: Надіслали комерційну пропозицію, чекають на дзвінок у понеділок..."></textarea>
                     </div>
-                    <button type="submit" class="btn btn-sm btn-primary">Додати запис</button>
+                    <button type="submit" class="btn btn-sm btn-success fw-bold px-4">Записати в історію</button>
                 </form>
             </div>
         </div>
 
-        <h4 class="mb-3" style="font-size: 1.3rem;">📜 Історія комунікацій</h4>
-        {% for item in history %}
-        <div class="card shadow-sm mb-2">
-            <div class="card-body p-3" style="font-size: 0.9rem;">
-                <div class="d-flex justify-content-between text-muted mb-2">
-                    <small>📅 {{ item.date }}</small>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-link text-primary p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#editNegModal{{ item.id }}" style="font-size: 0.8rem;">✏️ Редагувати</button>
-                        <form action="{{ url_for('delete_negotiation', neg_id=item.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Ви впевнені?');">
-                            <input type="hidden" name="client_id" value="{{ client.id }}">
-                            <button type="submit" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" style="font-size: 0.8rem;">🗑️ Видалити</button>
-                        </form>
-                    </div>
-                </div>
-                <p class="mb-0" style="white-space: pre-wrap;">{{ item.result }}</p>
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white py-2">
+                <h5 class="mb-0">📜 Історія активностей клієнта</h5>
             </div>
-        </div>
-
-        <div class="modal fade" id="editNegModal{{ item.id }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="font-size: 0.9rem;">
-                    <form action="{{ url_for('edit_negotiation', neg_id=item.id) }}" method="POST">
-                        <input type="hidden" name="client_id" value="{{ client.id }}">
-                        <div class="modal-header bg-dark text-white py-2">
-                            <h5 class="modal-title" style="font-size: 1.1rem;">✏️ Редагувати запис</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body p-3">
-                            <textarea name="result" class="form-control form-control-sm" rows="4" required style="font-size: 0.9rem;">{{ item.result }}</textarea>
-                        </div>
-                        <div class="modal-footer bg-light py-2">
-                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-                            <button type="submit" class="btn btn-sm btn-primary">Зберегти</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-
-<div class="modal fade" id="editClientModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content" style="font-size: 0.9rem;">
-            <div class="modal-header bg-dark text-white py-2">
-                <h5 class="modal-title" style="font-size: 1.1rem;">✏️ Редагувати картку компанії</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ url_for('edit_client', client_id=client.id) }}" method="POST" class="d-flex flex-column" style="max-height: 80vh;">
-                <div class="modal-body p-3">
-                    <div class="mb-2">
-                        <label class="form-label fw-bold mb-1">Назва компанії</label>
-                        <input type="text" name="name" class="form-control form-control-sm" value="{{ client.name }}" required style="font-size: 0.9rem;">
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label fw-bold mb-1">Ступінь зацікавленості</label>
-                        <select name="interest_level" class="form-select form-select-sm" style="font-size: 0.9rem;" required>
-                            <option value="не опрацьовано" {% if client.interest_level == 'не опрацьовано' %}selected{% endif %}>Прозорий — не опрацьовано</option>
-                            <option value="немає зацікавленості" {% if client.interest_level == 'немає зацікавленості' %}selected{% endif %}>Синій — немає зацікавленості</option>
-                            <option value="середня зацікавленість" {% if client.interest_level == 'середня зацікавленість' %}selected{% endif %}>Жовтий — середня зацікавленість</option>
-                            <option value="зацікавленість" {% if client.interest_level == 'зацікавленість' %}selected{% endif %}>Зелений — зацікавленість</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-2">
-    <label class="form-label mb-1"><b>Реєстрація на сайті MAYER PRO</b></label>
-    <select name="mayer_reg" class="form-select form-select-sm">
-        <option value="Так" {% if client.mayer_reg == 'Так' %}selected{% endif %}>Так</option>
-        <option value="Ні" {% if client.mayer_reg == 'Ні' or not client.mayer_reg %}selected{% endif %}>Ні</option>
-    </select>
-</div>
-
-                    <div class="p-2 border border-primary rounded bg-light mb-2">
-                        <h6 class="text-primary mb-2 fw-bold">🎯 Планування наступної події</h6>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="small text-muted mb-1">Дата події</label>
-                                <input type="date" name="next_event_date" class="form-control form-control-sm" value="{{ client.next_event_date or '' }}" style="font-size: 0.9rem;">
-                            </div>
-                            <div class="col-6">
-                                <label class="small text-muted mb-1">Вид події</label>
-                                <select name="next_event_type" class="form-select form-select-sm" style="font-size: 0.9rem;">
-                                    <option value="" {% if not client.next_event_type %}selected{% endif %}>-- Оберіть вид --</option>
-                                    <option value="call" {% if client.next_event_type == 'call' %}selected{% endif %}>📞 Дзвінок</option>
-                                    <option value="visit" {% if client.next_event_type == 'visit' %}selected{% endif %}>🚗 Візит</option>
-                                    <option value="email" {% if client.next_event_type == 'email' %}selected{% endif %}>✉️ Електронний лист</option>
-                                </select>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" style="max-height: 65vh; overflow-y: auto;">
+                    {% for item in history %}
+                    <div class="list-group-item p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-dark font-monospace">🕒 {{ item.date }}</span>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-xs btn-outline-secondary py-0 px-1" style="font-size: 0.75rem;" onclick="document.getElementById('edit-neg-{{ item.id }}').style.display='block';">Редагувати</button>
+                                <form action="{{ url_for('delete_negotiation', neg_id=item.id) }}" method="POST" onsubmit="return confirm('Видалити цей запис з історії?');" style="display:inline;">
+                                    <input type="hidden" name="client_id" value="{{ client.id }}">
+                                    <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size: 0.75rem;">Видалити</button>
+                                </form>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-2">
-                        <label class="form-label fw-bold mb-1">Тип покупця</label>
-                        <select name="buyer_type" class="form-select form-select-sm" style="font-size: 0.9rem;">
-                            <option value="" {% if not client.buyer_type %}selected{% endif %}>-- Оберіть тип --</option>
-                            {% for t in ['інтернет-магазин', 'гуртовий клієнт', 'фермерське господарство', 'виробник', 'надання послуг', 'роздрібний покупець', 'Дилер сг техніки'] %}
-                            <option value="{{ t }}" {% if client.buyer_type == t %}selected{% endif %}>{{ t }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label fw-bold mb-1">Пріоритетні бренди</label>
-                        {% set cb = client.brands or '' %}
-                        <div class="d-flex flex-wrap gap-x-3 gap-y-1 bg-white p-2 border rounded">
-                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Vaderstad" {% if 'Vaderstad' in cb %}checked{% endif %}><label class="form-check-label small">Vaderstad</label></div>
-                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Gaspardo" {% if 'Gaspardo' in cb %}checked{% endif %}><label class="form-check-label small">Gaspardo</label></div>
-                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Pottinger" {% if 'Pottinger' in cb %}checked{% endif %}><label class="form-check-label small">Pottinger</label></div>
-                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="Kverneland" {% if 'Kverneland' in cb %}checked{% endif %}><label class="form-check-label small">Kverneland</label></div>
-                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="HORSCH" {% if 'HORSCH' in cb %}checked{% endif %}><label class="form-check-label small">HORSCH</label></div>
-                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="checkbox" name="brands" value="інший" {% if 'інший' in cb %}checked{% endif %}><label class="form-check-label small">інший</label></div>
+                        <p class="mb-0 text-dark font-medium" style="white-space: pre-line;">{{ item.result }}</p>
+                        
+                        <div id="edit-neg-{{ item.id }}" class="mt-2 p-2 bg-light border rounded" style="display:none;">
+                            <form action="{{ url_for('edit_negotiation', neg_id=item.id) }}" method="POST">
+                                <input type="hidden" name="client_id" value="{{ client.id }}">
+                                <textarea name="result" class="form-control form-control-sm mb-2" rows="2" required>{{ item.result }}</textarea>
+                                <button type="submit" class="btn btn-xs btn-success py-0 px-2">Оновити</button>
+                                <button type="button" class="btn btn-xs btn-secondary py-0 px-2" onclick="document.getElementById('edit-neg-{{ item.id }}').style.display='none';">Скасувати</button>
+                            </form>
                         </div>
                     </div>
-
-                    <div class="mb-2">
-                        <label class="form-label fw-bold mb-1">Веб-сайт</label>
-                        <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website or '' }}" style="font-size: 0.9rem;">
-                    </div>
-                    
-                    <div class="mb-2">
-                        <label class="form-label fw-bold mb-1">Країна</label>
-                        <input type="text" name="country" class="form-control form-control-sm" value="{{ client.country or '' }}" style="font-size: 0.9rem;">
-                    </div>
-                    
-                    <div class="mb-2">
-                        <label class="form-label fw-bold mb-1">Адреса</label>
-                        <input type="text" name="address" class="form-control form-control-sm" value="{{ client.address or '' }}" style="font-size: 0.9rem;">
-                    </div>
-
-                    <div class="p-2 border rounded bg-light mb-2">
-                        <h6 class="text-danger mb-2" style="font-size: 0.9rem;">👤 Контактна особа №1</h6>
-                        <div class="row g-2">
-                            <div class="col-6"><input type="text" name="contact_person" class="form-control form-control-sm" placeholder="Ім'я" value="{{ client.contact_person or '' }}" style="font-size: 0.9rem;"></div>
-                            <div class="col-6"><input type="text" name="position" class="form-control form-control-sm" placeholder="Посада" value="{{ client.position or '' }}" style="font-size: 0.9rem;"></div>
-                            <div class="col-6"><input type="text" name="phone" class="form-control form-control-sm" placeholder="Телефон" value="{{ client.phone or '' }}" style="font-size: 0.9rem;"></div>
-                            <div class="col-6"><input type="email" name="email" class="form-control form-control-sm" placeholder="Email" value="{{ client.email or '' }}" style="font-size: 0.9rem;"></div>
-                        </div>
-                    </div>
-
-                    <div class="p-2 border rounded bg-light">
-                        <h6 class="text-danger mb-2" style="font-size: 0.9rem;">👤 Контактна особа №2</h6>
-                        <div class="row g-2">
-                            <div class="col-6"><input type="text" name="contact_person_2" class="form-control form-control-sm" placeholder="Ім'я" value="{{ client.contact_person_2 or '' }}" style="font-size: 0.9rem;"></div>
-                            <div class="col-6"><input type="text" name="position_2" class="form-control form-control-sm" placeholder="Посада" value="{{ client.position_2 or '' }}" style="font-size: 0.9rem;"></div>
-                            <div class="col-6"><input type="text" name="phone_2" class="form-control form-control-sm" placeholder="Телефон" value="{{ client.phone_2 or '' }}" style="font-size: 0.9rem;"></div>
-                            <div class="col-6"><input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email" value="{{ client.email_2 or '' }}" style="font-size: 0.9rem;"></div>
-                        </div>
-                    </div>
+                    {% endfor %}
+                    {% if not history %}
+                    <div class="text-center text-muted py-4">Історія перемовин порожня. Запишіть перший результат вище.</div>
+                    {% endif %}
                 </div>
-                
-                <div class="modal-footer bg-light py-2 w-100">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Закрити</button>
-                    <button type="submit" class="btn btn-sm btn-danger px-4 fw-bold">Зберегти зміни</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
