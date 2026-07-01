@@ -316,6 +316,7 @@ def edit_client(client_id):
     next_event_type = request.form.get('next_event_type', '')
     mayer_reg = request.form.get('mayer_reg', 'Ні')
     
+    # Змінюємо отримання брендів на зчитування списку галочок:
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
     
