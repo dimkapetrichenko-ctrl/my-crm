@@ -154,16 +154,17 @@ def index():
     
     stats_cursor.execute("SELECT interest_level, COUNT(*) FROM clients GROUP BY interest_level")
     raw_interest = stats_cursor.fetchall()
-    interest_stats = {'немає зацікавленості': 0, 'середня зацікавленість': 0, 'зацікавленість': 0}
+    
+    # Сюди додано 'не опрацьовано'
+    interest_stats = {'не опрацьовано': 0, 'немає зацікавленості': 0, 'середня зацікавленість': 0, 'зацікавленість': 0}
     for row in raw_interest:
-        status = row[0] if row[0] else 'немає зацікавленості'
+        status = row[0] if row[0] else 'не опрацьовано'
         if status in interest_stats:
             interest_stats[status] = row[1]
             
     stats_cursor.execute("SELECT country, COUNT(*) FROM clients WHERE country IS NOT NULL AND country != '' GROUP BY country ORDER BY COUNT(*) DESC")
     country_stats = stats_cursor.fetchall()
     
-    # Збір унікальних дат
     stats_cursor.execute("SELECT DISTINCT next_event_date FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != ''")
     busy_dates = [row[0] for row in stats_cursor.fetchall()]
     stats_cursor.close()
@@ -193,10 +194,9 @@ def index():
     raw_clients = cursor.fetchall()
     
     clients = []
-    clients_js_data = [] # Безпечний масив суто для JS-календаря
+    clients_js_data = []
     
     for row in raw_clients:
-        # Безпечні текстові змінні (очищені від лапок та переносів)
         clean_name = str(row['name']).replace('"', '\\"').replace("'", "\\'") if row['name'] else ''
         clean_country = str(row['country']).replace('"', '\\"').replace("'", "\\'") if row['country'] else ''
         clean_contact = str(row['contact_person']).replace('"', '\\"').replace("'", "\\'") if row['contact_person'] else ''
@@ -204,7 +204,6 @@ def index():
         clean_date = str(row['next_event_date']) if row['next_event_date'] else ''
         clean_type = str(row['next_event_type']) if row['next_event_type'] else ''
         
-        # 1. Основний список для рендерингу HTML
         clients.append({
             'id': int(row['id']),
             'name': row['name'] if row['name'] else '',
@@ -217,13 +216,12 @@ def index():
             'website': row['website'] if row['website'] else '',
             'buyer_type': row['buyer_type'] if row['buyer_type'] else 'не вказано',
             'brands': row['brands'] if row['brands'] else '-',
-            'interest_level': row['interest_level'] if row['interest_level'] else 'немає зацікавленості',
+            'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано',
             'last_activity': row['last_activity'] if row['last_activity'] else '',
             'next_event_date': clean_date,
             'next_event_type': clean_type
         })
         
-        # 2. Полегшений масив для JS без ризику зламати JSON-парсер
         clients_js_data.append({
             'id': int(row['id']),
             'name': clean_name,
@@ -237,7 +235,6 @@ def index():
     cursor.close()
     conn.close()
     
-    # Попередньо перетворюємо масиви в стрічки на рівні Python
     json_clients = json.dumps(clients_js_data, ensure_ascii=False)
     json_busy_dates = json.dumps(busy_dates, ensure_ascii=False)
     
@@ -262,7 +259,7 @@ def add_client():
     country = request.form.get('country', '')
     address = request.form.get('address', '')
     buyer_type = request.form.get('buyer_type', '')
-    interest_level = request.form.get('interest_level', 'немає зацікавленості')
+    interest_level = request.form.get('interest_level', 'не опрацьовано')
     website = request.form.get('website', '')
     next_event_date = request.form.get('next_event_date', '')
     next_event_type = request.form.get('next_event_type', '')
@@ -302,7 +299,7 @@ def edit_client(client_id):
     country = request.form.get('country', '')
     address = request.form.get('address', '')
     buyer_type = request.form.get('buyer_type', '')
-    interest_level = request.form.get('interest_level', 'немає зацікавленості')
+    interest_level = request.form.get('interest_level', 'не опрацьовано')
     website = request.form.get('website', '')
     next_event_date = request.form.get('next_event_date', '')
     next_event_type = request.form.get('next_event_type', '')
@@ -363,7 +360,7 @@ def client_detail(client_id):
     for field in fields_to_check:
         if field not in client or client[field] is None:
             if field == 'interest_level':
-                client[field] = 'немає зацікавленості'
+                client[field] = 'не опрацьовано'
             else:
                 client[field] = ''
     
@@ -483,7 +480,7 @@ def import_excel():
                 if not name:
                     continue
                 
-                interest_level = str(row['interest_level']).strip() if 'interest_level' in df.columns and pd.notnull(row['interest_level']) else 'немає зацікавленості'
+                interest_level = str(row['interest_level']).strip() if 'interest_level' in df.columns and pd.notnull(row['interest_level']) else 'не опрацьовано'
                 buyer_type = str(row['buyer_type']).strip() if 'buyer_type' in df.columns and pd.notnull(row['buyer_type']) else ''
                 brands = str(row['brands']).strip() if 'brands' in df.columns and pd.notnull(row['brands']) else ''
                 website = str(row['website']).strip() if 'website' in df.columns and pd.notnull(row['website']) else ''
