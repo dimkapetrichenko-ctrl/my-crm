@@ -49,6 +49,12 @@
                             <option value="середня зацікавленість">Жовтий — середня</option>
                             <option value="зацікавленість">Зелений — висока</option>
                         </select>
+                        <div class="mb-1">
+                            <select name="mayer_reg" class="form-select form-select-sm">
+                                <option value="Ні">Реєстрація: Ні</option>
+                                <option value="Так">Реєстрація: Так</option>
+                            </select>
+                        </div>
                         <input type="text" name="country" class="form-control form-control-sm mb-1" placeholder="Країна">
                         <input type="text" name="contact_person" class="form-control form-control-sm mb-1" placeholder="Контактна особа">
                         <input type="text" name="phone" class="form-control form-control-sm mb-2" placeholder="Телефон">
@@ -109,9 +115,18 @@
                                         <span class="badge bg-transparent text-secondary border border-secondary mb-1" style="font-size: 0.7rem; font-weight: 600;">не опрацьовано</span>
                                     {% endif %}<br>
                                     <strong style="font-size: 1rem; color: #111;">{{ client.name }}</strong>
-                                    {% if client.buyer_type and client.buyer_type != 'не вказано' %}
-                                        <div class="mt-1"><span class="badge bg-info text-dark fw-bold" style="font-size: 0.75rem; letter-spacing: 0.3px;">💼 {{ client.buyer_type }}</span></div>
-                                    {% endif %}
+                                    
+                                    <div class="mt-1 d-flex flex-wrap gap-1">
+                                        {% if client.buyer_type and client.buyer_type != 'не вказано' %}
+                                            <span class="badge bg-info text-dark fw-bold" style="font-size: 0.7rem; padding: 3px 5px;">💼 {{ client.buyer_type }}</span>
+                                        {% endif %}
+                                        
+                                        {% if client.mayer_reg == 'Так' %}
+                                            <span class="badge bg-success text-white fw-bold" style="font-size: 0.7rem; padding: 3px 5px;">🌐 Сайт: Так</span>
+                                        {% else %}
+                                            <span class="badge bg-transparent text-muted border border-secondary" style="font-size: 0.7rem; padding: 2px 4px; font-weight: 500;">🌐 Сайт: Ні</span>
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td style="background-color: inherit;"><small class="fw-medium text-dark">{{ client.brands or '-' }}</small></td>
                                 <td style="background-color: inherit;"><span class="badge bg-secondary">{{ client.country or '-' }}</span></td>
@@ -161,9 +176,14 @@
                         <tr style="background-color: #fff3cd !important; border: 2px solid #ffc107;">
                             <td>
                                 <strong>{{ client.name }}</strong>
-                                {% if client.buyer_type and client.buyer_type != 'не вказано' %}
-                                    <br><span class="badge bg-info text-dark small">💼 {{ client.buyer_type }}</span>
-                                {% endif %}
+                                <div class="mt-1 d-flex gap-1">
+                                    {% if client.buyer_type and client.buyer_type != 'не вказано' %}
+                                        <span class="badge bg-info text-dark small">💼 {{ client.buyer_type }}</span>
+                                    {% endif %}
+                                    {% if client.mayer_reg == 'Так' %}
+                                        <span class="badge bg-success small">🌐 Сайт: Так</span>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td>{{ client.brands or '-' }}</td>
                             <td><span class="badge bg-secondary">{{ client.country }}</span></td>
