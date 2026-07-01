@@ -17,16 +17,8 @@
     <div class="card shadow-sm mb-4">
         <div class="card-body py-2">
             <form method="GET" action="{{ url_for('index') }}" class="row g-2">
-                <div class="col-md-5">
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Пошук за назвою, брендом..." value="{{ search_query }}">
-                </div>
-                <div class="col-md-4">
-                    <select name="country" class="form-select form-select-sm">
-                        <option value="">-- Всі країни --</option>
-                        {% for c in countries %}
-                            <option value="{{ c }}" {% if country_filter == c %}selected{% endif %}>{{ c }}</option>
-                        {% endfor %}
-                    </select>
+                <div class="col-md-9">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Пошук за назвою, брендом, країною або контактом..." value="{{ search_query }}">
                 </div>
                 <div class="col-md-3 d-grid gap-2 d-md-flex">
                     <button type="submit" class="btn btn-sm btn-primary w-100">Застосувати</button>
