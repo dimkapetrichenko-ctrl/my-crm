@@ -44,6 +44,7 @@
                     <form action="{{ url_for('add_client') }}" method="POST">
                         <input type="text" name="name" class="form-control form-control-sm mb-1" required placeholder="Назва компанії *">
                         <select name="interest_level" class="form-select form-select-sm mb-1" required>
+                            <option value="не опрацьовано">Прозорий — не опрацьовано</option>
                             <option value="немає зацікавленості">Синій — немає</option>
                             <option value="середня зацікавленість">Жовтий — середня</option>
                             <option value="зацікавленість">Зелений — висока</option>
@@ -65,6 +66,7 @@
                         <div class="small">🟢 Висока: <b class="text-success">{{ interest_stats['зацікавленість'] }}</b></div>
                         <div class="small">💛 Середня: <b class="text-warning bg-dark px-1 rounded">{{ interest_stats['середня зацікавленість'] }}</b></div>
                         <div class="small">🔵 Немає: <b class="text-primary">{{ interest_stats['немає зацікавленості'] }}</b></div>
+                        <div class="small">⚪ Не опрацьовано: <b class="text-secondary border rounded px-1 bg-white">{{ interest_stats['не опрацьовано'] }}</b></div>
                     </div>
                     <div>
                         <div class="small fw-bold text-muted mb-1">Країни:</div>
@@ -101,8 +103,10 @@
                                         <span class="badge bg-success mb-1" style="font-size: 0.7rem;">зацікавленість</span>
                                     {% elif client.interest_level == 'середня зацікавленість' %}
                                         <span class="badge bg-warning text-dark mb-1" style="font-size: 0.7rem;">середня зацікавленість</span>
-                                    {% else %}
+                                    {% elif client.interest_level == 'немає зацікавленості' %}
                                         <span class="badge bg-primary mb-1" style="font-size: 0.7rem;">немає зацікавленості</span>
+                                    {% else %}
+                                        <span class="badge bg-transparent text-secondary border border-secondary mb-1" style="font-size: 0.7rem; font-weight: 600;">не опрацьовано</span>
                                     {% endif %}<br>
                                     <strong style="font-size: 1rem; color: #111;">{{ client.name }}</strong>
                                     {% if client.buyer_type and client.buyer_type != 'не вказано' %}
