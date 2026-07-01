@@ -157,7 +157,7 @@ def index():
     countries = [row[0] for row in country_cursor.fetchall()]
     country_cursor.close()
     
-    # СТАТИСТИКА (завжди рахується по всій базі без врахування поточних фільтрів)
+    # СТАТИСТИКА (завжди по всій базі)
     stats_cursor = conn.cursor()
     stats_cursor.execute("SELECT COUNT(*) FROM clients")
     total_clients = stats_cursor.fetchone()[0]
@@ -174,11 +174,28 @@ def index():
     stats_cursor.execute("SELECT country, COUNT(*) FROM clients WHERE country IS NOT NULL AND country != '' GROUP BY country ORDER BY COUNT(*) DESC")
     country_stats = stats_cursor.fetchall()
     
-    stats_cursor.execute("SELECT DISTINCT next_event_date FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != ''")
-    busy_dates = [row[0] for row in stats_cursor.fetchall()]
-    stats_cursor.close()
+    # ОКРЕМИЙ НЕЗАЛЕЖНИЙ ЗБІР ДАНИХ СУТО ДЛЯ КАЛЕНДАРЯ (БЕЗ ФІЛЬТРІВ)
+    cal_cursor = conn.cursor(cursor_factory=DictCursor)
+    cal_cursor.execute("SELECT id, name, country, contact_person, phone, next_event_date, next_event_type FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != ''")
+    all_raw_cal = cal_cursor.fetchall()
     
-    # ВИБІРКА КЛІЄНТІВ (З ФІЛЬТРАЦІЄЮ)
+    clients_js_data = []
+    busy_dates = []
+    for r in all_raw_cal:
+        c_date = str(r['next_event_date'])
+        busy_dates.append(c_date)
+        clients_js_data.append({
+            'id': int(r['id']),
+            'name': str(r['name']).replace('"', '\\"').replace("'", "\\'"),
+            'country': str(r['country']).replace('"', '\\"').replace("'", "\\'") if r['country'] else '',
+            'contact_person': str(r['contact_person']).replace('"', '\\"').replace("'", "\\'") if r['contact_person'] else '',
+            'phone': str(r['phone']) if r['phone'] else '',
+            'next_event_date': c_date,
+            'next_event_type': str(r['next_event_type']) if r['next_event_type'] else ''
+        })
+    cal_cursor.close()
+    
+    # ВИБІРКА КЛІЄНТІВ ДЛЯ ТАБЛИЦІ (З УРАХУВАННЯМ ФІЛЬТРІВ)
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = """
         SELECT c.*, 
@@ -207,16 +224,7 @@ def index():
     raw_clients = cursor.fetchall()
     
     clients = []
-    clients_js_data = []
-    
     for row in raw_clients:
-        clean_name = str(row['name']).replace('"', '\\"').replace("'", "\\'") if row['name'] else ''
-        clean_country = str(row['country']).replace('"', '\\"').replace("'", "\\'") if row['country'] else ''
-        clean_contact = str(row['contact_person']).replace('"', '\\"').replace("'", "\\'") if row['contact_person'] else ''
-        clean_phone = str(row['phone']) if row['phone'] else ''
-        clean_date = str(row['next_event_date']) if row['next_event_date'] else ''
-        clean_type = str(row['next_event_type']) if row['next_event_type'] else ''
-        
         clients.append({
             'id': int(row['id']),
             'name': row['name'] if row['name'] else '',
@@ -231,21 +239,10 @@ def index():
             'brands': row['brands'] if row['brands'] else '-',
             'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано',
             'last_activity': row['last_activity'] if row['last_activity'] else '',
-            'next_event_date': clean_date,
-            'next_event_type': clean_type,
+            'next_event_date': str(row['next_event_date']) if row['next_event_date'] else '',
+            'next_event_type': str(row['next_event_type']) if row['next_event_type'] else '',
             'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні'
         })
-        
-        clients_js_data.append({
-            'id': int(row['id']),
-            'name': clean_name,
-            'country': clean_country,
-            'contact_person': clean_contact,
-            'phone': clean_phone,
-            'next_event_date': clean_date,
-            'next_event_type': clean_type
-        })
-    
     cursor.close()
     conn.close()
     
