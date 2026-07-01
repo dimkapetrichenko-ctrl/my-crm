@@ -150,6 +150,7 @@
                     <div class="mb-2">
                         <label class="form-label fw-bold mb-1">Ступінь зацікавленості</label>
                         <select name="interest_level" class="form-select form-select-sm" style="font-size: 0.9rem;" required>
+                            <option value="не опрацьовано" {% if client.interest_level == 'не опрацьовано' %}selected{% endif %}>Прозорий — не опрацьовано</option>
                             <option value="немає зацікавленості" {% if client.interest_level == 'немає зацікавленості' %}selected{% endif %}>Синій — немає зацікавленості</option>
                             <option value="середня зацікавленість" {% if client.interest_level == 'середня зацікавленість' %}selected{% endif %}>Жовтий — середня зацікавленість</option>
                             <option value="зацікавленість" {% if client.interest_level == 'зацікавленість' %}selected{% endif %}>Зелений — зацікавленість</option>
