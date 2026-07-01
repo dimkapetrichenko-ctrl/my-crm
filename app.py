@@ -143,6 +143,7 @@ def index():
             WHERE country IS NOT NULL AND country != '';
         """)
         
+        # Автоматичний скид статусу на "не опрацьовано" для клієнтів без історії дій
         fix_cursor.execute("""
             UPDATE clients 
             SET interest_level = 'не опрацьовано' 
@@ -383,6 +384,164 @@ def client_detail(client_id):
     cursor.close()
     conn.close()
     return render_template('client.html', client=client, history=history)
+
+@app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
+@login_required
+def edit_negotiation(neg_id):
+    client_id = request.form.get('client_id')
+    result_text = request.form.get('result')
+    
+    if result_text:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE negotiations SET result = %s WHERE id = %s", (result_text, neg_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    return redirect(url_for('client_detail', client_id=client_id))
+
+@app.route('/delete_negotiation/<int:neg_id>', methods=['POST'])
+@login_required
+def delete_negotiation(neg_id):
+    client_id = request.form.get('client_id')
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM negotiations WHERE id = %s", (neg_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for('client_detail', client_id=client_id))
+
+@app.route('/export_excel')
+@login_required
+def export_excel():
+    conn = get_db_connection()
+    
+    query = """
+        SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
+               c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
+               c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.email AS "Email 1",
+               c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.email_2 AS "Email 2",
+               c.next_event_date AS "Дата наступної події", c.next_event_type AS "Вид наступної події"
+        FROM clients c ORDER BY c.name ASC
+    """
+    df = pd.read_sql(query, conn)
+    conn.close()
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Клієнти Mayer CRM')
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Mayer_CRM_Clients_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
+    )
+
+@app.route('/import_excel', methods=['POST'])
+@login_required
+def import_excel():
+    if 'excel_file' not in request.files:
+        return redirect(url_for('index'))
+    
+    file = request.files['excel_file']
+    if file.filename == '':
+        return redirect(url_for('index'))
+        
+    if file and (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+        try:
+            df = pd.read_excel(file)
+            
+            mapping = {
+                'Назва компанії': 'name', 'Company Name': 'name', 'Назва': 'name', 'Name': 'name',
+                'Зацікавленість': 'interest_level', 'Interest Level': 'interest_level',
+                'Тип покупця': 'buyer_type', 'Buyer Type': 'buyer_type',
+                'Пріоритетні бренди': 'brands', 'Brands': 'brands', 'Бренди': 'brands',
+                'Веб-сайт': 'website', 'Website': 'website', 'Сайт': 'website',
+                'Країна': 'country', 'Country': 'country',
+                'Адреса': 'address', 'Address': 'address',
+                'Контактна особа 1': 'contact_person', 'Contact Person 1': 'contact_person', 'Контакт 1': 'contact_person',
+                'Посада 1': 'position', 'Position 1': 'position',
+                'Телефон 1': 'phone', 'Phone 1': 'phone',
+                'Email 1': 'email', 'Mail 1': 'email',
+                'Контактна особа 2': 'contact_person_2', 'Contact Person 2': 'contact_person_2', 'Контакт 2': 'contact_person_2',
+                'Посада 2': 'position_2', 'Position 2': 'position_2',
+                'Телефон 2': 'phone_2', 'Phone 2': 'phone_2',
+                'Email 2': 'email_2', 'Mail 2': 'email_2',
+                'Дата наступної події': 'next_event_date',
+                'Вид наступної події': 'next_event_type'
+            }
+            
+            renamed_cols = {}
+            for col in df.columns:
+                cleaned_col = str(col).strip()
+                if cleaned_col in mapping:
+                    renamed_cols[col] = mapping[cleaned_col]
+            
+            df = df.rename(columns=renamed_cols)
+            
+            if 'name' not in df.columns:
+                return "Помилка: У файлі Excel не знайдено колонку з назвою компанії ('Назва компанії')"
+            
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=DictCursor)
+            
+            for _, row in df.iterrows():
+                name = str(row['name']).strip() if pd.notnull(row['name']) else ''
+                if not name:
+                    continue
+                
+                interest_level = str(row['interest_level']).strip() if 'interest_level' in df.columns and pd.notnull(row['interest_level']) else 'не опрацьовано'
+                buyer_type = str(row['buyer_type']).strip() if 'buyer_type' in df.columns and pd.notnull(row['buyer_type']) else ''
+                brands = str(row['brands']).strip() if 'brands' in df.columns and pd.notnull(row['brands']) else ''
+                website = str(row['website']).strip() if 'website' in df.columns and pd.notnull(row['website']) else ''
+                country = str(row['country']).strip() if 'country' in df.columns and pd.notnull(row['country']) else ''
+                address = str(row['address']).strip() if 'address' in df.columns and pd.notnull(row['address']) else ''
+                
+                contact_person = str(row['contact_person']).strip() if 'contact_person' in df.columns and pd.notnull(row['contact_person']) else ''
+                position = str(row['position']).strip() if 'position' in df.columns and pd.notnull(row['position']) else ''
+                phone = str(row['phone']).strip() if 'phone' in df.columns and pd.notnull(row['phone']) else ''
+                email = str(row['email']).strip() if 'email' in df.columns and pd.notnull(row['email']) else ''
+                
+                contact_person_2 = str(row['contact_person_2']).strip() if 'contact_person_2' in df.columns and pd.notnull(row['contact_person_2']) else ''
+                position_2 = str(row['position_2']).strip() if 'position_2' in df.columns and pd.notnull(row['position_2']) else ''
+                phone_2 = str(row['phone_2']).strip() if 'phone_2' in df.columns and pd.notnull(row['phone_2']) else ''
+                email_2 = str(row['email_2']).strip() if 'email_2' in df.columns and pd.notnull(row['email_2']) else ''
+                
+                next_event_date = str(row['next_event_date']).strip() if 'next_event_date' in df.columns and pd.notnull(row['next_event_date']) else ''
+                next_event_type = str(row['next_event_type']).strip() if 'next_event_type' in df.columns and pd.notnull(row['next_event_type']) else ''
+                
+                cursor.execute("SELECT id FROM clients WHERE LOWER(name) = LOWER(%s)", (name,))
+                existing = cursor.fetchone()
+                
+                if existing:
+                    cursor.execute(
+                        """UPDATE clients SET country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s,
+                                              website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s,
+                                              phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s WHERE id=%s""",
+                        (country, address, contact_person, position, phone, email, website, buyer_type, brands,
+                         contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, existing['id'])
+                    )
+                else:
+                    cursor.execute(
+                        """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
+                                               contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                        (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
+                         contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type)
+                    )
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+        except Exception as e:
+            return f"Помилка при обробці файлу: {str(e)}"
+            
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
