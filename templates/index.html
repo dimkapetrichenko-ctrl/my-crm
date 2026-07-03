@@ -39,8 +39,11 @@
             </div>
 
             <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white py-2">
+                <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold">📊 Аналітика бази</h6>
+                    {% if interest_filter or country_filter or search_query %}
+                        <a href="{{ url_for('index') }}" class="btn btn-xs btn-danger py-0 px-1.5 fw-bold" style="font-size: 0.72rem; border-radius: 3px;">❌ Скинути</a>
+                    {% endif %}
                 </div>
                 <div class="card-body p-3" style="font-size: 0.9rem; max-height: 78vh; overflow-y: auto;">
                     <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
@@ -377,7 +380,7 @@
                             <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
                         </div>
                         <div class="col-12 bg-light p-2 rounded border">
-                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅  Планування першої дії (необов'язково)</h6>
+                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅 Планування першої дії (необов'язково)</h6>
                             <div class="row g-2">
                                 <div class="col-md-6">
                                     <input type="date" name="next_event_date" class="form-control form-control-sm">
