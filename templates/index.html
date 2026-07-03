@@ -71,10 +71,10 @@
                     </div>
 
                     <div class="mb-3">
-                        <div class="fw-bold text-muted small text-uppercase mb-2">💼 Сг сегменти (Типи):</div>
+                        <div class="fw-bold text-muted small text-uppercase mb-2">💼 Тип клієнта:</div>
                         <div class="d-flex flex-column gap-1.5" style="max-height: 20vh; overflow-y: auto; padding-right: 2px;">
                             {% for row in buyer_type_stats %}
-                            <div class="d-flex justify-content-between align-items-center px-2 py-1.5 bg-white border rounded shadow-xs">
+                            <a href="{{ url_for('index', search=row[0], interest=interest_filter, country=country_filter) }}" class="d-flex justify-content-between align-items-center px-2 py-1.5 bg-white border rounded text-decoration-none text-dark shadow-xs">
                                 <span class="text-truncate" style="max-width: 170px;">
                                     {% if row[0] == 'Дилер сг техніки' %}🚜
                                     {% elif row[0] == 'інтернет-магазин' or row[0] == 'интернет-магазин' %}🛒
@@ -87,7 +87,7 @@
                                     {{ row[0] }}
                                 </span>
                                 <span class="badge bg-info text-dark rounded-pill fw-bold">{{ row[1] }}</span>
-                            </div>
+                            </a>
                             {% endfor %}
                         </div>
                     </div>
