@@ -123,7 +123,7 @@ def index():
     
     conn = get_db_connection()
     
-    # Автоматичний переклад країн та скидання статусів
+    # Автоматичний переклад країн та налаштування статусів
     with conn.cursor() as fix_cursor:
         fix_cursor.execute("""
             UPDATE clients 
@@ -157,7 +157,7 @@ def index():
     countries = [row[0] for row in country_cursor.fetchall()]
     country_cursor.close()
     
-    # СТАТИСТИКА (завжди по всій базі)
+    # СТАТИСТИКА БАЗИ (рахується завжди по всьому масиву)
     stats_cursor = conn.cursor()
     stats_cursor.execute("SELECT COUNT(*) FROM clients")
     total_clients = stats_cursor.fetchone()[0]
@@ -173,8 +173,12 @@ def index():
             
     stats_cursor.execute("SELECT country, COUNT(*) FROM clients WHERE country IS NOT NULL AND country != '' GROUP BY country ORDER BY COUNT(*) DESC")
     country_stats = stats_cursor.fetchall()
+
+    # СТАТИСТИКА ПО ТИПАХ КЛІЄНТІВ
+    stats_cursor.execute("SELECT buyer_type, COUNT(*) FROM clients WHERE buyer_type IS NOT NULL AND buyer_type != 'не вказано' AND buyer_type != '' GROUP BY buyer_type ORDER BY COUNT(*) DESC")
+    buyer_type_stats = stats_cursor.fetchall()
     
-    # ОКРЕМИЙ НЕЗАЛЕЖНИЙ ЗБІР ДАНИХ СУТО ДЛЯ КАЛЕНДАРЯ (БЕЗ ФІЛЬТРІВ)
+    # НЕЗАЛЕЖНИЙ ЗБІР ДАНИХ ДЛЯ КАЛЕНДАРЯ
     cal_cursor = conn.cursor(cursor_factory=DictCursor)
     cal_cursor.execute("SELECT id, name, country, contact_person, phone, next_event_date, next_event_type FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != ''")
     all_raw_cal = cal_cursor.fetchall()
@@ -195,7 +199,7 @@ def index():
         })
     cal_cursor.close()
     
-    # ВИБІРКА КЛІЄНТІВ ДЛЯ ТАБЛИЦІ (З УРАХУВАННЯМ ФІЛЬТРІВ)
+    # ВИБІРКА ДЛЯ ГОЛОВНОЇ ТАБЛИЦІ (З ФІЛЬТРАМИ)
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = """
         SELECT c.*, 
@@ -259,6 +263,7 @@ def index():
         total_clients=total_clients,
         interest_stats=interest_stats,
         country_stats=country_stats,
+        buyer_type_stats=buyer_type_stats,
         json_clients=json_clients,
         json_busy_dates=json_busy_dates,
         today_date=today_str
