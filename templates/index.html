@@ -6,7 +6,7 @@
         <div class="card shadow-sm bg-dark text-white">
             <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center">
                 <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋 Загальний список клієнтів</button>
-                <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
+                <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-warning fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
             </div>
         </div>
@@ -96,34 +96,34 @@
         <div class="col-md-9">
             <div class="card shadow-sm" style="max-height: 72vh; overflow-y: auto; border: 2px solid #6c757d;">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                    <table class="table table-bordered table-sm table-hover align-middle mb-0" style="font-size: 0.82rem; table-layout: fixed; width: 100%;">
                         <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
                             <tr>
-                                <th>Компанія</th>
-                                <th>Тип клієнта</th>
+                                <th style="width: 25%;">Компанія</th>
+                                <th style="width: 14%;">Тип клієнта</th>
                                 <th style="width: 10%;">Країна</th>
-                                <th>Ступінь зацікавленості</th>
-                                <th>Реєстрація на сайті</th>
-                                <th style="width: 13%;">Остання подія</th>
-                                <th style="width: 15%;">Наступна подія</th>
-                                <th style="width: 8%;">Дія</th>
+                                <th style="width: 13%; text-align: center;">Зацікавленість</th>
+                                <th style="width: 9%; text-align: center;">Сайт</th>
+                                <th style="width: 11%;">Остання подія</th>
+                                <th style="width: 12%;">Наступна подія</th>
+                                <th style="width: 6%; text-align: center;">Дія</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for client in clients %}
                             <tr style="{% if client.next_event_date == today_date %}background-color: #fff3cd !important; font-weight: 500; border: 2px solid #ffc107;{% elif loop.index0 % 2 == 1 %}background-color: #e9ecef;{% else %}background-color: #ffffff;{% endif %} border-bottom: 1.5px solid #6c757d;">
-                                <td style="background-color: inherit;">
-                                    <strong style="font-size: 0.95rem; color: #111;">{{ client.name }}</strong>
+                                <td class="text-truncate" style="background-color: inherit; max-width: 0; padding: 5px;">
+                                    <strong style="font-size: 0.88rem; color: #111;" title="{{ client.name }}">{{ client.name }}</strong>
                                     {% if client.website %}
                                         <br>
-                                        <a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-truncate d-inline-block text-decoration-none small text-primary" style="max-width: 150px; font-size: 0.75rem;">
+                                        <a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-truncate text-decoration-none small text-primary" style="max-width: 95%; font-size: 0.72rem; display: inline-block;">
                                             🔗 {{ client.website | replace('https://','') | replace('http://','') | replace('www.','') }}
                                         </a>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit;">
+                                <td style="background-color: inherit; padding: 5px;">
                                     {% if client.buyer_type and client.buyer_type != 'не вказано' %}
-                                        <span class="badge bg-info text-dark fw-bold" style="font-size: 0.75rem; padding: 4px 6px;">
+                                        <span class="badge bg-info text-dark" style="font-size: 0.72rem; padding: 3px 5px; white-space: normal; display: inline-block; text-align: left; width: 100%;">
                                             {% if client.buyer_type == 'Дилер сг техніки' %}🚜
                                             {% elif client.buyer_type == 'інтернет-магазин' or client.buyer_type == 'интернет-магазин' %}🛒
                                             {% elif client.buyer_type == 'гуртовий клієнт' %}📦
@@ -136,35 +136,35 @@
                                         <span class="text-muted small">-</span>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit;"><span class="badge bg-secondary">📍 {{ client.country or '-' }}</span></td>
-                                <td style="background-color: inherit; text-align: center;">
+                                <td style="background-color: inherit; padding: 5px;"><span class="badge bg-secondary text-truncate d-inline-block" style="max-width: 100%;">📍 {{ client.country or '-' }}</span></td>
+                                <td style="background-color: inherit; text-align: center; padding: 5px;">
                                     {% if client.interest_level == 'зацікавленість' %}
-                                        <span class="badge bg-success w-100 py-1.5" style="font-size: 0.75rem;">🟢 зацікавленість</span>
+                                        <span class="badge bg-success w-100 py-1" style="font-size: 0.72rem;">🟢 Висока</span>
                                     {% elif client.interest_level == 'середня зацікавленість' %}
-                                        <span class="badge bg-warning text-dark w-100 py-1.5" style="font-size: 0.75rem;">💛 середня зацікавленість</span>
+                                        <span class="badge bg-warning text-dark w-100 py-1" style="font-size: 0.72rem;">💛 Середня</span>
                                     {% elif client.interest_level == 'немає зацікавленості' %}
-                                        <span class="badge bg-primary w-100 py-1.5" style="font-size: 0.75rem;">🔵 немає зацікавленості</span>
+                                        <span class="badge bg-primary w-100 py-1" style="font-size: 0.72rem;">🔵 Немає</span>
                                     {% else %}
-                                        <span class="badge bg-transparent text-secondary border border-secondary w-100 py-1" style="font-size: 0.75rem; font-weight: 600;">⚪ не опрацьовано</span>
+                                        <span class="badge bg-transparent text-secondary border border-secondary w-100 py-0.5" style="font-size: 0.72rem; font-weight: 600;">⚪ Не опр.</span>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; text-align: center;">
+                                <td style="background-color: inherit; text-align: center; padding: 5px;">
                                     {% if client.mayer_reg == 'Так' %}
-                                        <span class="badge bg-success text-white fw-bold px-3 py-1.5" style="font-size: 0.75rem;">🌐 Так</span>
+                                        <span class="badge bg-success text-white fw-bold px-2 py-1" style="font-size: 0.72rem;">🌐 Так</span>
                                     {% else %}
-                                        <span class="badge bg-transparent text-muted border border-secondary px-3 py-1" style="font-size: 0.75rem; font-weight: 500;">🔒 Ні</span>
+                                        <span class="badge bg-transparent text-muted border border-secondary px-2 py-0.5" style="font-size: 0.72rem; font-weight: 500;">🔒 Ні</span>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit;">{% if client.last_activity %}<span class="badge bg-dark font-monospace" style="font-size: 0.75rem;">🕒 {{ client.last_activity }}</span>{% else %}<small class="text-muted">немає дій</small>{% endif %}</td>
-                                <td style="background-color: inherit;">
+                                <td style="background-color: inherit; padding: 5px;">{% if client.last_activity %}<span class="badge bg-dark font-monospace" style="font-size: 0.72rem; padding: 3px 4px;">🕒 {{ client.last_activity | replace('2026-', '') }}</span>{% else %}<small class="text-muted">немає</small>{% endif %}</td>
+                                <td style="background-color: inherit; padding: 5px;">
                                     {% if client.next_event_date %}
-                                        <div class="fw-bold text-primary small">📅 {{ client.next_event_date }}</div>
-                                        <span class="badge border border-primary text-primary text-capitalize px-1 py-0" style="font-size: 0.7rem;">
-                                            {% if client.next_event_type == 'call' %}📞 Дзвінок{% elif client.next_event_type == 'visit' %}🚗 Візит{% elif client.next_event_type == 'email' %}✉️ Лист{% else %}{{ client.next_event_type }}{% endif %}
+                                        <div class="fw-bold text-primary" style="font-size: 0.75rem;">📅 {{ client.next_event_date | replace('2026-', '') }}</div>
+                                        <span class="badge border border-primary text-primary px-1 py-0" style="font-size: 0.68rem;">
+                                            {% if client.next_event_type == 'call' %}📞 Дзв.{% elif client.next_event_type == 'visit' %}🚗 Віз.{% elif client.next_event_type == 'email' %}✉️ Лист{% else %}{{ client.next_event_type }}{% endif %}
                                         </span>
-                                    {% else %}<small class="text-muted">не заплановано</small>{% endif %}
+                                    {% else %}<small class="text-muted">ні</small>{% endif %}
                                 </td>
-                                <td style="background-color: inherit;"><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-outline-primary fw-bold" style="font-size: 0.8rem; padding: 2px 5px;">Картка</a></td>
+                                <td style="background-color: inherit; text-align: center; padding: 5px;"><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-xs btn-outline-primary fw-bold" style="font-size: 0.72rem; padding: 1px 4px;">Картка</a></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -273,7 +273,6 @@
             </div>
             <form action="{{ url_for('add_client') }}" method="POST" class="mb-0">
                 <div class="modal-body p-3" style="font-size: 0.85rem; max-height: 70vh; overflow-y: auto;">
-                    
                     <div class="row g-2">
                         <div class="col-md-6">
                             <label class="form-label mb-0"><b>Назва компанії *</b></label>
@@ -288,7 +287,6 @@
                                 <option value="зацікавленість">Зелений — висока</option>
                             </select>
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label mb-0"><b>Реєстрація на сайті MAYER PRO</b></label>
                             <select name="mayer_reg" class="form-select form-select-sm">
@@ -309,7 +307,6 @@
                                 <option value="Дилер сг техніки">Дилер сг техніки</option>
                             </select>
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label mb-0">Країна</label>
                             <input type="text" name="country" class="form-control form-control-sm" placeholder="Наприклад: Польща або Україна">
@@ -322,7 +319,6 @@
                             <label class="form-label mb-0">Адреса</label>
                             <input type="text" name="address" class="form-control form-control-sm" placeholder="Повна юридична або фізична адреса">
                         </div>
-
                         <div class="col-12">
                             <label class="form-label mb-0"><b>Пріоритетні бренди</b></label>
                             <div class="p-2 border rounded bg-light d-flex flex-wrap gap-2" style="font-size: 0.8rem;">
@@ -352,7 +348,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-md-6 border-end">
                             <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №1</h6>
                             <input type="text" name="contact_person" class="form-control form-control-sm mb-1" placeholder="ПІБ">
@@ -360,7 +355,6 @@
                             <input type="text" name="phone" class="form-control form-control-sm mb-1" placeholder="Телефон">
                             <input type="email" name="email" class="form-control form-control-sm" placeholder="Email">
                         </div>
-
                         <div class="col-md-6">
                             <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №2</h6>
                             <input type="text" name="contact_person_2" class="form-control form-control-sm mb-1" placeholder="ПІБ">
@@ -368,7 +362,6 @@
                             <input type="text" name="phone_2" class="form-control form-control-sm mb-1" placeholder="Телефон">
                             <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
                         </div>
-
                         <div class="col-12 bg-light p-2 rounded border">
                             <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅 Планування першої дії (необов'язково)</h6>
                             <div class="row g-2">
