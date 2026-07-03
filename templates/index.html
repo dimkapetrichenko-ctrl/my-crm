@@ -86,36 +86,36 @@
         </div>
 
         <div class="col-md-9">
-            <div class="card shadow-sm" style="max-height: 72vh; overflow-y: auto; border: 2px solid #6c757d;">
+            <div class="card shadow-sm" style="max-height: 82vh; overflow-y: auto; border: 2px solid #6c757d;">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-sm table-hover align-middle mb-0" style="font-size: 0.84rem; table-layout: fixed; width: 100%;">
-                        <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
+                    <table class="table table-bordered table-sm table-hover align-middle mb-0" style="font-size: 0.84rem; width: 100%;">
+                        <thead class="table-dark" style="position: sticky; top: 0; z-index: 5; white-space: nowrap;">
                             <tr>
-                                <th style="width: 20%;">Компанія</th>
-                                <th style="width: 17%;">Тип клієнта</th>
-                                <th style="width: 11%;">Країна</th>
-                                <th style="width: 14%; text-align: center;">Зацікавленість</th>
-                                <th style="width: 8%; text-align: center;">Сайт</th>
-                                <th style="width: 11%;">Остання подія</th>
-                                <th style="width: 13%;">Наступна подія</th>
-                                <th style="width: 6%; text-align: center;">Дія</th>
+                                <th>Компанія</th>
+                                <th>Тип клієнта</th>
+                                <th>Країна</th>
+                                <th style="text-align: center;">Зацікавленість</th>
+                                <th style="text-align: center;">Сайт</th>
+                                <th>Остання подія</th>
+                                <th>Наступна подія</th>
+                                <th style="text-align: center;">Дія</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for client in clients %}
                             <tr style="{% if client.next_event_date == today_date %}background-color: #fff3cd !important; font-weight: 500; border: 2px solid #ffc107;{% elif loop.index0 % 2 == 1 %}background-color: #e9ecef;{% else %}background-color: #ffffff;{% endif %} border-bottom: 1.5px solid #6c757d;">
-                                <td class="text-truncate" style="background-color: inherit; max-width: 0; padding: 6px 6px;">
-                                    <strong style="font-size: 0.90rem; color: #111;" title="{{ client.name }}">{{ client.name }}</strong>
+                                <td style="background-color: inherit; padding: 6px 8px; min-width: 150px;">
+                                    <strong style="font-size: 0.90rem; color: #111;">{{ client.name }}</strong>
                                     {% if client.website %}
                                         <br>
-                                        <a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-truncate text-decoration-none small text-primary" style="max-width: 95%; font-size: 0.74rem; display: inline-block;">
+                                        <a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-decoration-none small text-primary" style="font-size: 0.74rem; display: inline-block;">
                                             🔗 {{ client.website | replace('https://','') | replace('http://','') | replace('www.','') }}
                                         </a>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; padding: 6px 6px;">
+                                <td style="background-color: inherit; padding: 6px 6px; min-width: 120px;">
                                     {% if client.buyer_type and client.buyer_type != 'не вказано' %}
-                                        <span class="badge bg-info text-dark" style="font-size: 0.74rem; padding: 4px 5px; white-space: normal; display: inline-block; text-align: left; width: 100%;">
+                                        <span class="badge bg-info text-dark" style="font-size: 0.72rem; padding: 4px 6px; white-space: normal; display: block; text-align: left; line-height: 1.2;">
                                             {% if client.buyer_type == 'Дилер сг техніки' %}🚜
                                             {% elif client.buyer_type == 'інтернет-магазин' or client.buyer_type == 'интернет-магазин' %}🛒
                                             {% elif client.buyer_type == 'гуртовий клієнт' %}📦
@@ -128,35 +128,35 @@
                                         <span class="text-muted small">-</span>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; padding: 6px 6px;"><span class="badge bg-secondary text-truncate d-inline-block" style="max-width: 100%; font-size: 0.76rem;">📍 {{ client.country or '-' }}</span></td>
-                                <td style="background-color: inherit; text-align: center; padding: 6px 6px;">
+                                <td style="background-color: inherit; padding: 6px 6px; white-space: nowrap;"><span class="badge bg-secondary" style="font-size: 0.76rem;">📍 {{ client.country or '-' }}</span></td>
+                                <td style="background-color: inherit; text-align: center; padding: 6px 6px; white-space: nowrap;">
                                     {% if client.interest_level == 'зацікавленість' %}
-                                        <span class="badge bg-success w-100 py-1" style="font-size: 0.74rem;">🟢 Висока</span>
+                                        <span class="badge bg-success px-2 py-1" style="font-size: 0.74rem; display: inline-block;">🟢 Висока</span>
                                     {% elif client.interest_level == 'середня зацікавленість' %}
-                                        <span class="badge bg-warning text-dark w-100 py-1" style="font-size: 0.74rem;">💛 Середня</span>
+                                        <span class="badge bg-warning text-dark px-2 py-1" style="font-size: 0.74rem; display: inline-block;">💛 Середня</span>
                                     {% elif client.interest_level == 'немає зацікавленості' %}
-                                        <span class="badge bg-primary w-100 py-1" style="font-size: 0.74rem;">🔵 Немає</span>
+                                        <span class="badge bg-primary px-2 py-1" style="font-size: 0.74rem; display: inline-block;">🔵 Немає</span>
                                     {% else %}
-                                        <span class="badge bg-transparent text-secondary border border-secondary w-100 py-0.5" style="font-size: 0.74rem; font-weight: 600;">⚪ Не опр.</span>
+                                        <span class="badge bg-transparent text-secondary border border-secondary px-2 py-0.5" style="font-size: 0.74rem; font-weight: 600; display: inline-block;">⚪ Не опр.</span>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; text-align: center; padding: 6px 6px;">
+                                <td style="background-color: inherit; text-align: center; padding: 6px 6px; white-space: nowrap;">
                                     {% if client.mayer_reg == 'Так' %}
                                         <span class="badge bg-success text-white fw-bold px-2 py-1" style="font-size: 0.74rem;">🌐 Так</span>
                                     {% else %}
                                         <span class="badge bg-transparent text-muted border border-secondary px-2 py-0.5" style="font-size: 0.74rem; font-weight: 500;">🔒 Ні</span>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; padding: 6px 6px;">{% if client.last_activity %}<span class="badge bg-dark font-monospace" style="font-size: 0.74rem; padding: 3px 4px;">🕒 {{ client.last_activity | replace('2026-', '') }}</span>{% else %}<small class="text-muted">немає</small>{% endif %}</td>
-                                <td style="background-color: inherit; padding: 6px 6px;">
+                                <td style="background-color: inherit; padding: 6px 6px; white-space: nowrap;">{% if client.last_activity %}<span class="badge bg-dark font-monospace" style="font-size: 0.74rem; padding: 3px 4px;">🕒 {{ client.last_activity | replace('2026-', '') }}</span>{% else %;<small class="text-muted">немає</small>{% endif %}</td>
+                                <td style="background-color: inherit; padding: 6px 6px; white-space: nowrap;">
                                     {% if client.next_event_date %}
                                         <div class="fw-bold text-primary" style="font-size: 0.76rem;">📅 {{ client.next_event_date | replace('2026-', '') }}</div>
                                         <span class="badge border border-primary text-primary px-1 py-0" style="font-size: 0.68rem;">
                                             {% if client.next_event_type == 'call' %}📞 Дзв.{% elif client.next_event_type == 'visit' %}🚗 Віз.{% elif client.next_event_type == 'email' %}✉️ Лист{% else %}{{ client.next_event_type }}{% endif %}
                                         </span>
-                                    {% else %}<small class="text-muted">ні</small>{% endif %}
+                                    {% else %;<small class="text-muted">ні</small>{% endif %}
                                 </td>
-                                <td style="background-color: inherit; text-align: center; padding: 6px 6px;"><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-xs btn-outline-primary fw-bold" style="font-size: 0.74rem; padding: 2px 4px;">Картка</a></td>
+                                <td style="background-color: inherit; text-align: center; padding: 6px 6px; white-space: nowrap;"><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-xs btn-outline-primary fw-bold" style="font-size: 0.74rem; padding: 2px 4px;">Картка</a></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -172,7 +172,7 @@
         <div class="card-header bg-warning text-dark fw-bold py-2">
             🚀 Завдання на сьогодні ({{ today_date }})
         </div>
-        <div class="table-responsive" style="max-height: 72vh; overflow-y: auto;">
+        <div class="table-responsive" style="max-height: 82vh; overflow-y: auto;">
             <table class="table table-bordered table-hover align-middle mb-0" style="font-size: 0.95rem;">
                 <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
                     <tr>
@@ -246,7 +246,7 @@
         <div class="col-md-7">
             <div class="card shadow-sm border-primary">
                 <div class="card-header bg-primary text-white py-2 fw-bold" id="selected-date-title">
-                    🎯 Оберіть дату v календарі ліворуч
+                    🎯 Оберіть дату в календарі ліворуч
                 </div>
                 <div class="card-body p-0" id="calendar-tasks-box">
                     <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у календарі, щоб побачити заплановані перемовини.</div>
@@ -419,7 +419,7 @@ function switchWindow(targetWinId) {
     }
 }
 
-const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Люпень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
 function renderCalendar() {
     const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
