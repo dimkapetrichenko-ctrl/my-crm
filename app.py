@@ -157,7 +157,7 @@ def index():
     countries = [row[0] for row in country_cursor.fetchall()]
     country_cursor.close()
     
-    # СТАТИСТИКА БАЗИ (рахується завжди по всьому масиву)
+    # СТАТИСТИКА ПО ВСІЙ БАЗІ
     stats_cursor = conn.cursor()
     stats_cursor.execute("SELECT COUNT(*) FROM clients")
     total_clients = stats_cursor.fetchone()[0]
@@ -174,9 +174,9 @@ def index():
     stats_cursor.execute("SELECT country, COUNT(*) FROM clients WHERE country IS NOT NULL AND country != '' GROUP BY country ORDER BY COUNT(*) DESC")
     country_stats = stats_cursor.fetchall()
 
-    # СТАТИСТИКА ПО ТИПАХ КЛІЄНТІВ
     stats_cursor.execute("SELECT buyer_type, COUNT(*) FROM clients WHERE buyer_type IS NOT NULL AND buyer_type != 'не вказано' AND buyer_type != '' GROUP BY buyer_type ORDER BY COUNT(*) DESC")
     buyer_type_stats = stats_cursor.fetchall()
+    stats_cursor.close()
     
     # НЕЗАЛЕЖНИЙ ЗБІР ДАНИХ ДЛЯ КАЛЕНДАРЯ
     cal_cursor = conn.cursor(cursor_factory=DictCursor)
@@ -199,7 +199,7 @@ def index():
         })
     cal_cursor.close()
     
-    # ВИБІРКА ДЛЯ ГОЛОВНОЇ ТАБЛИЦІ (З ФІЛЬТРАМИ)
+    # ВИБІРКА ДЛЯ ГОЛОВНОЇ ТАБЛИЦІ (З УРАХУВАННЯМ ФІЛЬТРІВ)
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = """
         SELECT c.*, 
@@ -210,8 +210,9 @@ def index():
     params = []
     
     if search_query:
-        sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s))"
-        params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
+        # ДОДАНО ШУКАННЯ ЗА ТИПОМ КЛІЄНТА (buyer_type) У SQL Запит
+        sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s) OR LOWER(c.buyer_type) LIKE LOWER(%s))"
+        params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
         
     if interest_filter:
         sql += " AND c.interest_level = %s"
