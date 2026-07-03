@@ -31,52 +31,52 @@
     </div>
 
     <div class="row g-3">
-        <div class="col-md-2 mb-3">
+        <div class="col-md-3 mb-3">
             <div class="d-grid gap-2 mb-3">
-                <button type="button" class="btn btn-danger fw-bold py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#addClientModal" style="font-size: 0.85rem;">
+                <button type="button" class="btn btn-danger fw-bold py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#addClientModal">
                     ➕ Новий клієнт
                 </button>
             </div>
 
             <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white py-1.5 px-2">
-                    <h6 class="mb-0 fw-bold" style="font-size: 0.85rem;">📊 Аналітика</h6>
+                <div class="card-header bg-dark text-white py-2">
+                    <h6 class="mb-0 fw-bold">📊 Аналітика бази</h6>
                 </div>
-                <div class="card-body p-2" style="font-size: 0.8rem;">
-                    <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
-                        <span class="fw-bold text-secondary">Всього:</span>
-                        <span class="badge bg-dark px-2 py-1">{{ total_clients }}</span>
+                <div class="card-body p-3" style="font-size: 0.9rem;">
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span class="fw-bold text-secondary">👥 Всього контрагентів:</span>
+                        <span class="badge bg-dark px-2.5 py-1.5" style="font-size: 0.95rem;">{{ total_clients }}</span>
                     </div>
                     
                     <div class="mb-3">
-                        <div class="fw-bold text-muted small text-uppercase mb-1" style="font-size: 0.72rem;">Статуси:</div>
-                        <div class="d-flex flex-column gap-1">
-                            <a href="{{ url_for('index', interest='зацікавленість', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-1.5 bg-light border-start border-success border-3 rounded text-decoration-none text-dark shadow-xs">
-                                <span>🟢 Висока</span>
-                                <b class="text-success">{{ interest_stats['зацікавленість'] }}</b>
+                        <div class="fw-bold text-muted small text-uppercase mb-2">🔍 Статуси зацікавленості:</div>
+                        <div class="d-flex flex-column gap-2">
+                            <a href="{{ url_for('index', interest='зацікавленість', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-success border-3 rounded text-decoration-none text-dark shadow-xs">
+                                <span>🟢 Висока зацікавленість</span>
+                                <b class="text-success fs-6">{{ interest_stats['зацікавленість'] }}</b>
                             </a>
-                            <a href="{{ url_for('index', interest='середня зацікавленість', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-1.5 bg-light border-start border-warning border-3 rounded text-decoration-none text-dark shadow-xs">
-                                <span>💛 Сер.</span>
-                                <b class="text-warning">{{ interest_stats['середня зацікавленість'] }}</b>
+                            <a href="{{ url_for('index', interest='середня зацікавленість', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-warning border-3 rounded text-decoration-none text-dark shadow-xs">
+                                <span>💛 Середня зацікавленість</span>
+                                <b class="text-dark fs-6">{{ interest_stats['середня зацікавленість'] }}</b>
                             </a>
-                            <a href="{{ url_for('index', interest='немає зацікавленості', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-1.5 bg-light border-start border-primary border-3 rounded text-decoration-none text-dark shadow-xs">
-                                <span>🔵 Немає</span>
-                                <b class="text-primary">{{ interest_stats['немає зацікавленості'] }}</b>
+                            <a href="{{ url_for('index', interest='немає зацікавленості', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-primary border-3 rounded text-decoration-none text-dark shadow-xs">
+                                <span>🔵 Немає зацікавленості</span>
+                                <b class="text-primary fs-6">{{ interest_stats['немає зацікавленості'] }}</b>
                             </a>
-                            <a href="{{ url_for('index', interest='не опрацьовано', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-1.5 bg-light border-start border-secondary border-3 rounded text-decoration-none text-dark shadow-xs">
-                                <span>⚪ Не опр.</span>
-                                <b class="text-secondary">{{ interest_stats['не опрацьовано'] }}</b>
+                            <a href="{{ url_for('index', interest='не опрацьовано', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-secondary border-3 rounded text-decoration-none text-dark shadow-xs">
+                                <span>⚪ Не опрацьовано</span>
+                                <b class="text-secondary fs-6">{{ interest_stats['не опрацьовано'] }}</b>
                             </a>
                         </div>
                     </div>
 
                     <div>
-                        <div class="fw-bold text-muted small text-uppercase mb-1" style="font-size: 0.72rem;">Країни:</div>
-                        <div class="d-flex flex-column gap-1" style="max-height: 25vh; overflow-y: auto; padding-right: 1px;">
+                        <div class="fw-bold text-muted small text-uppercase mb-2">🗺️ Географія (Країни):</div>
+                        <div class="d-flex flex-column gap-1.5" style="max-height: 25vh; overflow-y: auto; padding-right: 2px;">
                             {% for row in country_stats %}
-                            <a href="{{ url_for('index', country=row[0], interest=interest_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-1 bg-white border rounded text-decoration-none text-dark shadow-xs" style="font-size: 0.78rem;">
-                                <span class="text-truncate" style="max-width: 100px;">📍 {{ row[0] }}</span>
-                                <span class="badge bg-secondary rounded-pill" style="font-size: 0.7rem;">{{ row[1] }}</span>
+                            <a href="{{ url_for('index', country=row[0], interest=interest_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center px-2 py-1.5 bg-white border rounded text-decoration-none text-dark shadow-xs">
+                                <span class="text-truncate" style="max-width: 150px;">📍 {{ row[0] }}</span>
+                                <span class="badge bg-secondary rounded-pill">{{ row[1] }}</span>
                             </a>
                             {% endfor %}
                         </div>
@@ -85,37 +85,37 @@
             </div>
         </div>
 
-        <div class="col-md-10">
+        <div class="col-md-9">
             <div class="card shadow-sm" style="max-height: 72vh; overflow-y: auto; border: 2px solid #6c757d;">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-sm table-hover align-middle mb-0" style="font-size: 0.85rem; table-layout: fixed; width: 100%;">
+                    <table class="table table-bordered table-sm table-hover align-middle mb-0" style="font-size: 0.84rem; table-layout: fixed; width: 100%;">
                         <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
                             <tr>
-                                <th style="width: 28%;">Компанія</th>
-                                <th style="width: 15%;">Тип клієнта</th>
-                                <th style="width: 10%;">Країна</th>
-                                <th style="width: 12%; text-align: center;">Зацікавленість</th>
-                                <th style="width: 7%; text-align: center;">Сайт</th>
+                                <th style="width: 20%;">Компанія</th>
+                                <th style="width: 17%;">Тип клієнта</th>
+                                <th style="width: 11%;">Країна</th>
+                                <th style="width: 14%; text-align: center;">Зацікавленість</th>
+                                <th style="width: 8%; text-align: center;">Сайт</th>
                                 <th style="width: 11%;">Остання подія</th>
-                                <th style="width: 11%;">Наступна подія</th>
+                                <th style="width: 13%;">Наступна подія</th>
                                 <th style="width: 6%; text-align: center;">Дія</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for client in clients %}
                             <tr style="{% if client.next_event_date == today_date %}background-color: #fff3cd !important; font-weight: 500; border: 2px solid #ffc107;{% elif loop.index0 % 2 == 1 %}background-color: #e9ecef;{% else %}background-color: #ffffff;{% endif %} border-bottom: 1.5px solid #6c757d;">
-                                <td class="text-truncate" style="background-color: inherit; max-width: 0; padding: 6px 8px;">
-                                    <strong style="font-size: 0.92rem; color: #111;" title="{{ client.name }}">{{ client.name }}</strong>
+                                <td class="text-truncate" style="background-color: inherit; max-width: 0; padding: 6px 6px;">
+                                    <strong style="font-size: 0.90rem; color: #111;" title="{{ client.name }}">{{ client.name }}</strong>
                                     {% if client.website %}
                                         <br>
-                                        <a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-truncate text-decoration-none small text-primary" style="max-width: 95%; font-size: 0.75rem; display: inline-block;">
+                                        <a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-truncate text-decoration-none small text-primary" style="max-width: 95%; font-size: 0.74rem; display: inline-block;">
                                             🔗 {{ client.website | replace('https://','') | replace('http://','') | replace('www.','') }}
                                         </a>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; padding: 6px 8px;">
+                                <td style="background-color: inherit; padding: 6px 6px;">
                                     {% if client.buyer_type and client.buyer_type != 'не вказано' %}
-                                        <span class="badge bg-info text-dark" style="font-size: 0.75rem; padding: 4px 6px; white-space: normal; display: inline-block; text-align: left; width: 100%;">
+                                        <span class="badge bg-info text-dark" style="font-size: 0.74rem; padding: 4px 5px; white-space: normal; display: inline-block; text-align: left; width: 100%;">
                                             {% if client.buyer_type == 'Дилер сг техніки' %}🚜
                                             {% elif client.buyer_type == 'інтернет-магазин' or client.buyer_type == 'интернет-магазин' %}🛒
                                             {% elif client.buyer_type == 'гуртовий клієнт' %}📦
@@ -128,35 +128,35 @@
                                         <span class="text-muted small">-</span>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; padding: 6px 8px;"><span class="badge bg-secondary text-truncate d-inline-block" style="max-width: 100%; font-size: 0.78rem;">📍 {{ client.country or '-' }}</span></td>
-                                <td style="background-color: inherit; text-align: center; padding: 6px 8px;">
+                                <td style="background-color: inherit; padding: 6px 6px;"><span class="badge bg-secondary text-truncate d-inline-block" style="max-width: 100%; font-size: 0.76rem;">📍 {{ client.country or '-' }}</span></td>
+                                <td style="background-color: inherit; text-align: center; padding: 6px 6px;">
                                     {% if client.interest_level == 'зацікавленість' %}
-                                        <span class="badge bg-success w-100 py-1.5" style="font-size: 0.75rem;">🟢 Висока</span>
+                                        <span class="badge bg-success w-100 py-1" style="font-size: 0.74rem;">🟢 Висока</span>
                                     {% elif client.interest_level == 'середня зацікавленість' %}
-                                        <span class="badge bg-warning text-dark w-100 py-1.5" style="font-size: 0.75rem;">💛 Середня</span>
+                                        <span class="badge bg-warning text-dark w-100 py-1" style="font-size: 0.74rem;">💛 Середня</span>
                                     {% elif client.interest_level == 'немає зацікавленості' %}
-                                        <span class="badge bg-primary w-100 py-1.5" style="font-size: 0.75rem;">🔵 Немає</span>
+                                        <span class="badge bg-primary w-100 py-1" style="font-size: 0.74rem;">🔵 Немає</span>
                                     {% else %}
-                                        <span class="badge bg-transparent text-secondary border border-secondary w-100 py-1" style="font-size: 0.75rem; font-weight: 600;">⚪ Не опр.</span>
+                                        <span class="badge bg-transparent text-secondary border border-secondary w-100 py-0.5" style="font-size: 0.74rem; font-weight: 600;">⚪ Не опр.</span>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; text-align: center; padding: 6px 8px;">
+                                <td style="background-color: inherit; text-align: center; padding: 6px 6px;">
                                     {% if client.mayer_reg == 'Так' %}
-                                        <span class="badge bg-success text-white fw-bold px-2 py-1.5" style="font-size: 0.75rem;">🌐 Так</span>
+                                        <span class="badge bg-success text-white fw-bold px-2 py-1" style="font-size: 0.74rem;">🌐 Так</span>
                                     {% else %}
-                                        <span class="badge bg-transparent text-muted border border-secondary px-2 py-1" style="font-size: 0.75rem; font-weight: 500;">🔒 Ні</span>
+                                        <span class="badge bg-transparent text-muted border border-secondary px-2 py-0.5" style="font-size: 0.74rem; font-weight: 500;">🔒 Ні</span>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; padding: 6px 8px;">{% if client.last_activity %}<span class="badge bg-dark font-monospace" style="font-size: 0.75rem; padding: 3px 5px;">🕒 {{ client.last_activity | replace('2026-', '') }}</span>{% else %}<small class="text-muted">немає</small>{% endif %}</td>
-                                <td style="background-color: inherit; padding: 6px 8px;">
+                                <td style="background-color: inherit; padding: 6px 6px;">{% if client.last_activity %}<span class="badge bg-dark font-monospace" style="font-size: 0.74rem; padding: 3px 4px;">🕒 {{ client.last_activity | replace('2026-', '') }}</span>{% else %}<small class="text-muted">немає</small>{% endif %}</td>
+                                <td style="background-color: inherit; padding: 6px 6px;">
                                     {% if client.next_event_date %}
-                                        <div class="fw-bold text-primary" style="font-size: 0.78rem;">📅 {{ client.next_event_date | replace('2026-', '') }}</div>
-                                        <span class="badge border border-primary text-primary px-1 py-0" style="font-size: 0.7rem;">
+                                        <div class="fw-bold text-primary" style="font-size: 0.76rem;">📅 {{ client.next_event_date | replace('2026-', '') }}</div>
+                                        <span class="badge border border-primary text-primary px-1 py-0" style="font-size: 0.68rem;">
                                             {% if client.next_event_type == 'call' %}📞 Дзв.{% elif client.next_event_type == 'visit' %}🚗 Віз.{% elif client.next_event_type == 'email' %}✉️ Лист{% else %}{{ client.next_event_type }}{% endif %}
                                         </span>
                                     {% else %}<small class="text-muted">ні</small>{% endif %}
                                 </td>
-                                <td style="background-color: inherit; text-align: center; padding: 6px 8px;"><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-xs btn-outline-primary fw-bold" style="font-size: 0.75rem; padding: 2px 5px;">Картка</a></td>
+                                <td style="background-color: inherit; text-align: center; padding: 6px 6px;"><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-xs btn-outline-primary fw-bold" style="font-size: 0.74rem; padding: 2px 4px;">Картка</a></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -246,7 +246,7 @@
         <div class="col-md-7">
             <div class="card shadow-sm border-primary">
                 <div class="card-header bg-primary text-white py-2 fw-bold" id="selected-date-title">
-                    🎯 Оберіть дату в календарі ліворуч
+                    🎯 Оберіть дату v календарі ліворуч
                 </div>
                 <div class="card-body p-0" id="calendar-tasks-box">
                     <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у календарі, щоб побачити заплановані перемовини.</div>
@@ -355,7 +355,7 @@
                             <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
                         </div>
                         <div class="col-12 bg-light p-2 rounded border">
-                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅  Планування першої дії (необов'язково)</h6>
+                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅 Планування першої дії (необов'язково)</h6>
                             <div class="row g-2">
                                 <div class="col-md-6">
                                     <input type="date" name="next_event_date" class="form-control form-control-sm">
@@ -419,7 +419,7 @@ function switchWindow(targetWinId) {
     }
 }
 
-const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Люпень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
 function renderCalendar() {
     const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
