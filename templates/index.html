@@ -80,7 +80,6 @@
                     <div>
                         <div class="fw-bold text-muted small text-uppercase mb-2">🗺️ Географія (Країни):</div>
                         <div class="d-flex flex-column gap-1.5" style="max-height: 22vh; overflow-y: auto; padding-right: 2px;">
-                            {% mapping_country = countries %}
                             {% for row in country_stats %}
                             <a href="{{ url_for('index', country=row[0], interest=interest_filter, search=search_query) }}" 
                                class="d-flex justify-content-between align-items-center small px-2 py-1.5 text-decoration-none text-dark border rounded shadow-xs {% if country_filter == row[0] %}bg-info fw-bold border-2 border-dark{% else %}bg-white{% endif %}" style="transition: 0.2s;">
