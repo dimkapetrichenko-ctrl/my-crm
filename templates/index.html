@@ -379,13 +379,26 @@
 </div>
 
 <script>
+const allClients = JSON.parse({{ json_clients | tojson | safe }});
+const busyDates = JSON.parse({{ json_busy_dates | tojson | safe }});
+
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth();
+
 function switchWindow(targetWinId) {
+    // 1. Ховаємо абсолютно всі вікна CRM
     document.querySelectorAll('.crm-window').forEach(win => win.style.display = 'none');
+    
+    // 2. Показуємо саме те вікно, на яке натиснули
     document.getElementById('window-' + targetWinId).style.display = 'block';
+    
+    // 3. Скидаємо стилі активності (робимо всі кнопки контурними)
     ['today-win', 'calendar-win', 'all-win', 'finance-win'].forEach(id => {
         let btn = document.getElementById('btn-' + id);
         if (btn) btn.className = "btn btn-md btn-outline-light fw-bold px-4";
     });
+    
+    // 4. Підсвічуємо поточну кнопку її фірмовим кольором
     let activeBtn = document.getElementById('btn-' + targetWinId);
     if (activeBtn) {
         if(targetWinId === 'today-win') activeBtn.className = "btn btn-md btn-warning fw-bold px-4 shadow";
@@ -394,20 +407,27 @@ function switchWindow(targetWinId) {
         if(targetWinId === 'finance-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-4 shadow";
     }
 }
+
 function openEditFinance(id, name, planned, month, actual, payDate) {
     document.getElementById('editFinanceClientName').innerText = name;
     document.getElementById('edit_planned_amount').value = planned;
     document.getElementById('edit_month_name').value = month;
     document.getElementById('edit_actual_amount').value = actual;
     document.getElementById('edit_payment_date').value = payDate;
+    
     document.getElementById('editFinanceForm').action = "/edit_finance_plan/" + id;
     document.getElementById('deleteFinanceForm').action = "/delete_finance_plan/" + id;
+    
     let editModal = new bootstrap.Modal(document.getElementById('editFinanceModal'));
     editModal.show();
 }
+
 window.onload = function() {
+    // Перевірка, чи ми повернулися з фінансового збереження
     const urlParams = new URLSearchParams(window.location.search);
-    if(urlParams.get('tab') === 'finance') { switchWindow('finance-win'); }
+    if(urlParams.get('tab') === 'finance') { 
+        switchWindow('finance-win'); 
+    }
 };
 </script>
 {% endblock %}
