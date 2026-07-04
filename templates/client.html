@@ -142,9 +142,11 @@
                     <div style="max-height: 52vh; overflow-y: auto; padding-right: 5px;">
                         {% for h in history %}
                         <div class="card mb-2 shadow-xs border-secondary">
-                            <div class="card-header p-1.5 bg-dark text-white d-flex justify-content-between style-font" style="font-size: 0.78rem;">
+                            <div class="card-header p-1.5 bg-dark text-white d-flex justify-content-between align-items-center" style="font-size: 0.78rem;">
                                 <span class="font-monospace">🕒 {{ h.date }}</span>
-                                <span class="badge bg-secondary">Запис №{{ h.id }}</span>
+                                <div>
+                                    <button class="btn btn-xs btn-outline-warning text-warning py-0 px-1.5 me-1 fw-bold" style="font-size: 0.7rem;" onclick="openEditNegModal('{{ h.id }}', `{{ h.result | replace('\"', '\\"') | replace('\n', '\\n') }}`)">✏️ Ред.</button>
+                                </div>
                             </div>
                             <div class="card-body p-2 bg-white text-dark" style="white-space: pre-wrap; font-size: 0.86rem;">{{ h.result }}</div>
                         </div>
@@ -159,5 +161,44 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="editNegModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark py-2">
+                <h5 class="modal-title fw-bold">✏️ Редагування запису розмови</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <form id="editNegForm" method="POST">
+                    <input type="hidden" name="client_id" value="{{ client.id }}">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Текст результату розмови:</label>
+                        <textarea id="edit_neg_result" name="result" class="form-control form-control-sm" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold shadow-sm">💾 Зберегти оновлений текст</button>
+                </form>
+                
+                <form id="deleteNegForm" method="POST" class="mt-2" onsubmit="return confirm('Ви впевнені, що хочете остаточно видалити цей коментар з історії?');">
+                    <input type="hidden" name="client_id" value="{{ client.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">❌ Видалити цей запис повністю</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openEditNegModal(id, currentText) {
+    document.getElementById('edit_neg_result').value = currentText;
+    
+    // Налаштовуємо динамічні action адреси для відправки форм на сервер
+    document.getElementById('editNegForm').action = "/edit_negotiation/" + id;
+    document.getElementById('deleteNegForm').action = "/delete_negotiation/" + id;
+    
+    let negModal = new bootstrap.Modal(document.getElementById('editNegModal'));
+    negModal.show();
+}
+</script>
 
 {% endblock %}
