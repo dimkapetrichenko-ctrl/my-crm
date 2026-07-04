@@ -206,12 +206,18 @@ def index():
     clients = []
     clients_js_list = []
     for row in raw_clients:
+        # Гарантоване перетворення дат на рядки, щоб уникнути None помилок при replace
+        clean_last = str(row['last_activity']) if row['last_activity'] else ''
+        clean_next = str(row['next_event_date']) if row['next_event_date'] else ''
+        
         clients.append({
             'id': int(row['id']), 'name': row['name'], 'country': row['country'] if row['country'] else '',
             'buyer_type': row['buyer_type'] if row['buyer_type'] else 'не вказано',
             'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано',
-            'website': row['website'] if row['website'] else '', 'last_activity': row['last_activity'] if row['last_activity'] else '',
-            'next_event_date': row['next_event_date'] if row['next_event_date'] else '', 'next_event_type': row['next_event_type'] if row['next_event_type'] else '',
+            'website': row['website'] if row['website'] else '', 
+            'last_activity': clean_last,
+            'next_event_date': clean_next, 
+            'next_event_type': row['next_event_type'] if row['next_event_type'] else '',
             'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні'
         })
         clients_js_list.append({'id': int(row['id']), 'name': str(row['name']).replace("'", "\\'")})
@@ -325,7 +331,6 @@ def client_detail(client_id):
         conn.close()
         return "Клієнта не знайдено", 404
         
-    # БЕЗПЕЧНА ПЕРЕВІРКА ТА ЗАПОВНЕННЯ ПОРОЖНІХ ЗНАЧЕНЬ ПЕРЕД ВІДПРАВКОЮ В HTML
     client = dict(raw_client)
     fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
                        'contact_person', 'position', 'phone', 'email', 
@@ -340,11 +345,24 @@ def client_detail(client_id):
             else:
                 client[field] = ''
                 
+    # ПРИМУСОВЕ ПЕРЕТВОРЕННЯ ДАТ НА ТЕКСТ ДЛЯ КАРТКИ КЛІЄНТА КЛІЄНТА
+    client['next_event_date'] = str(client['next_event_date']) if client['next_event_date'] else ''
+                
     cursor.execute("SELECT * FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
     history = cursor.fetchall()
+    
+    clean_history = []
+    for h in history:
+        clean_history.append({
+            'id': h['id'],
+            'client_id': h['client_id'],
+            'date': str(h['date']) if h['date'] else '',
+            'result': h['result'] if h['result'] else ''
+        })
+        
     cursor.close()
     conn.close()
-    return render_template('client.html', client=client, history=history)
+    return render_template('client.html', client=client, history=clean_history)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
