@@ -72,7 +72,7 @@ def init_db():
         )
     ''')
 
-    # 3. НОВА ТАБЛИЦЯ: ФІНАНСОВИЙ РІЧНИЙ ПЛАН
+    # 3. ТАБЛИЦЯ: ФІНАНСОВИЙ РІЧНИЙ ПЛАН
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sales_plans (
             id SERIAL PRIMARY KEY,
@@ -128,7 +128,6 @@ def index():
     
     conn = get_db_connection()
     
-    # Стандартизація даних в базі
     with conn.cursor() as fix_cursor:
         fix_cursor.execute("""
             UPDATE clients SET country = CASE 
@@ -142,7 +141,6 @@ def index():
         """)
         conn.commit()
     
-    # Збір статистки аналітики бази
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM clients")
     total_clients = cursor.fetchone()[0]
@@ -157,11 +155,9 @@ def index():
 
     cursor.execute("SELECT buyer_type, COUNT(*) FROM clients WHERE buyer_type IS NOT NULL AND buyer_type != 'не вказано' AND buyer_type != '' GROUP BY buyer_type ORDER BY COUNT(*) DESC")
     buyer_type_stats = cursor.fetchall()
-    
-    # ЗБІР ДАНИХ ДЛЯ ФІНАНСОВОГО ПЛАНУ
     cursor.close()
-    dict_cursor = conn.cursor(cursor_factory=DictCursor)
     
+    dict_cursor = conn.cursor(cursor_factory=DictCursor)
     dict_cursor.execute("""
         SELECT sp.id, sp.client_id, sp.planned_amount, sp.month_name, sp.actual_amount, sp.payment_date,
                c.name as client_name, c.country as client_country
@@ -180,7 +176,6 @@ def index():
         a_amt = float(row['actual_amount'] or 0)
         total_planned += p_amt
         total_actual += a_amt
-        
         finance_plans.append({
             'id': row['id'], 'client_id': row['client_id'], 'client_name': row['client_name'],
             'country': row['client_country'] if row['client_country'] else '-',
@@ -190,7 +185,6 @@ def index():
         
     total_remaining = total_planned - total_actual
 
-    # ВИБІРКА ДЛЯ ТАБЛИЦІ КЛІЄНТІВ
     sql = "SELECT c.*, (SELECT MAX(n.date)::TEXT FROM negotiations n WHERE n.client_id = c.id) AS last_activity FROM clients c WHERE 1=1"
     params = []
     if search_query:
@@ -222,10 +216,8 @@ def index():
         })
         clients_js_list.append({'id': int(row['id']), 'name': str(row['name']).replace("'", "\\'")})
         
-    # ПОВНИЙ СПИСОК КЛІЄНТІВ ДЛЯ ВИБОРУ У МОДАЛКАХ ФІНАНСІВ
     dict_cursor.execute("SELECT id, name FROM clients ORDER BY name ASC")
     all_selector_clients = dict_cursor.fetchall()
-
     dict_cursor.close()
     conn.close()
     
@@ -253,7 +245,6 @@ def add_client():
         conn.close()
     return redirect(url_for('index'))
 
-# МАРШРУТИ ДЛЯ РОБОТИ З ФІНАНСАМИ
 @app.route('/add_finance_plan', methods=['POST'])
 @login_required
 def add_finance_plan():
@@ -262,15 +253,10 @@ def add_finance_plan():
     month_name = request.form.get('month_name', '')
     actual_amount = request.form.get('actual_amount', 0)
     payment_date = request.form.get('payment_date', '')
-    
     if client_id:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute(
-            """INSERT INTO sales_plans (client_id, planned_amount, month_name, actual_amount, payment_date) 
-               VALUES (%s, %s, %s, %s, %s)""",
-            (client_id, planned_amount if planned_amount else 0, month_name, actual_amount if actual_amount else 0, payment_date)
-        )
+        cursor.execute("INSERT INTO sales_plans (client_id, planned_amount, month_name, actual_amount, payment_date) VALUES (%s, %s, %s, %s, %s)", (client_id, planned_amount if planned_amount else 0, month_name, actual_amount if actual_amount else 0, payment_date))
         conn.commit()
         cursor.close()
         conn.close()
@@ -283,13 +269,9 @@ def edit_finance_plan(plan_id):
     month_name = request.form.get('month_name', '')
     actual_amount = request.form.get('actual_amount', 0)
     payment_date = request.form.get('payment_date', '')
-    
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        """UPDATE sales_plans SET planned_amount=%s, month_name=%s, actual_amount=%s, payment_date=%s WHERE id=%s""",
-        (planned_amount if planned_amount else 0, month_name, actual_amount if actual_amount else 0, payment_date, plan_id)
-    )
+    cursor.execute("UPDATE sales_plans SET planned_amount=%s, month_name=%s, actual_amount=%s, payment_date=%s WHERE id=%s", (planned_amount if planned_amount else 0, month_name, actual_amount if actual_amount else 0, payment_date, plan_id))
     conn.commit()
     cursor.close()
     conn.close()
@@ -327,14 +309,37 @@ def edit_client(client_id):
 def client_detail(client_id):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
+    
     if request.method == 'POST':
         result_text = request.form.get('result')
         if result_text:
             cursor.execute("INSERT INTO negotiations (client_id, date, result) VALUES (%s, %s, %s)", (client_id, datetime.now().strftime("%Y-%m-%d %H:%M"), result_text))
             conn.commit()
         return redirect(url_for('client_detail', client_id=client_id))
+        
     cursor.execute("SELECT * FROM clients WHERE id = %s", (client_id,))
-    client = dict(cursor.fetchone())
+    raw_client = cursor.fetchone()
+    
+    if not raw_client:
+        cursor.close()
+        conn.close()
+        return "Клієнта не знайдено", 404
+        
+    # БЕЗПЕЧНА ПЕРЕВІРКА ТА ЗАПОВНЕННЯ ПОРОЖНІХ ЗНАЧЕНЬ ПЕРЕД ВІДПРАВКОЮ В HTML
+    client = dict(raw_client)
+    fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
+                       'contact_person', 'position', 'phone', 'email', 
+                       'contact_person_2', 'position_2', 'phone_2', 'email_2', 
+                       'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg']
+    for field in fields_to_check:
+        if field not in client or client[field] is None:
+            if field == 'interest_level':
+                client[field] = 'не опрацьовано'
+            elif field == 'mayer_reg':
+                client[field] = 'Ні'
+            else:
+                client[field] = ''
+                
     cursor.execute("SELECT * FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
     history = cursor.fetchall()
     cursor.close()
