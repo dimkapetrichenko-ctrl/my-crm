@@ -6,7 +6,7 @@
         <div class="card shadow-sm bg-dark text-white">
             <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center">
                 <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋 Загальний список клієнтів</button>
-                <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
+                <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-warning fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
             </div>
         </div>
@@ -54,21 +54,21 @@
                     <div class="mb-3">
                         <div class="fw-bold text-muted small text-uppercase mb-2">🔍 Статуси зацікавленості:</div>
                         <div class="d-flex flex-column gap-2">
-                            <a href="{{ url_for('index', interest='зацікавленість', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 text-decoration-none text-dark border-start border-success border-3 rounded shadow-xs {% if interest_filter == 'зацікавленість' %}bg-success text-white border-2 border-dark{% else %}bg-light{% endif %}" style="transition: 0.2s;">
+                            <a href="{{ url_for('index', interest='зацікавленість', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-success border-3 rounded text-decoration-none text-dark shadow-xs">
                                 <span>😍 Висока зацікавленість</span>
-                                <b class="{% if interest_filter == 'зацікавленість' %}text-white{% else %}text-success{% endif %} fs-6">{{ interest_stats['зацікавленість'] }}</b>
+                                <b class="text-success fs-6">{{ interest_stats['зацікавленість'] }}</b>
                             </a>
-                            <a href="{{ url_for('index', interest='середня зацікавленість', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 text-decoration-none text-dark border-start border-warning border-3 rounded shadow-xs {% if interest_filter == 'середня зацікавленість' %}bg-warning border-2 border-dark{% else %}bg-light{% endif %}" style="transition: 0.2s;">
+                            <a href="{{ url_for('index', interest='середня зацікавленість', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-warning border-3 rounded text-decoration-none text-dark shadow-xs">
                                 <span>🤔 Середня зацікавленість</span>
-                                <b class="fs-6 fw-bold text-dark">{{ interest_stats['середня зацікавленість'] }}</b>
+                                <b class="text-dark fs-6">{{ interest_stats['середня зацікавленість'] }}</b>
                             </a>
-                            <a href="{{ url_for('index', interest='немає зацікавленості', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 text-decoration-none text-dark border-start border-primary border-3 rounded shadow-xs {% if interest_filter == 'немає зацікавленості' %}bg-primary text-white border-2 border-dark{% else %}bg-light{% endif %}" style="transition: 0.2s;">
+                            <a href="{{ url_for('index', interest='немає зацікавленості', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-primary border-3 rounded text-decoration-none text-dark shadow-xs">
                                 <span>😴 Немає зацікавленості</span>
-                                <b class="{% if interest_filter == 'немає зацікавленості' %}text-white{% else %}text-primary{% endif %} fs-6">{{ interest_stats['немає зацікавленості'] }}</b>
+                                <b class="text-primary fs-6">{{ interest_stats['немає зацікавленості'] }}</b>
                             </a>
-                            <a href="{{ url_for('index', interest='не опрацьовано', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 text-decoration-none text-dark border-start border-secondary border-3 rounded shadow-xs {% if interest_filter == 'не опрацьовано' %}bg-secondary text-white border-2 border-dark{% else %}bg-light{% endif %}" style="transition: 0.2s;">
+                            <a href="{{ url_for('index', interest='не опрацьовано', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-secondary border-3 rounded text-decoration-none text-dark shadow-xs">
                                 <span>❓ Не опрацьовано</span>
-                                <b class="{% if interest_filter == 'не опрацьовано' %}text-white{% else %}text-secondary{% endif %} fs-6">{{ interest_stats['не опрацьовано'] }}</b>
+                                <b class="text-secondary fs-6">{{ interest_stats['не опрацьовано'] }}</b>
                             </a>
                         </div>
                     </div>
@@ -119,7 +119,7 @@
                                 <th>Компанія</th>
                                 <th>Тип клієнта</th>
                                 <th>Країна</th>
-                                <th style="text-align: center; width: 14%;">Зацікавленість</th>
+                                <th style="text-align: center;">Зацікавленість</th>
                                 <th style="text-align: center;">Сайт</th>
                                 <th>Остання подія</th>
                                 <th>Наступна подія</th>
@@ -156,13 +156,13 @@
                                 <td style="background-color: inherit; padding: 6px 6px; white-space: nowrap;"><span class="badge bg-secondary" style="font-size: 0.76rem;">📍 {{ client.country or '-' }}</span></td>
                                 <td style="background-color: inherit; text-align: center; padding: 6px 6px; white-space: nowrap;">
                                     {% if client.interest_level == 'зацікавленість' %}
-                                        <span class="badge bg-success w-100 py-1.5 shadow-xs fw-bold" style="font-size: 0.75rem;">😍 Висока</span>
+                                        <span class="badge bg-success px-2 py-1" style="font-size: 0.74rem; display: inline-block;">😍 Висока</span>
                                     {% elif client.interest_level == 'середня зацікавленість' %}
-                                        <span class="badge bg-warning text-dark w-100 py-1.5 shadow-xs fw-bold" style="font-size: 0.75rem;">🤔 Середня</span>
+                                        <span class="badge bg-warning text-dark px-2 py-1" style="font-size: 0.74rem; display: inline-block;">🤔 Середня</span>
                                     {% elif client.interest_level == 'немає зацікавленості' %}
-                                        <span class="badge bg-primary w-100 py-1.5 shadow-xs fw-bold" style="font-size: 0.75rem;">😴 Немає</span>
+                                        <span class="badge bg-primary px-2 py-1" style="font-size: 0.74rem; display: inline-block;">😴 Немає</span>
                                     {% else %}
-                                        <span class="badge bg-secondary text-white w-100 py-1.5 shadow-xs fw-bold" style="font-size: 0.75rem;">❓ Не опр.</span>
+                                        <span class="badge bg-transparent text-secondary border border-secondary px-2 py-0.5" style="font-size: 0.74rem; font-weight: 600; display: inline-block;">❓ Не опр.</span>
                                     {% endif %}
                                 </td>
                                 <td style="background-color: inherit; text-align: center; padding: 6px 6px; white-space: nowrap;">
@@ -202,12 +202,18 @@
 
 <div id="window-today-win" class="crm-window" style="display: none;">
     <div class="card shadow-sm border-warning mb-4">
-        <div class="card-header bg-warning text-dark fw-bold py-2">🚀 Завдання на сьогодні ({{ today_date }})</div>
+        <div class="card-header bg-warning text-dark fw-bold py-2">
+            🚀 Завдання на сьогодні ({{ today_date }})
+        </div>
         <div class="table-responsive" style="max-height: 82vh; overflow-y: auto;">
             <table class="table table-bordered table-hover align-middle mb-0" style="font-size: 0.95rem;">
                 <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
                     <tr>
-                        <th>Компанія</th><th>Тип клієнта</th><th>Країна</th><th style="background-color: #0d6efd;">Тип дії</th><th>Дія</th>
+                        <th>Компанія</th>
+                        <th>Тип клієнта</th>
+                        <th>Країна</th>
+                        <th style="background-color: #0d6efd;">Тип дії</th>
+                        <th>Дія</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -217,11 +223,18 @@
                         {% set today_count.value = today_count.value + 1 %}
                         <tr style="background-color: #fff3cd !important; border: 2px solid #ffc107;">
                             <td><strong>{{ client.name }}</strong></td>
-                            <td><span class="badge bg-info text-dark small">💼 {{ client.buyer_type }}</span></td>
+                            <td>
+                                {% if client.buyer_type and client.buyer_type != 'не вказано' %}
+                                    <span class="badge bg-info text-dark small">💼 {{ client.buyer_type }}</span>
+                                {% else %}-{% endif %}
+                            </td>
                             <td><span class="badge bg-secondary">{{ client.country }}</span></td>
                             <td>
                                 <span class="badge bg-primary text-capitalize p-2" style="font-size: 0.85rem;">
-                                    {% if client.next_event_type == 'call' %}📞 Дзвінок{% elif client.next_event_type == 'visit' %}🚗 Візит{% elif client.next_event_type == 'email' %}✉️ Лист{% else %}{{ client.next_event_type }}{% endif %}
+                                    {% if client.next_event_type == 'call' %}📞 Дзвінок
+                                    {% elif client.next_event_type == 'visit' %}🚗 Візит
+                                    {% elif client.next_event_type == 'email' %}✉️ Лист
+                                    {% else %}{{ client.next_event_type }}{% endif %}
                                 </span>
                             </td>
                             <td><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-dark fw-bold">Картка</a></td>
@@ -229,7 +242,9 @@
                         {% endif %}
                     {% endfor %}
                     {% if today_count.value == 0 %}
-                    <tr><td colspan="5" class="text-center text-muted py-4 fw-bold">🌴 На сьогодні завдань не заплановано. Гарного дня!</td></tr>
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4 fw-bold">🌴 На сьогодні завдань не заплановано. Гарного дня!</td>
+                    </tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -238,70 +253,176 @@
 </div>
 
 <div id="window-calendar-win" class="crm-window" style="display: none;">
-    <div class="card shadow-sm border-primary mb-4">
-        <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold">📅 Календар запланованих дій</h5>
-            <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-light fw-bold" onclick="changeMonth(-1)">◀ Попередній</button>
-                <h6 id="calendar-month-year" class="mb-0 text-white fw-bold px-2" style="min-width: 150px; text-align: center;">---</h6>
-                <button type="button" class="btn btn-sm btn-light fw-bold" onclick="changeMonth(1)">Наступний ▶</button>
+    <div class="row">
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm border-dark">
+                <div class="card-header bg-dark text-white text-center py-2 d-flex justify-content-between align-items-center">
+                    <button class="btn btn-sm btn-outline-light py-0" onclick="changeMonth(-1)">◀</button>
+                    <h5 class="mb-0 fw-bold" id="calendar-month-year"></h5>
+                    <button class="btn btn-sm btn-outline-light py-0" onclick="changeMonth(1)">▶</button>
+                </div>
+                <div class="card-body p-2">
+                    <table class="table table-sm table-bordered text-center mb-0" id="calendar-table">
+                        <thead>
+                            <tr class="table-secondary">
+                                <th style="width: 14%;">Пн</th><th style="width: 14%;">Вт</th><th style="width: 14%;">Ср</th>
+                                <th style="width: 14%;">Чт</th><th style="width: 14%;">Пт</th><th style="width: 14%;">Сб</th>
+                                <th style="width: 14%;">Нд</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendar-grid"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        <div class="card-body p-2 bg-light">
-            <table class="table table-bordered text-center mb-0 bg-white shadow-xs table-sm" style="font-size: 0.9rem;">
-                <thead class="table-secondary fw-bold">
-                    <tr>
-                        <th style="width: 14.28%;">Пн</th><th style="width: 14.28%;">Вт</th><th style="width: 14.28%;">Ср</th>
-                        <th style="width: 14.28%;">Чт</th><th style="width: 14.28%;">Пт</th><th style="width: 14.28%; color:red;">Сб</th>
-                        <th style="width: 14.28%; color:red;">Нд</th>
-                    </tr>
-                </thead>
-                <tbody id="calendar-grid-body">
-                    </tbody>
-            </table>
-        </div>
-    </div>
-    
-    <div class="card shadow-sm border-dark">
-        <div class="card-header bg-dark text-white py-2 fw-bold" id="selected-date-title">🎯 Клацніть на день з цифрою, щоб переглянути розгорнуті справи</div>
-        <div class="card-body p-0" id="calendar-tasks-box">
-            <div class="text-center text-muted py-3">Тут з'явиться список компаній та типів зв'язку на обрану дату.</div>
+        
+        <div class="col-md-7">
+            <div class="card shadow-sm border-primary">
+                <div class="card-header bg-primary text-white py-2 fw-bold" id="selected-date-title">
+                    🎯 Оберіть дату в календарі ліворуч
+                </div>
+                <div class="card-body p-0" id="calendar-tasks-box">
+                    <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у календарі, щоб побачити заплановані перемовини.</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="addClientModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-dark text-white py-2"><h5>➕ Створення картки нового клієнта</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-dark text-white py-2">
+                <h5 class="modal-title fw-bold" id="addClientModalLabel">➕ Створення картки нового клієнта</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <form action="{{ url_for('add_client') }}" method="POST" class="mb-0">
                 <div class="modal-body p-3" style="font-size: 0.85rem; max-height: 70vh; overflow-y: auto;">
                     <div class="row g-2">
-                        <div class="col-md-6"><label class="form-label mb-0"><b>Назва компанії *</b></label><input type="text" name="name" class="form-control form-control-sm" required></div>
-                        <div class="col-md-6"><label class="form-label mb-0">Країна</label><input type="text" name="country" class="form-control form-control-sm"></div>
                         <div class="col-md-6">
-                            <label class="form-label mb-0">Тип клієнта</label>
-                            <select name="buyer_type" class="form-select form-select-sm">
-                                <option value="не вказано">не вказано</option>
-                                <option value="Дилер сг техніки">Дилер сг техніки</option>
-                                <option value="інтернет-магазин">інтернет-магазин</option>
-                                <option value="гуртовий клієнт">гуртовий клієнт</option>
-                                <option value="виробник">виробник</option>
-                                <option value="фермерське господарство">фермерське господарство</option>
+                            <label class="form-label mb-0"><b>Назва компанії *</b></label>
+                            <input type="text" name="name" class="form-control form-control-sm" required placeholder="Введіть назву компанії">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0"><b>Зацікавленість *</b></label>
+                            <select name="interest_level" class="form-select form-select-sm" required>
+                                <option value="не опрацьовано" selected>Прозорий — не опрацьовано</option>
+                                <option value="немає зацікавленості">Синій — немає</option>
+                                <option value="середня зацікавленість">Жовтий — середня</option>
+                                <option value="зацікавленість">Зелений — висока</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label mb-0">Зацікавленість</label>
-                            <select name="interest_level" class="form-select form-select-sm">
-                                <option value="не опрацьовано">❓ Не опрацьовано</option>
-                                <option value="зацікавленість">😍 Висока</option>
-                                <option value="середня зацікавленість">🤔 Середня</option>
-                                <option value="немає зацікавленості">😴 Немає</option>
+                            <label class="form-label mb-0"><b>Реєстрація на сайті MAYER PRO</b></label>
+                            <select name="mayer_reg" class="form-select form-select-sm">
+                                <option value="Ні" selected>Ні</option>
+                                <option value="Так">Так</option>
                             </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Тип покупця</label>
+                            <select name="buyer_type" class="form-select form-select-sm">
+                                <option value="не вказано" selected>не вказано</option>
+                                <option value="інтернет-магазин">інтернет-магазин</option>
+                                <option value="гуртовий клієнт">гуртовий клієнт</option>
+                                <option value="фермерське господарство">фермерське господарство</option>
+                                <option value="виробник">виробник</option>
+                                <option value="надання послуг">надання послуг</option>
+                                <option value="роздрібний покупець">роздрібний покупець</option>
+                                <option value="Дилер сг техніки">Дилер сг техніки</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Країна</label>
+                            <input type="text" name="country" class="form-control form-control-sm" placeholder="Наприклад: Польща або Україна">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Веб-сайт</label>
+                            <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label mb-0">Адреса</label>
+                            <input type="text" name="address" class="form-control form-control-sm" placeholder="Повна юридична або фізична адреса">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label mb-0"><b>Пріоритетні бренди</b></label>
+                            <div class="p-2 border rounded bg-light d-flex flex-wrap gap-2" style="font-size: 0.8rem;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Vaderstad" id="add_b_vaderstad">
+                                    <label class="form-check-label" for="add_b_vaderstad">Vaderstad</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Gaspardo" id="add_b_gaspardo">
+                                    <label class="form-check-label" for="add_b_gaspardo">Gaspardo</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Horsch" id="add_b_horsch">
+                                    <label class="form-check-label" for="add_b_horsch">Horsch</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Kverneland" id="add_b_kverneland">
+                                    <label class="form-check-label" for="add_b_kverneland">Kverneland</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Pottinger" id="add_b_pottinger">
+                                    <label class="form-check-label" for="add_b_pottinger">Pottinger</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Інші" id="add_b_other">
+                                    <label class="form-check-label" for="add_b_other">Інші</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 border-end">
+                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №1</h6>
+                            <input type="text" name="contact_person" class="form-control form-control-sm mb-1" placeholder="ПІБ">
+                            <input type="text" name="position" class="form-control form-control-sm mb-1" placeholder="Посада">
+                            <input type="text" name="phone" class="form-control form-control-sm mb-1" placeholder="Телефон">
+                            <input type="email" name="email" class="form-control form-control-sm" placeholder="Email">
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №2</h6>
+                            <input type="text" name="contact_person_2" class="form-control form-control-sm mb-1" placeholder="ПІБ">
+                            <input type="text" name="position_2" class="form-control form-control-sm mb-1" placeholder="Посада">
+                            <input type="text" name="phone_2" class="form-control form-control-sm mb-1" placeholder="Телефон">
+                            <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
+                        </div>
+                        <div class="col-12 bg-light p-2 rounded border">
+                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅  Планування першої дії (необов'язково)</h6>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <input type="date" name="next_event_date" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-6">
+                                    <select name="next_event_type" class="form-select form-select-sm">
+                                        <option value="" selected>-- Оберіть вид дії --</option>
+                                        <option value="call">📞 Дзвінок</option>
+                                        <option value="visit">🚗 Візит</option>
+                                        <option value="email">✉️ Лист</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer py-2"><button type="submit" class="btn btn-sm btn-success fw-bold px-4">Створити картку</button></div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-sm btn-success fw-bold px-4">Створити картку</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="importExcelModal" tabindex="-1" aria-true="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white py-2"><h5>📥 Імпорт з Excel</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('import_excel') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body p-3">
+                    <input type="file" name="excel_file" class="form-control" accept=".xlsx, .xls" required>
+                </div>
+                <div class="modal-footer py-1"><button type="submit" class="btn btn-sm btn-primary">Почати імпорт</button></div>
             </form>
         </div>
     </div>
@@ -313,8 +434,6 @@ const busyDates = JSON.parse({{ json_busy_dates | tojson | safe }});
 
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
-
-const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
 function switchWindow(targetWinId) {
     document.querySelectorAll('.crm-window').forEach(win => win.style.display = 'none');
@@ -333,24 +452,20 @@ function switchWindow(targetWinId) {
     }
 }
 
-function changeMonth(direction) {
-    currentMonth += direction;
-    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    renderCalendar();
-}
+const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
 function renderCalendar() {
-    const labelEl = document.getElementById('calendar-month-year');
-    if (!labelEl) return;
-    labelEl.innerText = monthNames[currentMonth] + " " + currentYear;
-    
     const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
     const shiftDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
     const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
     
+    const labelEl = document.getElementById('calendar-month-year');
+    if (labelEl) labelEl.innerText = monthNames[currentMonth] + " " + currentYear;
+    
     let gridHtml = "<tr>";
-    for (let i = 0; i < shiftDay; i++) { gridHtml += "<td></td>"; }
+    for (let i = 0; i < shiftDay; i++) {
+        gridHtml += "<td></td>";
+    }
     
     let currentDayCount = shiftDay;
     for (let day = 1; day <= totalDays; day++) {
@@ -364,18 +479,15 @@ function renderCalendar() {
         let dStr = day < 10 ? "0" + day : day;
         let dateKey = `${currentYear}-${mStr}-${dStr}`;
         
-        let cellStyle = "cursor: pointer; padding: 12px 0; font-weight: normal; transition: 0.15s;";
+        let cellStyle = "cursor: pointer; padding: 10px 0; font-weight: normal;";
         let badgeDot = "";
         
-        // Підрахунок завдань на цей день
-        let dayTasks = allClients.filter(c => c.next_event_date === dateKey);
-        
-        if (dayTasks.length > 0) {
+        if (busyDates.includes(dateKey)) {
             cellStyle += " background-color: #d1e7dd; font-weight: bold; color: #0f5132; border: 1.5px solid #badbcc;";
-            badgeDot = `<br><span class='badge bg-danger rounded-pill' style='font-size:0.65rem; padding: 2px 5px;'>${dayTasks.length}</span>`;
+            badgeDot = "<br><span class='badge bg-danger' style='font-size:0.6rem; padding: 1px 3px;'>дія</span>";
         }
         
-        gridHtml += `<td style="${cellStyle}" class="calendar-day-cell" onclick="showTasksForDate('${dateKey}')" onmouseover="this.style.backgroundColor='#e2e6ea'" onmouseout="this.style.backgroundColor='${dayTasks.length > 0 ? '#d1e7dd':'#ffffff'}'">${day}${badgeDot}</td>`;
+        gridHtml += `<td style="${cellStyle}" onclick="showTasksForDate('${dateKey}')">${day}${badgeDot}</td>`;
         currentDayCount++;
     }
     
@@ -385,16 +497,27 @@ function renderCalendar() {
     }
     gridHtml += "</tr>";
     
-    document.getElementById('calendar-grid-body').innerHTML = gridHtml;
+    const gridEl = document.getElementById('calendar-grid');
+    if (gridEl) gridEl.innerHTML = gridHtml;
+}
+
+function changeMonth(direction) {
+    currentMonth += direction;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    renderCalendar();
 }
 
 function showTasksForDate(dateStr) {
-    document.getElementById('selected-date-title').innerHTML = `📅 Заплановані дії на: <span class="bg-white text-dark px-2 rounded">${dateStr}</span>`;
+    const titleEl = document.getElementById('selected-date-title');
+    if (titleEl) titleEl.innerHTML = `📅 Заплановані дії на: <span class="bg-white text-dark px-2 rounded">${dateStr}</span>`;
+    
     const filtered = allClients.filter(c => c.next_event_date === dateStr);
     const box = document.getElementById('calendar-tasks-box');
+    if (!box) return;
     
     if (filtered.length === 0) {
-        box.innerHTML = `<div class="alert alert-info text-center m-3 fw-bold">ℹ️ На цей день завдань не заплановано.</div>`;
+        box.innerHTML = `<div class="alert alert-info text-center m-3 fw-bold">ℹ️ Дії не заплановано</div>`;
         return;
     }
     
@@ -402,14 +525,14 @@ function showTasksForDate(dateStr) {
     filtered.forEach(c => {
         let icon = c.next_event_type === 'call' ? '📞 Дзвінок' : c.next_event_type === 'visit' ? '🚗 Візит' : '✉️ Лист';
         html += `
-            <li class="list-group-item d-flex justify-content-between align-items-center p-2.5 border-bottom">
+            <li class="list-group-item d-flex justify-content-between align-items-center p-3 border-bottom">
                 <div>
-                    <h6 class="mb-0 text-danger fw-bold">${c.name}</h6>
-                    <small class="text-muted">🌍 ${c.country if c.country else 'Не вказано'}</small>
+                    <h6 class="mb-1 text-danger fw-bold">${c.name}</h6>
+                    <small class="text-muted">🌍 ${c.country}</small>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-primary text-uppercase px-2 py-1.5">${icon}</span>
-                    <a href="/client/${c.id}" class="btn btn-sm btn-outline-dark fw-bold py-0.5 px-2" style="font-size:0.8rem;">Картка</a>
+                <div class="text-end">
+                    <span class="badge bg-primary text-uppercase p-2 mb-1 d-block">${icon}</span>
+                    <a href="/client/${c.id}" class="btn btn-sm btn-outline-dark fw-bold py-0 px-2" style="font-size:0.8rem;">Картка</a>
                 </div>
             </li>`;
     });
@@ -422,3 +545,4 @@ window.onload = function() {
 };
 </script>
 {% endblock %}
+
