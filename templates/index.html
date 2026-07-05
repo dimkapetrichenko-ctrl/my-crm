@@ -41,7 +41,7 @@
 
             <div class="card shadow-sm">
                 <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">📊  Аналітика бази</h6>
+                    <h6 class="mb-0 fw-bold">📊 Аналітика бази</h6>
                     {% if interest_filter or country_filter or search_query %}
                         <a href="{{ url_for('index') }}" class="btn btn-xs btn-danger py-0 px-1.5 fw-bold" style="font-size: 0.72rem; border-radius: 3px;">❌ Скинути</a>
                     {% endif %}
@@ -133,10 +133,10 @@
                                 <td><span class="badge bg-secondary" style="font-size: 0.76rem;">📍 {{ client.country or '-' }}</span></td>
                                 <td style="text-align: center;">
                                     {% if client.interest_level == 'зацікавленість' %}<span class="badge bg-success w-100 py-1.5 shadow-xs fw-bold">😍 Висока</span>
-                                    {% elif client.interest_level == 'середня зацікавленість' %}<span class="badge bg-warning text-dark w-100 py-1.5 shadow-xs fw-bold">🤔  Середня</span>
+                                    {% elif client.interest_level == 'середня зацікавленість' %}<span class="badge bg-warning text-dark w-100 py-1.5 shadow-xs fw-bold">🤔 Середня</span>
                                     {% elif client.interest_level == 'немає зацікавленості' %}<span class="badge bg-primary w-100 py-1.5 shadow-xs fw-bold">😴 Немає</span>
                                     {% else %}<span class="badge bg-secondary text-white w-100 py-1.5 shadow-xs fw-bold">❓ Не опр.</span>{% endif %}
-                                </td>
+                                endfor
                                 <td style="text-align: center;">{% if client.mayer_reg == 'Так' %}<span class="badge bg-success text-white fw-bold px-2 py-1">🌐 Так</span>{% else %}<span class="badge bg-transparent text-muted border border-secondary px-2 py-0.5">🔒 Ні</span>{% endif %}</td>
                                 <td>{% if client.last_activity %}<span class="badge bg-dark font-monospace">🕒 {{ client.last_activity | replace('2026-', '') }}</span>{% else %}<small class="text-muted">немає</small>{% endif %}</td>
                                 <td>{% if client.next_event_date %}<div class="fw-bold text-primary">📅 {{ client.next_event_date | replace('2026-', '') }}</div><span class="badge border border-primary text-primary px-1 py-0" style="font-size: 0.68rem;">{% if client.next_event_type == 'call' %}📞 Дзв.{% elif client.next_event_type == 'visit' %}🚗 Віз.{% else %}✉️ Лист{% endif %}</span>{% else %}<small class="text-muted">ні</small>{% endif %}</td>
@@ -180,32 +180,36 @@
 </div>
 
 <div id="window-calendar-win" class="crm-window" style="display: none;">
-    <div class="card shadow-sm border-primary mb-4">
-        <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold">📅 Календар дій</h5>
-            <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-light fw-bold" onclick="changeMonth(-1)">◀</button>
-                <h6 id="calendar-month-year" class="mb-0 text-white fw-bold px-3" style="min-width: 150px; text-align: center;">---</h6>
-                <button type="button" class="btn btn-sm btn-light fw-bold" onclick="changeMonth(1)">▶</button>
+    <div class="row">
+        <div class="col-md-5 mb-3">
+            <div class="card shadow-sm border-primary">
+                <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-sm btn-light py-0 px-2 fw-bold" onclick="changeMonth(-1)">◀</button>
+                    <h5 id="calendar-month-year" class="mb-0 fw-bold text-center px-2" style="min-width: 140px;">---</h5>
+                    <button type="button" class="btn btn-sm btn-light py-0 px-2 fw-bold" onclick="changeMonth(1)">▶</button>
+                </div>
+                <div class="card-body p-2 bg-light">
+                    <table class="table table-bordered text-center mb-0 bg-white shadow-xs table-sm" style="font-size: 0.9rem;">
+                        <thead class="table-secondary fw-bold">
+                            <tr>
+                                <th style="width: 14.28%;">Пн</th><th style="width: 14.28%;">Вт</th><th style="width: 14.28%;">Ср</th>
+                                <th style="width: 14.28%;">Чт</th><th style="width: 14.28%;">Пт</th><th style="width: 14.28%; color:red;">Сб</th>
+                                <th style="width: 14.28%; color:red;">Нд</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendar-grid-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        <div class="card-body p-2 bg-light">
-            <table class="table table-bordered text-center mb-0 bg-white shadow-xs table-sm" style="font-size: 0.9rem;">
-                <thead class="table-secondary fw-bold">
-                    <tr>
-                        <th style="width: 14.28%;">Пн</th><th style="width: 14.28%;">Вт</th><th style="width: 14.28%;">Ср</th>
-                        <th style="width: 14.28%;">Чт</th><th style="width: 14.28%;">Пт</th><th style="width: 14.28%; color:red;">Сб</th>
-                        <th style="width: 14.28%; color:red;">Нд</th>
-                    </tr>
-                </thead>
-                <tbody id="calendar-grid-body"></tbody>
-            </table>
-        </div>
-    </div>
-    <div class="card shadow-sm border-dark">
-        <div class="card-header bg-dark text-white py-2 fw-bold" id="selected-date-title">🎯 Клацніть на день з цифрою, щоб переглянути розгорнуті справи</div>
-        <div class="card-body p-0" id="calendar-tasks-box">
-            <div class="text-center text-muted py-3">Тут з'явиться список компаній та типів зв'язку на обрану дату.</div>
+        
+        <div class="col-md-7 mb-3">
+            <div class="card shadow-sm border-dark h-100">
+                <div class="card-header bg-dark text-white py-2 fw-bold" id="selected-date-title">🎯 Клацніть на день з цифрою, щоб переглянути розгорнуті справи</div>
+                <div class="card-body p-0" id="calendar-tasks-box">
+                    <div class="text-center text-muted py-4">Тут з'явиться список компаній та типів зв'язку на обрану дату.</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -405,7 +409,7 @@ function showTasksForDate(dateStr) {
     }
     let html = `<ul class="list-group list-group-flush" style="font-size:0.9rem;">`;
     filtered.forEach(c => {
-        let icon = c.next_event_type === 'call' ? '📞 Дзвінок' : c.next_event_type === 'visit' ? '🚗  Візит' : '✉️ Лист';
+        let icon = c.next_event_type === 'call' ? '📞 Дзвінок' : c.next_event_type === 'visit' ? '🚗 Візит' : '✉️ Лист';
         html += `<li class="list-group-item d-flex justify-content-between align-items-center p-2.5 border-bottom"><div><h6 class="mb-0 text-danger fw-bold">${c.name}</h6></div><span class="badge bg-primary">${icon}</span></li>`;
     });
     html += `</ul>`;
