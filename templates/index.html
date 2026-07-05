@@ -8,7 +8,7 @@
                 <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋 Загальний список клієнтів</button>
                 <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
-                <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-4">💰 Річний план</button>
+                <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-4">💰  Річний план</button>
             </div>
         </div>
     </div>
@@ -41,7 +41,7 @@
 
             <div class="card shadow-sm">
                 <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">📊 Аналітика бази</h6>
+                    <h6 class="mb-0 fw-bold">📊  Аналітика бази</h6>
                     {% if interest_filter or country_filter or search_query %}
                         <a href="{{ url_for('index') }}" class="btn btn-xs btn-danger py-0 px-1.5 fw-bold" style="font-size: 0.72rem; border-radius: 3px;">❌ Скинути</a>
                     {% endif %}
@@ -99,7 +99,7 @@
                         <div class="d-flex flex-column gap-1.5" style="max-height: 20vh; overflow-y: auto; padding-right: 2px;">
                             {% for row in country_stats %}
                             <a href="{{ url_for('index', country=row[0], interest=interest_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center px-2 py-1.5 bg-white border rounded text-decoration-none text-dark shadow-xs">
-                                <span class="text-truncate" style="max-width: 150px;">📍 {{ row[0] }}</span>
+                                <span class="text-truncate" style="max-width: 150px;">📍  {{ row[0] }}</span>
                                 <span class="badge bg-secondary rounded-pill">{{ row[1] }}</span>
                             </a>
                             {% endfor %}
@@ -224,7 +224,6 @@
                         <div class="mb-2">
                             <label class="form-label mb-0 fw-bold">Введіть назву клієнта (пошук):</label>
                             <input type="text" id="client_search_input" class="form-control form-control-sm" placeholder="🔍 Почніть писати назву..." list="clients_datalist" oninput="syncClientId()" required autocomplete="off">
-                            
                             <input type="hidden" id="real_client_id" name="client_id">
                             
                             <datalist id="clients_datalist">
@@ -303,38 +302,126 @@
     </div>
 </div>
 
-<div class="modal fade" id="editFinanceModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark py-2"><h5 class="modal-title fw-bold">✏️ Редагування плану: <span id="editFinanceClientName" class="badge bg-dark"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body p-3 bg-light">
-                <form id="editFinanceForm" method="POST">
-                    <div class="row g-2">
-                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Заплановане надходження, EUR</label><input type="number" step="0.01" id="edit_planned_amount" name="planned_amount" class="form-control form-control-sm"></div>
-                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Місяць</label><input type="text" id="edit_month_name" name="month_name" class="form-control form-control-sm"></div>
-                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Фактичне надходження, EUR</label><input type="number" step="0.01" id="edit_actual_amount" name="actual_amount" class="form-control form-control-sm"></div>
-                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Дата надходження</label><input type="text" id="edit_payment_date" name="payment_date" class="form-control form-control-sm"></div>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold mt-2">💾 Зберегти зміни</button>
-                </form>
-                <form id="deleteFinanceForm" method="POST" class="mt-2" onsubmit="return confirm('Ви впевнені?');"><button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">❌ Видалити запис плану</button></form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="addClientModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-dark text-white py-2"><h5>➕ Створення картки нового клієнта</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-dark text-white py-2">
+                <h5 class="modal-title fw-bold" id="addClientModalLabel">➕ Створення картки нового клієнта</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <form action="{{ url_for('add_client') }}" method="POST" class="mb-0">
                 <div class="modal-body p-3" style="font-size: 0.85rem; max-height: 70vh; overflow-y: auto;">
                     <div class="row g-2">
-                        <div class="col-md-6"><label class="form-label mb-0"><b>Назва компанії *</b></label><input type="text" name="name" class="form-control form-control-sm" required></div>
-                        <div class="col-md-6"><label class="form-label mb-0">Країна</label><input type="text" name="country" class="form-control form-control-sm"></div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0"><b>Назва компанії *</b></label>
+                            <input type="text" name="name" class="form-control form-control-sm" required placeholder="Введіть назву компанії">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0"><b>Зацікавленість *</b></label>
+                            <select name="interest_level" class="form-select form-select-sm" required>
+                                <option value="не опрацьовано" selected>Прозорий — не опрацьовано</option>
+                                <option value="немає зацікавленості">Синій — немає</option>
+                                <option value="середня зацікавленість">Жовтий — середня</option>
+                                <option value="зацікавленість">Зелений — висока</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0"><b>Реєстрація на сайті MAYER PRO</b></label>
+                            <select name="mayer_reg" class="form-select form-select-sm">
+                                <option value="Ні" selected>Ні</option>
+                                <option value="Так">Так</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Тип покупця</label>
+                            <select name="buyer_type" class="form-select form-select-sm">
+                                <option value="не вказано" selected>не вказано</option>
+                                <option value="інтернет-магазин">інтернет-магазин</option>
+                                <option value="гуртовий клієнт">гуртовий клієнт</option>
+                                <option value="фермерське господарство">фермерське господарство</option>
+                                <option value="виробник">виробник</option>
+                                <option value="надання послуг">надання послуг</option>
+                                <option value="роздрібний покупець">роздрібний покупець</option>
+                                <option value="Дилер сг техніки">Дилер сг техніки</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Країна</label>
+                            <input type="text" name="country" class="form-control form-control-sm" placeholder="Наприклад: Польща або Україна">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Веб-сайт</label>
+                            <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label mb-0">Адреса</label>
+                            <input type="text" name="address" class="form-control form-control-sm" placeholder="Повна юридична або фізична адреса">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label mb-0"><b>Пріоритетні бренди</b></label>
+                            <div class="p-2 border rounded bg-light d-flex flex-wrap gap-2" style="font-size: 0.8rem;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Vaderstad" id="add_b_vaderstad">
+                                    <label class="form-check-label" for="add_b_vaderstad">Vaderstad</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Gaspardo" id="add_b_gaspardo">
+                                    <label class="form-check-label" for="add_b_gaspardo">Gaspardo</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Horsch" id="add_b_horsch">
+                                    <label class="form-check-label" for="add_b_horsch">Horsch</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Kverneland" id="add_b_kverneland">
+                                    <label class="form-check-label" for="add_b_kverneland">Kverneland</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Pottinger" id="add_b_pottinger">
+                                    <label class="form-check-label" for="add_b_pottinger">Pottinger</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Інші" id="add_b_other">
+                                    <label class="form-check-label" for="add_b_other">Інші</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 border-end">
+                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №1</h6>
+                            <input type="text" name="contact_person" class="form-control form-control-sm mb-1" placeholder="ПІБ">
+                            <input type="text" name="position" class="form-control form-control-sm mb-1" placeholder="Посада">
+                            <input type="text" name="phone" class="form-control form-control-sm mb-1" placeholder="Телефон">
+                            <input type="email" name="email" class="form-control form-control-sm" placeholder="Email">
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №2</h6>
+                            <input type="text" name="contact_person_2" class="form-control form-control-sm mb-1" placeholder="ПІБ">
+                            <input type="text" name="position_2" class="form-control form-control-sm mb-1" placeholder="Посада">
+                            <input type="text" name="phone_2" class="form-control form-control-sm mb-1" placeholder="Телефон">
+                            <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
+                        </div>
+                        <div class="col-12 bg-light p-2 rounded border">
+                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅 Планування першої дії (необов'язково)</h6>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <input type="date" name="next_event_date" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-6">
+                                    <select name="next_event_type" class="form-select form-select-sm">
+                                        <option value="" selected>-- Оберіть вид дії --</option>
+                                        <option value="call">📞 Дзвінок</option>
+                                        <option value="visit">🚗 Візит</option>
+                                        <option value="email">✉️ Лист</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer py-2"><button type="submit" class="btn btn-sm btn-success fw-bold px-4">Створити картку</button></div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-sm btn-success fw-bold px-4">Створити картку</button>
+                </div>
             </form>
         </div>
     </div>
@@ -348,7 +435,6 @@ let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-// ФУНКЦІЯ СИНХРОНІЗАЦІЇ ТЕКСТОВОГО ПОШУКУ З РЕАЛЬНИМ ID КЛІЄНТА
 function syncClientId() {
     const inputVal = document.getElementById('client_search_input').value;
     const datalist = document.getElementById('clients_datalist');
