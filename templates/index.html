@@ -68,7 +68,7 @@
                                 <b class="text-primary fs-6">{{ interest_stats['немає зацікавленості'] }}</b>
                             </a>
                             <a href="{{ url_for('index', interest='не опрацьовано', country=country_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-secondary border-3 rounded text-decoration-none text-dark shadow-xs">
-                                <span>❓  Не опрацьовано</span>
+                                <span>❓ Не опрацьовано</span>
                                 <b class="text-secondary fs-6">{{ interest_stats['не опрацьовано'] }}</b>
                             </a>
                         </div>
@@ -223,7 +223,7 @@
                     <form action="{{ url_for('add_finance_plan') }}" method="POST" onsubmit="syncClientId()">
                         <div class="mb-2">
                             <label class="form-label mb-0 fw-bold">Введіть назву клієнта (пошук):</label>
-                            <input type="text" id="client_search_input" class="form-control form-control-sm" placeholder="🔍 Почніть писати назву..." list="clients_datalist" required autocomplete="off">
+                            <input type="text" id="client_search_input" class="form-control form-control-sm" placeholder="🔍 Почніть писати назву..." list="clients_datalist" oninput="syncClientId()" required autocomplete="off">
                             
                             <input type="hidden" id="real_client_id" name="client_id">
                             
