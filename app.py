@@ -2,7 +2,7 @@ import os
 import json
 import psycopg2
 from psycopg2.extras import DictCursor
-from Flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, send_file
 from datetime import datetime
 import pandas as pd
 import io
