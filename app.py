@@ -71,7 +71,6 @@ def init_db():
         )
     ''')
 
-    # ТАБЛИЦЯ РІЧНОГО ПЛАНУ
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sales_plans (
             id SERIAL PRIMARY KEY,
@@ -136,6 +135,12 @@ def index():
                 WHEN LOWER(country) IN ('германия', 'deutschland', 'germany') THEN 'Німеччина'
                 WHEN LOWER(country) IN ('словакия', 'slovakia') THEN 'Словаччина'
                 WHEN LOWER(country) IN ('чехия', 'czechia', 'czech republic') THEN 'Чехія'
+                WHEN LOWER(country) IN ('литва', 'lithuania') THEN 'Литва'
+                WHEN LOWER(country) IN ('латвия', 'latvia') THEN 'Латвія'
+                WHEN LOWER(country) IN ('эстония', 'estonia') THEN 'Естонія'
+                WHEN LOWER(country) IN ('венгрия', 'hungary') THEN 'Угорщина'
+                WHEN LOWER(country) IN ('румыния', 'romania') THEN 'Румунія'
+                WHEN LOWER(country) IN ('молдова', 'moldova') THEN 'Молдова'
                 ELSE country END
             WHERE country IS NOT NULL AND country != '';
         """)
@@ -160,7 +165,7 @@ def index():
     buyer_type_stats = cursor.fetchall()
     cursor.close()
     
-    # ФІНАНСОВІ ПОКАЗНИКИ
+    # ЗБІР ФІНАНСІВ
     dict_cursor = conn.cursor(cursor_factory=DictCursor)
     dict_cursor.execute("""
         SELECT sp.id, sp.client_id, sp.planned_amount, sp.month_name, sp.actual_amount, sp.payment_date,
@@ -187,7 +192,6 @@ def index():
         })
     total_remaining = total_planned - total_actual
 
-    # ВИБІРКА ДЛЯ КАЛЕНДАРЯ ТА БАЗИ
     cal_cursor = conn.cursor(cursor_factory=DictCursor)
     cal_cursor.execute("SELECT id, name, country, contact_person, phone, next_event_date, next_event_type FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != ''")
     all_raw_cal = cal_cursor.fetchall()
@@ -264,13 +268,15 @@ def index():
 @login_required
 def add_client():
     name = request.form.get('name')
+    country = request.form.get('country', '')
+    buyer_type = request.form.get('buyer_type', 'не вказано')
+    interest_level = request.form.get('interest_level', 'не опрацьовано')
     if name:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """INSERT INTO clients (name, country, address, buyer_type, interest_level, website, next_event_date, next_event_type, mayer_reg) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-            (name, request.form.get('country', ''), request.form.get('address', ''), request.form.get('buyer_type', 'не вказано'), request.form.get('interest_level', 'не опрацьовано'), request.form.get('website', ''), request.form.get('next_event_date', ''), request.form.get('next_event_type', ''), request.form.get('mayer_reg', 'Ні'))
+            "INSERT INTO clients (name, country, buyer_type, interest_level, mayer_reg) VALUES (%s, %s, %s, %s, 'Ні')",
+            (name, country, buyer_type, interest_level)
         )
         conn.commit()
         cursor.close()
@@ -282,13 +288,15 @@ def add_client():
 def edit_client(client_id):
     name = request.form.get('name')
     if name:
+        selected_brands = request.form.getlist('brands')
+        brands_str = ", ".join(selected_brands) if selected_brands else ""
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """UPDATE clients SET name=%s, interest_level=%s, mayer_reg=%s, buyer_type=%s, website=%s, country=%s, address=%s,
+            """UPDATE clients SET name=%s, interest_level=%s, mayer_reg=%s, buyer_type=%s, brands=%s, website=%s, country=%s, address=%s,
                                   contact_person=%s, position=%s, phone=%s, email=%s, contact_person_2=%s, position_2=%s, phone_2=%s, email_2=%s,
                                   next_event_date=%s, next_event_type=%s WHERE id=%s""",
-            (name, request.form.get('interest_level'), request.form.get('mayer_reg'), request.form.get('buyer_type'), request.form.get('website'), request.form.get('country'), request.form.get('address'),
+            (name, request.form.get('interest_level'), request.form.get('mayer_reg'), request.form.get('buyer_type'), brands_str, request.form.get('website'), request.form.get('country'), request.form.get('address'),
              request.form.get('contact_person'), request.form.get('position'), request.form.get('phone'), request.form.get('email'),
              request.form.get('contact_person_2'), request.form.get('position_2'), request.form.get('phone_2'), request.form.get('email_2'),
              request.form.get('next_event_date'), request.form.get('next_event_type'), client_id)
@@ -351,6 +359,42 @@ def delete_finance_plan(plan_id):
     cursor.close()
     conn.close()
     return redirect(url_for('index', tab='finance'))
+
+@app.route('/client/<int:client_id>', methods=['GET', 'POST'])
+@login_required
+def client_detail(client_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    
+    if request.method == 'POST':
+        result_text = request.form.get('result')
+        if result_text:
+            cursor.execute("INSERT INTO negotiations (client_id, date, result) VALUES (%s, %s, %s)", (client_id, datetime.now().strftime("%Y-%m-%d %H:%M"), result_text))
+            conn.commit()
+        return redirect(url_for('client_detail', client_id=client_id))
+        
+    cursor.execute("SELECT * FROM clients WHERE id = %s", (client_id,))
+    raw_client = cursor.fetchone()
+    if not raw_client:
+        cursor.close()
+        conn.close()
+        return "Клієнта не знайдено", 404
+        
+    client = dict(raw_client)
+    fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 'contact_person', 'position', 'phone', 'email', 'contact_person_2', 'position_2', 'phone_2', 'email_2', 'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg']
+    for field in fields_to_check:
+        if field not in client or client[field] is None:
+            client[field] = 'не опрацьовано' if field == 'interest_level' else ('Ні' if field == 'mayer_reg' else '')
+            
+    client['next_event_date'] = str(client['next_event_date']) if client['next_event_date'] else ''
+    
+    # ПЕРЕДАЧА ІСТОРІЇ ЯК СПИСОК СЛОВНИКІВ ДЛЯ ОРИГІНАЛЬНОГО ШАБЛОНУ СLIENT.HTML
+    cursor.execute("SELECT id, date, result FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
+    history = [{'id': h[0], 'date': str(h[1]), 'result': h[2]} for h in cursor.fetchall()]
+    
+    cursor.close()
+    conn.close()
+    return render_template('client.html', client=client, history=history)
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
