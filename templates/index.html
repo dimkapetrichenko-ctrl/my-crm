@@ -5,7 +5,7 @@
     <div class="col-12">
         <div class="card shadow-sm bg-dark text-white">
             <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center">
-                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋  Загальний список клієнтів</button>
+                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-outline-light fw-bold px-4">📋 Загальний список клієнтів</button>
                 <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
                 <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-4">💰 Річний план</button>
@@ -14,7 +14,7 @@
     </div>
 </div>
 
-<div id="window-all-win" class="crm-window">
+<div id="window-all-win" class="crm-window" style="display: none;">
     <div class="card shadow-sm mb-3">
         <div class="card-body py-2">
             <form method="GET" action="{{ url_for('index') }}" class="row g-2">
@@ -142,7 +142,7 @@
                                 <td>
                                     {% if client.next_event_date %}
                                         <div class="{% if client.next_event_date == today_date %}text-danger fw-extrabold{% else %}text-primary{% endif %}">📅 {{ client.next_event_date | replace('2026-', '') }}</div>
-                                        <span class="badge Extrabold {% if client.next_event_date == today_date %}bg-danger{% else %}border border-primary text-primary{% endif %} px-1 py-0" style="font-size: 0.68rem;">
+                                        <span class="badge {% if client.next_event_date == today_date %}bg-danger{% else %}border border-primary text-primary{% endif %} px-1 py-0" style="font-size: 0.68rem;">
                                             {% if client.next_event_type == 'call' %}📞 Дзв.{% elif client.next_event_type == 'visit' %}🚗 Віз.{% else %}✉️ Лист{% endif %}
                                         </span>
                                     {% else %}
@@ -283,7 +283,7 @@
                 <div class="card-header bg-dark text-white py-1.5 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span class="fw-bold">📋 Зведена відомість річного плану</span>
                     
-                    <form method="GET" action="/" class="d-flex align-items-center gap-1">
+                    <form method="GET" action="/" class="d-flex align-items-center gap-1 mb-0">
                         <input type="hidden" name="tab" value="finance">
                         <select name="finance_month" class="form-select form-select-sm bg-secondary text-white border-0 fw-bold" onchange="this.form.submit()" style="max-width: 160px; cursor: pointer;">
                             <option value="">📅 Усі місяці</option>
@@ -336,46 +336,6 @@
                         </tfoot>
                     </table>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="editFinanceModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark py-2">
-                <h5 class="modal-title fw-bold">✏️ Редагування плану: <span id="editFinanceClientName" class="badge bg-dark"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-3 bg-light">
-                <form id="editFinanceForm" method="POST">
-                    <div class="row g-2">
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label mb-0 small">Заплановане надходження, EUR</label>
-                            <input type="number" step="0.01" id="edit_planned_amount" name="planned_amount" class="form-control form-control-sm" required>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label mb-0 small">Місяць</label>
-                            <select id="edit_month_name" name="month_name" class="form-select form-select-sm">
-                                <option value="Січень">Січень</option><option value="Лютий">Лютий</option><option value="Березень">Березень</option>
-                                <option value="Квітень">Квітень</option><option value="Травень">Травень</option><option value="Червень">Червень</option>
-                                <option value="Липень">Липень</option><option value="Серпень">Серпень</option><option value="Вересень">Вересень</option>
-                                <option value="Жовтень">Жовтень</option><option value="Листопад">Листопад</option><option value="Грудень">Грудень</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label mb-0 small">Фактичне надходження, EUR</label>
-                            <input type="number" step="0.01" id="edit_actual_amount" name="actual_amount" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label mb-0 small">Дата надходження</label>
-                            <input type="date" id="edit_payment_date" name="payment_date" class="form-control form-control-sm">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold mt-2">💾 Зберегти зміни</button>
-                </form>
-                <form id="deleteFinanceForm" method="POST" class="mt-2" onsubmit="return confirm('Ви впевнені?');"><button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">❌ Видалити запис плану</button></form>
             </div>
         </div>
     </div>
@@ -502,6 +462,34 @@
                     <button type="submit" class="btn btn-sm btn-success fw-bold px-4">Створити картку</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editFinanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark py-2"><h5 class="modal-title fw-bold">✏️ Редагування плану: <span id="editFinanceClientName" class="badge bg-dark"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-3 bg-light">
+                <form id="editFinanceForm" method="POST">
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Заплановане надходження, EUR</label><input type="number" step="0.01" id="edit_planned_amount" name="planned_amount" class="form-control form-control-sm" required></div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label mb-0 small">Місяць</label>
+                            <select id="edit_month_name" name="month_name" class="form-select form-select-sm">
+                                <option value="Січень">Січень</option><option value="Лютий">Лютий</option><option value="Березень">Березень</option>
+                                <option value="Квітень">Квітень</option><option value="Травень">Травень</option><option value="Червень">Червень</option>
+                                <option value="Липень">Липень</option><option value="Серпень">Серпень</option><option value="Вересень">Вересень</option>
+                                <option value="Жовтень">Жовтень</option><option value="Листопад">Листопад</option><option value="Грудень">Грудень</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Фактичне надходження, EUR</label><input type="number" step="0.01" id="edit_actual_amount" name="actual_amount" class="form-control form-control-sm"></div>
+                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Дата надходження</label><input type="date" id="edit_payment_date" name="payment_date" class="form-control form-control-sm"></div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold mt-2">💾 Зберегти зміни</button>
+                </form>
+                <form id="deleteFinanceForm" method="POST" class="mt-2" onsubmit="return confirm('Ви впевнені?');"><button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">❌ Видалити запис плану</button></form>
+            </div>
         </div>
     </div>
 </div>
@@ -648,7 +636,6 @@ function showTasksForDate(dateStr) {
 window.onload = function() {
     renderCalendar();
     const urlParams = new URLSearchParams(window.location.search);
-    // ПІДТРИМКА УТРИМАННЯ ВКЛАДКИ ПРИ ФІЛЬТРАЦІЇ
     if(urlParams.get('tab') === 'finance' || urlParams.get('finance_month') !== null) { 
         switchWindow('finance-win'); 
     }
