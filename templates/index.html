@@ -449,18 +449,41 @@
 <div class="modal fade" id="editFinanceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-warning text-dark py-2"><h5 class="modal-title fw-bold">✏️ Редагування плану: <span id="editFinanceClientName" class="badge bg-dark"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-warning text-dark py-2">
+                <h5 class="modal-title fw-bold">✏️ Редагування плану: <span id="editFinanceClientName" class="badge bg-dark"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body p-3 bg-light">
                 <form id="editFinanceForm" method="POST">
                     <div class="row g-2">
-                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Заплановане надходження, EUR</label><input type="number" step="0.01" id="edit_planned_amount" name="planned_amount" class="form-control form-control-sm"></div>
-                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Місяць</label><input type="text" id="edit_month_name" name="month_name" class="form-control form-control-sm"></div>
-                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Фактичне надходження, EUR</label><input type="number" step="0.01" id="edit_actual_amount" name="actual_amount" class="form-control form-control-sm"></div>
-                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Дата надходження</label><input type="text" id="edit_payment_date" name="payment_date" class="form-control form-control-sm"></div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label mb-0 small">Заплановане надходження, EUR</label>
+                            <input type="number" step="0.01" id="edit_planned_amount" name="planned_amount" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label mb-0 small">Місяць</label>
+                            <select id="edit_month_name" name="month_name" class="form-select form-select-sm">
+                                <option value="Січень">Січень</option><option value="Лютий">Лютий</option><option value="Березень">Березень</option>
+                                <option value="Квітень">Квітень</option><option value="Травень">Травень</option><option value="Червень">Червень</option>
+                                <option value="Липень">Липень</option><option value="Серпень">Серпень</option><option value="Вересень">Вересень</option>
+                                <option value="Жовтень">Жовтень</option><option value="Листопад">Листопад</option><option value="Грудень">Грудень</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label mb-0 small">Фактичне надходження, EUR</label>
+                            <input type="number" step="0.01" id="edit_actual_amount" name="actual_amount" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label mb-0 small">Дата надходження</label>
+                            <input type="date" id="edit_payment_date" name="payment_date" class="form-control form-control-sm">
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-sm btn-success w-100 fw-bold mt-2">💾 Зберегти зміни</button>
                 </form>
-                <form id="deleteFinanceForm" method="POST" class="mt-2" onsubmit="return confirm('Ви впевнені?');"><button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">❌ Видалити запис плану</button></form>
+                
+                <form id="deleteFinanceForm" method="POST" class="mt-2" onsubmit="return confirm('Ви впевнені, що хочете видалити цей запис плану?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">❌ Видалити запис плану</button>
+                </form>
             </div>
         </div>
     </div>
