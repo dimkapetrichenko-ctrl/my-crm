@@ -5,10 +5,10 @@
     <div class="col-12">
         <div class="card shadow-sm bg-dark text-white">
             <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center">
-                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋 Загальний список клієнтів</button>
+                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋  Загальний список клієнтів</button>
                 <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
-                <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-4">💰  Річний план</button>
+                <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-4">💰 Річний план</button>
             </div>
         </div>
     </div>
@@ -41,7 +41,7 @@
 
             <div class="card shadow-sm">
                 <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">📊  Аналітика бази</h6>
+                    <h6 class="mb-0 fw-bold">📊 Аналітика бази</h6>
                     {% if interest_filter or country_filter or search_query %}
                         <a href="{{ url_for('index') }}" class="btn btn-xs btn-danger py-0 px-1.5 fw-bold" style="font-size: 0.72rem; border-radius: 3px;">❌ Скинути</a>
                     {% endif %}
@@ -99,7 +99,7 @@
                         <div class="d-flex flex-column gap-1.5" style="max-height: 20vh; overflow-y: auto; padding-right: 2px;">
                             {% for row in country_stats %}
                             <a href="{{ url_for('index', country=row[0], interest=interest_filter, search=search_query) }}" class="d-flex justify-content-between align-items-center px-2 py-1.5 bg-white border rounded text-decoration-none text-dark shadow-xs">
-                                <span class="text-truncate" style="max-width: 150px;">📍  {{ row[0] }}</span>
+                                <span class="text-truncate" style="max-width: 150px;">📍 {{ row[0] }}</span>
                                 <span class="badge bg-secondary rounded-pill">{{ row[1] }}</span>
                             </a>
                             {% endfor %}
@@ -167,12 +167,22 @@
                         <tr style="background-color: #fff3cd !important; border: 2px solid #ffc107;">
                             <td><strong>{{ client.name }}</strong></td>
                             <td><span class="badge bg-info text-dark small">💼 {{ client.buyer_type }}</span></td>
-                            <td><span class="badge bg-secondary">{{ client.country }}</span></td>
-                            <td><span class="badge bg-primary text-capitalize p-2">{% if client.next_event_type == 'call' %}📞 Дзвінок{% elif client.next_event_type == 'visit' %}🚗 Візит{% else %}✉️ Лист{% endif %}</span></td>
+                            <td><span class="badge bg-secondary">📍 {{ client.country or '-' }}</span></td>
+                            <td>
+                                <span class="badge bg-primary text-capitalize p-2">
+                                    {% if client.next_event_type == 'call' %}📞 Дзвінок
+                                    {% elif client.next_event_type == 'visit' %}🚗 Візит
+                                    {% elif client.next_event_type == 'email' %}✉️ Лист
+                                    {% else %}{{ client.next_event_type or 'Зв\'язок' }}{% endif %}
+                                </span>
+                            </td>
                             <td><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-dark fw-bold">Картка</a></td>
                         </tr>
                         {% endif %}
                     {% endfor %}
+                    {% if today_count.value == 0 %}
+                    <tr><td colspan="5" class="text-center text-muted py-4 fw-bold">🌴 На сьогодні завдань не заплановано. Гарного дня!</td></tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
@@ -427,6 +437,26 @@
     </div>
 </div>
 
+<div class="modal fade" id="editFinanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark py-2"><h5 class="modal-title fw-bold">✏️ Редагування плану: <span id="editFinanceClientName" class="badge bg-dark"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-3 bg-light">
+                <form id="editFinanceForm" method="POST">
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Заплановане надходження, EUR</label><input type="number" step="0.01" id="edit_planned_amount" name="planned_amount" class="form-control form-control-sm"></div>
+                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Місяць</label><input type="text" id="edit_month_name" name="month_name" class="form-control form-control-sm"></div>
+                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Фактичне надходження, EUR</label><input type="number" step="0.01" id="edit_actual_amount" name="actual_amount" class="form-control form-control-sm"></div>
+                        <div class="col-md-6 mb-2"><label class="form-label mb-0 small">Дата надходження</label><input type="text" id="edit_payment_date" name="payment_date" class="form-control form-control-sm"></div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold mt-2">💾 Зберегти зміни</button>
+                </form>
+                <form id="deleteFinanceForm" method="POST" class="mt-2" onsubmit="return confirm('Ви впевнені?');"><button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">❌ Видалити запис плану</button></form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 const allClients = JSON.parse({{ json_clients | tojson | safe }});
 const busyDates = JSON.parse({{ json_busy_dates | tojson | safe }});
@@ -528,18 +558,6 @@ function showTasksForDate(dateStr) {
     });
     html += `</ul>`;
     box.innerHTML = html;
-}
-
-function openEditFinance(id, name, planned, month, actual, payDate) {
-    document.getElementById('editFinanceClientName').innerText = name;
-    document.getElementById('edit_planned_amount').value = planned;
-    document.getElementById('edit_month_name').value = month;
-    document.getElementById('edit_actual_amount').value = actual;
-    document.getElementById('edit_payment_date').value = payDate;
-    document.getElementById('editFinanceForm').action = "/edit_finance_plan/" + id;
-    document.getElementById('deleteFinanceForm').action = "/delete_finance_plan/" + id;
-    let editModal = new bootstrap.Modal(document.getElementById('editFinanceModal'));
-    editModal.show();
 }
 
 window.onload = function() {
