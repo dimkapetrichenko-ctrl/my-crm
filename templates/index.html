@@ -120,14 +120,14 @@
                         </thead>
                         <tbody>
                             {% for client in clients %}
-                            <tr style="{% if client.next_event_date == today_date %}background-color: #fff3cd !important; font-weight: 500; border: 2px solid #ffc107;{% elif loop.index0 % 2 == 1 %}background-color: #e9ecef;{% else %}background-color: #ffffff;{% endif %} border-bottom: 1.5px solid #6c757d;">
-                                <td style="background-color: inherit; padding: 6px 8px; min-width: 150px;">
+                            <tr style="border-bottom: 1.5px solid #6c757d;" class="{% if client.next_event_date == today_date %}table-warning fw-bold text-dark{% elif loop.index0 % 2 == 1 %}table-light{% else %}bg-white{% endif %}">
+                                <td style="padding: 6px 8px; min-width: 150px;">
                                     <strong style="font-size: 0.90rem; color: #111;">{{ client.name }}</strong>
                                     {% if client.website %}
                                         <br><a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-decoration-none small text-primary" style="font-size: 0.74rem; display: inline-block;">🔗 {{ client.website | replace('https://','') | replace('www.','') }}</a>
                                     {% endif %}
                                 </td>
-                                <td style="background-color: inherit; padding: 6px 6px;">
+                                <td style="padding: 6px 6px;">
                                     <span class="badge bg-info text-dark" style="font-size: 0.72rem; padding: 4px 6px; white-space: normal; display: block; text-align: left; line-height: 1.2;">{{ client.buyer_type }}</span>
                                 </td>
                                 <td><span class="badge bg-secondary" style="font-size: 0.76rem;">📍 {{ client.country or '-' }}</span></td>
@@ -139,7 +139,16 @@
                                 </td>
                                 <td style="text-align: center;">{% if client.mayer_reg == 'Так' %}<span class="badge bg-success text-white fw-bold px-2 py-1">🌐 Так</span>{% else %}<span class="badge bg-transparent text-muted border border-secondary px-2 py-0.5">🔒 Ні</span>{% endif %}</td>
                                 <td>{% if client.last_activity %}<span class="badge bg-dark font-monospace">🕒 {{ client.last_activity | replace('2026-', '') }}</span>{% else %}<small class="text-muted">немає</small>{% endif %}</td>
-                                <td>{% if client.next_event_date %}<div class="fw-bold text-primary">📅 {{ client.next_event_date | replace('2026-', '') }}</div><span class="badge border border-primary text-primary px-1 py-0" style="font-size: 0.68rem;">{% if client.next_event_type == 'call' %}📞 Дзв.{% elif client.next_event_type == 'visit' %}🚗 Віз.{% else %}✉️ Лист{% endif %}</span>{% else %}<small class="text-muted">ні</small>{% endif %}</td>
+                                <td>
+                                    {% if client.next_event_date %}
+                                        <div class="{% if client.next_event_date == today_date %}text-danger fw-extrabold{% else %}text-primary{% endif %}">📅 {{ client.next_event_date | replace('2026-', '') }}</div>
+                                        <span class="badge {% if client.next_event_date == today_date %}bg-danger{% else %}border border-primary text-primary{% endif %} px-1 py-0" style="font-size: 0.68rem;">
+                                            {% if client.next_event_type == 'call' %}📞 Дзв.{% elif client.next_event_type == 'visit' %}🚗 Віз.{% else %}✉️ Лист{% endif %}
+                                        </span>
+                                    {% else %}
+                                        <small class="text-muted">ні</small>
+                                    {% endif %}
+                                </td>
                                 <td style="text-align: center;"><a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-xs btn-outline-primary fw-bold">Картка</a></td>
                             </tr>
                             {% endfor %}
@@ -411,7 +420,7 @@
                             <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
                         </div>
                         <div class="col-12 bg-light p-2 rounded border">
-                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅 Планування першої дії (необов'язково)</h6>
+                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅  Планування першої дії (необов'язково)</h6>
                             <div class="row g-2">
                                 <div class="col-md-6">
                                     <input type="date" name="next_event_date" class="form-control form-control-sm">
