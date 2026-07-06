@@ -5,7 +5,7 @@
     <div class="col-12">
         <div class="card shadow-sm bg-dark text-white">
             <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center">
-                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-outline-light fw-bold px-4">📋 Загальний список клієнтів</button>
+                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋 Загальний список клієнтів</button>
                 <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
                 <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-4">💰 Річний план</button>
@@ -14,7 +14,7 @@
     </div>
 </div>
 
-<div id="window-all-win" class="crm-window" style="display: none;">
+<div id="window-all-win" class="crm-window">
     <div class="card shadow-sm mb-3">
         <div class="card-body py-2">
             <form method="GET" action="{{ url_for('index') }}" class="row g-2">
@@ -142,7 +142,7 @@
                                 <td>
                                     {% if client.next_event_date %}
                                         <div class="{% if client.next_event_date == today_date %}text-danger fw-extrabold{% else %}text-primary{% endif %}">📅 {{ client.next_event_date | replace('2026-', '') }}</div>
-                                        <span class="badge {% if client.next_event_date == today_date %}bg-danger{% else %}border border-primary text-primary{% endif %} px-1 py-0" style="font-size: 0.68rem;">
+                                        <span class="badge Extrabold {% if client.next_event_date == today_date %}bg-danger{% else %}border border-primary text-primary{% endif %} px-1 py-0" style="font-size: 0.68rem;">
                                             {% if client.next_event_type == 'call' %}📞 Дзв.{% elif client.next_event_type == 'visit' %}🚗 Віз.{% else %}✉️ Лист{% endif %}
                                         </span>
                                     {% else %}
@@ -611,26 +611,28 @@ function showTasksForDate(dateStr) {
     document.getElementById('selected-date-title').innerHTML = `📅 Заплановані дії на: <span class="bg-white text-dark px-2 rounded">${dateStr}</span>`;
     const filtered = allClients.filter(c => c.next_event_date === dateStr);
     const box = document.getElementById('calendar-tasks-box');
-    if (filtered.length === 0) {
-        box.innerHTML = `<div class="alert alert-info text-center m-3 fw-bold">ℹ️ На цей день завдань не заплановано.</div>`;
-        return;
+    if (box) {
+        if (filtered.length === 0) {
+            box.innerHTML = `<div class="alert alert-info text-center m-3 fw-bold">ℹ️ На цей день завдань не заплановано.</div>`;
+            return;
+        }
+        let html = `<ul class="list-group list-group-flush" style="font-size:0.9rem;">`;
+        filtered.forEach(c => {
+            let icon = c.next_event_type === 'call' ? '📞 Дзвінок' : c.next_event_type === 'visit' ? '🚗 Візит' : '✉️ Лист';
+            html += `
+                <li class="list-group-item d-flex justify-content-between align-items-center p-2.5 border-bottom">
+                    <div>
+                        <a href="/client/${c.id}" class="fw-bold text-decoration-none text-primary fs-6">🏢 ${c.name}</a>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary">${icon}</span>
+                        <a href="/client/${c.id}" class="btn btn-xs btn-dark fw-bold px-2 py-0.5 shadow-xs">Картка</a>
+                    </div>
+                </li>`;
+        });
+        html += `</ul>`;
+        box.innerHTML = html;
     }
-    let html = `<ul class="list-group list-group-flush" style="font-size:0.9rem;">`;
-    filtered.forEach(c => {
-        let icon = c.next_event_type === 'call' ? '📞 Дзвінок' : c.next_event_type === 'visit' ? '🚗 Візит' : '✉️ Лист';
-        html += `
-            <li class="list-group-item d-flex justify-content-between align-items-center p-2.5 border-bottom">
-                <div>
-                    <a href="/client/${c.id}" class="fw-bold text-decoration-none text-primary fs-6">🏢 ${c.name}</a>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-primary">${icon}</span>
-                    <a href="/client/${c.id}" class="btn btn-xs btn-dark fw-bold px-2 py-0.5 shadow-xs">Картка</a>
-                </div>
-            </li>`;
-    });
-    html += `</ul>`;
-    box.innerHTML = html;
 }
 
 window.onload = function() {
@@ -638,6 +640,8 @@ window.onload = function() {
     const urlParams = new URLSearchParams(window.location.search);
     if(urlParams.get('tab') === 'finance' || urlParams.get('finance_month') !== null) { 
         switchWindow('finance-win'); 
+    } else {
+        switchWindow('all-win');
     }
 };
 </script>
