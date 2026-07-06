@@ -5,16 +5,16 @@
     <div class="col-12">
         <div class="card shadow-sm bg-dark text-white">
             <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center">
-                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋  Загальний список клієнтів</button>
+                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-outline-light fw-bold px-4">📋 Загальний список клієнтів</button>
                 <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
-                <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-4">💰 Річний план</button>
+                <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-primary fw-bold px-4 shadow">💰 Річний план</button>
             </div>
         </div>
     </div>
 </div>
 
-<div id="window-all-win" class="crm-window">
+<div id="window-all-win" class="crm-window" style="display: none;">
     <div class="card shadow-sm mb-3">
         <div class="card-body py-2">
             <form method="GET" action="{{ url_for('index') }}" class="row g-2">
@@ -190,7 +190,7 @@
                         {% endif %}
                     {% endfor %}
                     {% if today_count.value == 0 %}
-                    <tr><td colspan="5" class="text-center text-muted py-4 fw-bold">🌴 На сьогодні завдань не заплановано. Гарного дня!</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4 fw-bold">🌴 На сьогодні завдань не заплановано.  Гарного дня!</td></tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -233,7 +233,7 @@
     </div>
 </div>
 
-<div id="window-finance-win" class="crm-window" style="display: none;">
+<div id="window-finance-win" class="crm-window">
     <div class="row g-3">
         <div class="col-md-3">
             <div class="card shadow-sm border-primary">
@@ -298,7 +298,15 @@
                                 <td class="text-end fw-bold text-success">{{ "{:,.2f}".format(plan.actual_amount) }} €</td>
                                 <td class="text-muted small">{{ plan.payment_date }}</td>
                                 <td class="text-center">
-                                    <button class="btn btn-xs btn-outline-warning text-dark py-0 px-1.5 fw-bold" onclick="openEditFinance('{{ plan.id }}', `{{ plan.client_name | replace('\'', '\\\'') }}`, '{{ plan.planned_amount }}', '{{ plan.month_name }}', '{{ plan.actual_amount }}', '{{ plan.payment_date }}')">✏️ Ред.</button>
+                                    <button class="btn btn-xs btn-outline-warning text-dark py-0 px-1.5 fw-bold btn-edit-finance" 
+                                            data-id="{{ plan.id }}"
+                                            data-client="{{ plan.client_name }}"
+                                            data-planned="{{ plan.planned_amount }}"
+                                            data-month="{{ plan.month_name }}"
+                                            data-actual="{{ plan.actual_amount }}"
+                                            data-date="{{ plan.payment_date or '' }}">
+                                        ✏️ Ред.
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -316,6 +324,48 @@
                         </tfoot>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editFinanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark py-2">
+                <h5 class="modal-title fw-bold">✏️ Редагування плану: <span id="editFinanceClientName" class="badge bg-dark"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3 bg-light">
+                <form id="editFinanceForm" method="POST">
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label mb-0 small">Заплановане надходження, EUR</label>
+                            <input type="number" step="0.01" id="edit_planned_amount" name="planned_amount" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label mb-0 small">Місяць</label>
+                            <select id="edit_month_name" name="month_name" class="form-select form-select-sm">
+                                <option value="Січень">Січень</option><option value="Лютий">Лютий</option><option value="Березень">Березень</option>
+                                <option value="Квітень">Квітень</option><option value="Травень">Травень</option><option value="Червень">Червень</option>
+                                <option value="Липень">Липень</option><option value="Серпень">Серпень</option><option value="Вересень">Вересень</option>
+                                <option value="Жовтень">Жовтень</option><option value="Листопад">Листопад</option><option value="Грудень">Грудень</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label mb-0 small">Фактичне надходження, EUR</label>
+                            <input type="number" step="0.01" id="edit_actual_amount" name="actual_amount" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label mb-0 small">Дата надходження</label>
+                            <input type="date" id="edit_payment_date" name="payment_date" class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold mt-2">💾 Зберегти зміни</button>
+                </form>
+                <form id="deleteFinanceForm" method="POST" class="mt-2" onsubmit="return confirm('Ви впевнені, що хочете видалити цей запис плану?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">❌ Видалити запис плану</button>
+                </form>
             </div>
         </div>
     </div>
@@ -366,7 +416,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label mb-0">Країна</label>
-                            <input type="text" name="country" class="form-control form-control-sm" placeholder="Наприклад: Польща або Україна">
+                            <input type="text" name="country" class="form-control form-control-sm" placeholder="Наприклад:  Польща або Україна">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label mb-0">Веб-сайт</label>
@@ -413,7 +463,7 @@
                             <input type="email" name="email" class="form-control form-control-sm" placeholder="Email">
                         </div>
                         <div class="col-md-6">
-                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №2</h6>
+                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤  Контактна особа №2</h6>
                             <input type="text" name="contact_person_2" class="form-control form-control-sm mb-1" placeholder="ПІБ">
                             <input type="text" name="position_2" class="form-control form-control-sm mb-1" placeholder="Посада">
                             <input type="text" name="phone_2" class="form-control form-control-sm mb-1" placeholder="Телефон">
@@ -446,49 +496,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="editFinanceModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark py-2">
-                <h5 class="modal-title fw-bold">✏️ Редагування плану: <span id="editFinanceClientName" class="badge bg-dark"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-3 bg-light">
-                <form id="editFinanceForm" method="POST">
-                    <div class="row g-2">
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label mb-0 small">Заплановане надходження, EUR</label>
-                            <input type="number" step="0.01" id="edit_planned_amount" name="planned_amount" class="form-control form-control-sm" required>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label mb-0 small">Місяць</label>
-                            <select id="edit_month_name" name="month_name" class="form-select form-select-sm">
-                                <option value="Січень">Січень</option><option value="Лютий">Лютий</option><option value="Березень">Березень</option>
-                                <option value="Квітень">Квітень</option><option value="Травень">Травень</option><option value="Червень">Червень</option>
-                                <option value="Липень">Липень</option><option value="Серпень">Серпень</option><option value="Вересень">Вересень</option>
-                                <option value="Жовтень">Жовтень</option><option value="Листопад">Листопад</option><option value="Грудень">Грудень</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label mb-0 small">Фактичне надходження, EUR</label>
-                            <input type="number" step="0.01" id="edit_actual_amount" name="actual_amount" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label mb-0 small">Дата надходження</label>
-                            <input type="date" id="edit_payment_date" name="payment_date" class="form-control form-control-sm">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-success w-100 fw-bold mt-2">💾 Зберегти зміни</button>
-                </form>
-                
-                <form id="deleteFinanceForm" method="POST" class="mt-2" onsubmit="return confirm('Ви впевнені, що хочете видалити цей запис плану?');">
-                    <button type="submit" class="btn btn-sm btn-outline-danger w-100 fw-bold">❌ Видалити запис плану</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
 const allClients = JSON.parse({{ json_clients | tojson | safe }});
 const busyDates = JSON.parse({{ json_busy_dates | tojson | safe }});
@@ -496,6 +503,43 @@ const busyDates = JSON.parse({{ json_busy_dates | tojson | safe }});
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+
+// НАДІЙНИЙ ДИНАМІЧНИЙ ОБРОБНИК КЛІКІВ ДЛЯ МОДАЛКИ РЕДАГУВАННЯ
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-edit-finance');
+    if (!btn) return;
+    
+    e.preventDefault();
+    
+    const planId = btn.getAttribute('data-id');
+    const clientName = btn.getAttribute('data-client');
+    const plannedAmount = btn.getAttribute('data-planned');
+    const monthName = btn.getAttribute('data-month');
+    const actualAmount = btn.getAttribute('data-actual');
+    let paymentDate = btn.getAttribute('data-date');
+    
+    const titleEl = document.getElementById('editFinanceClientName');
+    if (titleEl) titleEl.innerText = clientName;
+    
+    document.getElementById('edit_planned_amount').value = plannedAmount;
+    document.getElementById('edit_month_name').value = monthName;
+    document.getElementById('edit_actual_amount').value = actualAmount;
+    
+    if (paymentDate && paymentDate !== 'None' && paymentDate !== 'null' && paymentDate !== '-') {
+        document.getElementById('edit_payment_date').value = paymentDate;
+    } else {
+        document.getElementById('edit_payment_date').value = '';
+    }
+    
+    document.getElementById('editFinanceForm').action = "/edit_finance_plan/" + planId;
+    document.getElementById('deleteFinanceForm').action = "/delete_finance_plan/" + planId;
+    
+    const modalEl = document.getElementById('editFinanceModal');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+});
 
 function syncClientId() {
     const inputVal = document.getElementById('client_search_input').value;
