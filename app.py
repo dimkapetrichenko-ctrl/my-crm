@@ -167,7 +167,7 @@ def index():
     buyer_type_stats = cursor.fetchall()
     cursor.close()
     
-    # ЗБІР ФІНАНСОВИХ РЯДКІВ З ФІЛЬТРАЦІЄЮ
+    # ФІНАНСОВА КЛАСИФІКАЦІЯ ТА ФІЛЬТР
     dict_cursor = conn.cursor(cursor_factory=DictCursor)
     finance_sql = """
         SELECT sp.id, sp.client_id, sp.planned_amount, sp.month_name, sp.actual_amount, sp.payment_date,
