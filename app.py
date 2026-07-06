@@ -123,6 +123,7 @@ def index():
     search_query = request.args.get('search', '').strip()
     interest_filter = request.args.get('interest', '').strip()
     country_filter = request.args.get('country', '').strip()
+    finance_month_filter = request.args.get('finance_month', '').strip()
     
     conn = get_db_connection()
     
@@ -165,15 +166,21 @@ def index():
     buyer_type_stats = cursor.fetchall()
     cursor.close()
     
-    # ЗБІР ФІНАНСІВ
+    # ЗБІР ФІНАНСІВ З ФІЛЬТРАЦІЄЮ ЗА МІСЯЦЕМ
     dict_cursor = conn.cursor(cursor_factory=DictCursor)
-    dict_cursor.execute("""
+    finance_sql = """
         SELECT sp.id, sp.client_id, sp.planned_amount, sp.month_name, sp.actual_amount, sp.payment_date,
                c.name as client_name, c.country as client_country
         FROM sales_plans sp
         JOIN clients c ON sp.client_id = c.id
-        ORDER BY sp.id DESC
-    """)
+    """
+    finance_params = []
+    if finance_month_filter:
+        finance_sql += " WHERE sp.month_name = %s"
+        finance_params.append(finance_month_filter)
+        
+    finance_sql += " ORDER BY sp.id DESC"
+    dict_cursor.execute(finance_sql, finance_params)
     finance_rows = dict_cursor.fetchall()
     
     total_planned = 0
@@ -259,6 +266,7 @@ def index():
     return render_template(
         'index.html', clients=clients, all_selector_clients=all_selector_clients,
         search_query=search_query, interest_filter=interest_filter, country_filter=country_filter,
+        finance_month_filter=finance_month_filter,
         total_clients=total_clients, interest_stats=interest_stats, country_stats=country_stats, buyer_type_stats=buyer_type_stats,
         finance_plans=finance_plans, total_planned=total_planned, total_actual=total_actual, total_remaining=total_remaining,
         json_clients=json_clients, json_busy_dates=json_busy_dates, today_date=today_str
@@ -268,15 +276,13 @@ def index():
 @login_required
 def add_client():
     name = request.form.get('name')
-    country = request.form.get('country', '')
-    buyer_type = request.form.get('buyer_type', 'не вказано')
-    interest_level = request.form.get('interest_level', 'не опрацьовано')
     if name:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO clients (name, country, buyer_type, interest_level, mayer_reg) VALUES (%s, %s, %s, %s, 'Ні')",
-            (name, country, buyer_type, interest_level)
+            """INSERT INTO clients (name, country, address, buyer_type, interest_level, website, next_event_date, next_event_type, mayer_reg) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (name, request.form.get('country', ''), request.form.get('address', ''), request.form.get('buyer_type', 'не вказано'), request.form.get('interest_level', 'не опрацьовано'), request.form.get('website', ''), request.form.get('next_event_date', ''), request.form.get('next_event_type', ''), request.form.get('mayer_reg', 'Ні'))
         )
         conn.commit()
         cursor.close()
@@ -332,7 +338,7 @@ def add_finance_plan():
         conn.commit()
         cursor.close()
         conn.close()
-    return redirect(url_for('index', tab='finance'))
+    return redirect(url_for('index', tab='finance', finance_month=month_name))
 
 @app.route('/edit_finance_plan/<int:plan_id>', methods=['POST'])
 @login_required
@@ -347,7 +353,7 @@ def edit_finance_plan(plan_id):
     conn.commit()
     cursor.close()
     conn.close()
-    return redirect(url_for('index', tab='finance'))
+    return redirect(url_for('index', tab='finance', finance_month=month_name))
 
 @app.route('/delete_finance_plan/<int:plan_id>', methods=['POST'])
 @login_required
@@ -359,42 +365,6 @@ def delete_finance_plan(plan_id):
     cursor.close()
     conn.close()
     return redirect(url_for('index', tab='finance'))
-
-@app.route('/client/<int:client_id>', methods=['GET', 'POST'])
-@login_required
-def client_detail(client_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    
-    if request.method == 'POST':
-        result_text = request.form.get('result')
-        if result_text:
-            cursor.execute("INSERT INTO negotiations (client_id, date, result) VALUES (%s, %s, %s)", (client_id, datetime.now().strftime("%Y-%m-%d %H:%M"), result_text))
-            conn.commit()
-        return redirect(url_for('client_detail', client_id=client_id))
-        
-    cursor.execute("SELECT * FROM clients WHERE id = %s", (client_id,))
-    raw_client = cursor.fetchone()
-    if not raw_client:
-        cursor.close()
-        conn.close()
-        return "Клієнта не знайдено", 404
-        
-    client = dict(raw_client)
-    fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 'contact_person', 'position', 'phone', 'email', 'contact_person_2', 'position_2', 'phone_2', 'email_2', 'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg']
-    for field in fields_to_check:
-        if field not in client or client[field] is None:
-            client[field] = 'не опрацьовано' if field == 'interest_level' else ('Ні' if field == 'mayer_reg' else '')
-            
-    client['next_event_date'] = str(client['next_event_date']) if client['next_event_date'] else ''
-    
-    # ПЕРЕДАЧА ІСТОРІЇ ЯК СПИСОК СЛОВНИКІВ ДЛЯ ОРИГІНАЛЬНОГО ШАБЛОНУ СLIENT.HTML
-    cursor.execute("SELECT id, date, result FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
-    history = [{'id': h[0], 'date': str(h[1]), 'result': h[2]} for h in cursor.fetchall()]
-    
-    cursor.close()
-    conn.close()
-    return render_template('client.html', client=client, history=history)
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
