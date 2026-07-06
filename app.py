@@ -71,6 +71,7 @@ def init_db():
         )
     ''')
 
+    # СТВОРЕННЯ ТАБЛИЦІ РІЧНОГО ПЛАНУ
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sales_plans (
             id SERIAL PRIMARY KEY,
@@ -166,7 +167,7 @@ def index():
     buyer_type_stats = cursor.fetchall()
     cursor.close()
     
-    # ЗБІР ФІНАНСІВ З ФІЛЬТРАЦІЄЮ ЗА МІСЯЦЕМ
+    # ЗБІР ФІНАНСОВИХ РЯДКІВ З ФІЛЬТРАЦІЄЮ
     dict_cursor = conn.cursor(cursor_factory=DictCursor)
     finance_sql = """
         SELECT sp.id, sp.client_id, sp.planned_amount, sp.month_name, sp.actual_amount, sp.payment_date,
@@ -277,12 +278,17 @@ def index():
 def add_client():
     name = request.form.get('name')
     if name:
+        selected_brands = request.form.getlist('brands')
+        brands_str = ", ".join(selected_brands) if selected_brands else ""
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """INSERT INTO clients (name, country, address, buyer_type, interest_level, website, next_event_date, next_event_type, mayer_reg) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-            (name, request.form.get('country', ''), request.form.get('address', ''), request.form.get('buyer_type', 'не вказано'), request.form.get('interest_level', 'не опрацьовано'), request.form.get('website', ''), request.form.get('next_event_date', ''), request.form.get('next_event_type', ''), request.form.get('mayer_reg', 'Ні'))
+            """INSERT INTO clients (name, country, address, buyer_type, interest_level, website, brands, contact_person, position, phone, email, contact_person_2, position_2, phone_2, email_2, next_event_date, next_event_type, mayer_reg) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (name, request.form.get('country', ''), request.form.get('address', ''), request.form.get('buyer_type', 'не вказано'), request.form.get('interest_level', 'не опрацьовано'), request.form.get('website', ''),
+             brands_str, request.form.get('contact_person', ''), request.form.get('position', ''), request.form.get('phone', ''), request.form.get('email', ''),
+             request.form.get('contact_person_2', ''), request.form.get('position_2', ''), request.form.get('phone_2', ''), request.form.get('email_2'),
+             request.form.get('next_event_date', ''), request.form.get('next_event_type', ''), request.form.get('mayer_reg', 'Ні'))
         )
         conn.commit()
         cursor.close()
