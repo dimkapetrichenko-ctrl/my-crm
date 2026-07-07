@@ -87,12 +87,6 @@
                         <label class="form-label mb-1">Веб-сайт</label>
                         <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website }}">
                     </div>
-                    
-                    <div class="mb-2">
-                        <label class="form-label mb-1 text-success fw-bold">🟢 Номер WhatsApp</label>
-                        <input type="text" name="whatsapp" class="form-control form-control-sm border-success fw-bold text-success" value="{{ client.whatsapp or '' }}" placeholder="+380...">
-                    </div>
-                    
                     <div class="mb-2">
                         <label class="form-label mb-1">Країна</label>
                         <input type="text" name="country" class="form-control form-control-sm" value="{{ client.country }}">
@@ -106,12 +100,14 @@
                     <div class="mb-1"><input type="text" name="contact_person" class="form-control form-control-sm" value="{{ client.contact_person }}" placeholder="Ім'я"></div>
                     <div class="mb-1"><input type="text" name="position" class="form-control form-control-sm" value="{{ client.position }}" placeholder="Посада"></div>
                     <div class="mb-1"><input type="text" name="phone" class="form-control form-control-sm" value="{{ client.phone }}" placeholder="Телефон"></div>
+                    <div class="mb-1"><input type="text" name="whatsapp_1" class="form-control form-control-sm border-success text-success fw-bold" value="{{ client.whatsapp_1 or '' }}" placeholder="🟢 WhatsApp №1"></div>
                     <div class="mb-2"><input type="email" name="email" class="form-control form-control-sm" value="{{ client.email }}" placeholder="Email"></div>
 
                     <h6 class="text-danger mt-3 border-bottom pb-1 mb-1">👤 Контактна особа №2</h6>
                     <div class="mb-1"><input type="text" name="contact_person_2" class="form-control form-control-sm" value="{{ client.contact_person_2 }}" placeholder="Ім'я"></div>
                     <div class="mb-1"><input type="text" name="position_2" class="form-control form-control-sm" value="{{ client.position_2 }}" placeholder="Посада"></div>
                     <div class="mb-1"><input type="text" name="phone_2" class="form-control form-control-sm" value="{{ client.phone_2 }}" placeholder="Телефон"></div>
+                    <div class="mb-1"><input type="text" name="whatsapp_2" class="form-control form-control-sm border-success text-success fw-bold" value="{{ client.whatsapp_2 or '' }}" placeholder="🟢 WhatsApp №2"></div>
                     <div class="mb-2"><input type="email" name="email_2" class="form-control form-control-sm" value="{{ client.email_2 }}" placeholder="Email"></div>
 
                     <h6 class="text-primary mt-3 border-bottom pb-1 mb-1">📅 Планування наступної дії</h6>
