@@ -16,11 +16,11 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 1. Таблиця клієнтів (якщо не існує)
+    # 1. Таблиця клієнтів (ВИПРАВЛЕНО НА NOT NULL)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clients (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT EXISTS,
+            name TEXT NOT NULL,
             interest_level TEXT,
             mayer_reg TEXT,
             buyer_type TEXT,
@@ -46,7 +46,7 @@ def init_db():
         )
     ''')
     
-    # 2. Таблиця історії перемовин з новим полем author
+    # 2. Таблиця історії перемовин з полем author
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS negotiations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,8 +58,7 @@ def init_db():
         )
     ''')
     
-    # АВТО-АПГРЕЙД БАЗИ ДАНИХ:
-    # Перевіряємо, чи є вже колонка 'author' в таблиці negotiations. Якщо немає — додаємо її.
+    # АВТО-АПГРЕЙД БАЗИ ДАНИХ
     try:
         cursor.execute("SELECT author FROM negotiations LIMIT 1")
     except sqlite3.OperationalError:
@@ -78,28 +77,23 @@ def index():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Отримуємо фільтр місяця (за замовчуванням 'all')
     month_filter = request.args.get('month_filter', 'all')
     
-    # Базовий запит для списку клієнтів
     if month_filter and month_filter != 'all':
         cursor.execute('SELECT * FROM clients WHERE revenue_month = ? ORDER BY name ASC', (month_filter,))
     else:
         cursor.execute('SELECT * FROM clients ORDER BY name ASC')
-    clients = cursor.execute('SELECT * FROM clients ORDER BY name ASC').fetchall() # Повний список для таблиці
+    clients = cursor.fetchall()
     
-    # Фільтровані клієнти для фінансових підрахунків
     if month_filter and month_filter != 'all':
         filtered_clients = [c for c in clients if c['revenue_month'] == month_filter]
     else:
         filtered_clients = clients
 
-    # Підрахунок фінансових підсумків
     total_planned = sum(c['planned_revenue'] if c['planned_revenue'] else 0 for c in filtered_clients)
     total_actual = sum(c['actual_revenue'] if c['actual_revenue'] else 0 for c in filtered_clients)
     total_remaining = total_planned - total_actual
     
-    # Отримуємо сьогоднішню дату для підсвічування дій
     today_str = datetime.now().strftime('%Y-%m-%d')
     
     conn.close()
@@ -118,7 +112,6 @@ def add_client():
     mayer_reg = request.form.get('mayer_reg', 'Ні')
     buyer_type = request.form.get('buyer_type', 'не вказано')
     
-    # Збір обраних брендів у рядок через кому
     brands_list = request.form.getlist('brands')
     brands = ', '.join(brands_list) if brands_list else ''
     
@@ -141,7 +134,6 @@ def add_client():
     next_event_date = request.form.get('next_event_date')
     next_event_type = request.form.get('next_event_type')
     
-    # Фінансові поля
     planned_revenue = request.form.get('planned_revenue', 0)
     actual_revenue = request.form.get('actual_revenue', 0)
     revenue_month = request.form.get('revenue_month', '')
@@ -182,10 +174,9 @@ def client_detail(client_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Обробка додавання нового запису в історію перемовин
     if request.method == 'POST':
         result = request.form.get('result')
-        author = request.form.get('author', 'Продажі') # Отримуємо роль автора (за замовчуванням Продажі)
+        author = request.form.get('author', 'Продажі')
         
         if result:
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
@@ -197,7 +188,6 @@ def client_detail(client_id):
             flash('Запис додано до історії!', 'success')
             return redirect(url_for('client_detail', client_id=client_id))
             
-    # Завантаження даних про клієнта та його історію перемовин
     client = cursor.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
     history = cursor.execute('SELECT * FROM negotiations WHERE client_id = ? ORDER BY id DESC', (client_id,)).fetchall()
     conn.close()
@@ -293,8 +283,7 @@ def edit_negotiation(neg_id):
         cursor = conn.cursor()
         cursor.execute('UPDATE negotiations SET result = ? WHERE id = ?', (new_result, neg_id))
         conn.commit()
-        conn.close()
-        flash('Запис в історії успішно відредаговано!', 'success')
+        cursor.close()
         
     return redirect(url_for('client_detail', client_id=client_id))
 
@@ -308,24 +297,19 @@ def delete_negotiation(neg_id):
     conn.commit()
     conn.close()
     
-    flash('Запис видалено з історії.', 'warning')
     return redirect(url_for('client_detail', client_id=client_id))
 
 @app.route('/delete_client/<int:client_id>', methods=['POST'])
 def delete_client(client_id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    # Видаляємо спочатку історію перемовин, щоб не залишати сміття в базі
     cursor.execute('DELETE FROM negotiations WHERE client_id = ?', (client_id,))
-    # Видаляємо самого клієнта
     cursor.execute('DELETE FROM clients WHERE id = ?', (client_id,))
     conn.commit()
     conn.close()
     
-    flash('Клієнта та всю історію його активностей остаточно видалено!', 'danger')
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    # Працюємо на порті 5000 (стандарт для Flask) або тому, який видасть Render
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port)
