@@ -78,7 +78,7 @@
                         <span class="fw-bold text-secondary">👥 Всього контрагентів:</span>
                         <span class="badge bg-dark px-2.5 py-1.5" style="font-size: 0.95rem;">{{ total_clients }}</span>
                     </div>
-                     
+                    
                     <div class="mb-3">
                         <div class="fw-bold text-muted small text-uppercase mb-2">🔍 Статуси зацікавленості:</div>
                         <div class="d-flex flex-column gap-2">
@@ -248,10 +248,10 @@
                 </div>
             </div>
         </div>
-         
+        
         <div class="col-md-7 mb-3">
             <div class="card shadow-sm border-dark h-100">
-                <div class="card-header bg-dark text-white py-2 fw-bold" id="selected-date-title">🎯 Клацніть на день з цифрою, щоб переглянути розгорнуті справи</div>
+                <div class="card-header bg-dark text-white py-2 fw-bold" id="selected-date-title">🎯  Клацніть на день з цифрою, щоб переглянути розгорнуті справи</div>
                 <div class="card-body p-0" id="calendar-tasks-box">
                     <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у календарі, щоб побачити заплановані перемовини.</div>
                 </div>
@@ -271,7 +271,7 @@
                             <label class="form-label mb-0 fw-bold">Введіть назву клієнта (пошук):</label>
                             <input type="text" id="client_search_input" class="form-control form-control-sm" placeholder="🔍 Почніть писати назву..." list="clients_datalist" oninput="syncClientId()" required autocomplete="off">
                             <input type="hidden" id="real_client_id" name="client_id">
-                             
+                            
                             <datalist id="clients_datalist">
                                 {% for sel_c in all_selector_clients %}
                                 <option data-id="{{ sel_c[0] }}" value="{{ sel_c[1] }}"></option>
@@ -309,7 +309,7 @@
             <div class="card shadow-sm border-dark">
                 <div class="card-header bg-dark text-white py-1.5 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span class="fw-bold">📋 Зведена відомість річного плану</span>
-                     
+                    
                     <form method="GET" action="/" class="d-flex align-items-center gap-1 mb-0">
                         <input type="hidden" name="tab" value="finance">
                         <select name="finance_month" class="form-select form-select-sm bg-secondary text-white border-0 fw-bold" onchange="this.form.submit()" style="max-width: 160px; cursor: pointer;">
@@ -415,13 +415,17 @@
                                 <option value="Дилер сг техніки">Дилер сг техніки</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label mb-0">Країна</label>
                             <input type="text" name="country" class="form-control form-control-sm" placeholder="Наприклад: Польща або Україна">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label mb-0">Веб-сайт</label>
                             <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label mb-0 text-success fw-bold">🟢 Номер WhatsApp</label>
+                            <input type="text" name="whatsapp" class="form-control form-control-sm border-success" placeholder="+380...">
                         </div>
                         <div class="col-12">
                             <label class="form-label mb-0">Адреса</label>
@@ -471,7 +475,7 @@
                             <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
                         </div>
                         <div class="col-12 bg-light p-2 rounded border">
-                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅  Планування першої дії (необов'язково)</h6>
+                            <h6 class="text-primary fw-bold mb-1" style="font-size: 0.85rem;">📅 Планування першої дії (необов'язково)</h6>
                             <div class="row g-2">
                                 <div class="col-md-6">
                                     <input type="date" name="next_event_date" class="form-control form-control-sm">
@@ -479,7 +483,7 @@
                                 <div class="col-md-6">
                                     <select name="next_event_type" class="form-select form-select-sm">
                                         <option value="" selected>-- Оберіть вид дії --</option>
-                                        <option value="call">📞 Дзвінок</option>
+                                        <option value="call">📞  Дзвінок</option>
                                         <option value="visit">🚗 Візит</option>
                                         <option value="email">✉️ Лист</option>
                                     </select>
