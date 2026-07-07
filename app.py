@@ -44,7 +44,9 @@ def init_db():
             interest_level TEXT,
             next_event_date TEXT,
             next_event_type TEXT,
-            mayer_reg TEXT
+            mayer_reg TEXT,
+            whatsapp_1 TEXT,
+            whatsapp_2 TEXT
         )
     ''')
     
@@ -63,7 +65,9 @@ def init_db():
         'interest_level': 'TEXT',
         'next_event_date': 'TEXT',
         'next_event_type': 'TEXT',
-        'mayer_reg': 'TEXT'
+        'mayer_reg': 'TEXT',
+        'whatsapp_1': 'TEXT',
+        'whatsapp_2': 'TEXT'
     }
     
     for field, f_type in new_fields.items():
@@ -87,6 +91,17 @@ def init_db():
     existing_neg_columns = [row[0] for row in cursor.fetchall()]
     if 'author' not in existing_neg_columns:
         cursor.execute("ALTER TABLE negotiations ADD COLUMN author TEXT DEFAULT 'Продажі';")
+
+    # СТВОРЕННЯ ТАБЛИЦІ ЗАВДАНЬ (ПЛАНЕР)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tasks (
+            id SERIAL PRIMARY KEY,
+            text TEXT NOT NULL,
+            deadline TEXT,
+            author TEXT DEFAULT 'Продажі',
+            status TEXT DEFAULT 'in_progress'
+        )
+    ''')
 
     # СТВОРЕННЯ ТАБЛИЦІ РІЧНОГО ПЛАНУ SALES_PLANS
     cursor.execute('''
@@ -234,6 +249,10 @@ def index():
     dict_cursor.execute("SELECT id, name FROM clients ORDER BY name ASC")
     all_selector_clients = dict_cursor.fetchall()
 
+    # НАВАНТАЖЕННЯ ЗАВДАНЬ ДЛЯ ПЛАНЕРА
+    dict_cursor.execute("SELECT * FROM tasks ORDER BY id DESC")
+    tasks = dict_cursor.fetchall()
+
     # НЕЗАЛЕЖНИЙ ЗБІР ДАНИХ ДЛЯ КАЛЕНДАРЯ
     cal_cursor = conn.cursor(cursor_factory=DictCursor)
     cal_cursor.execute("SELECT id, name, country, contact_person, phone, next_event_date, next_event_type FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != ''")
@@ -328,8 +347,49 @@ def index():
         total_remaining=total_remaining,
         json_clients=json_clients,
         json_busy_dates=json_busy_dates,
-        today_date=today_str
+        today_date=today_str,
+        tasks=tasks
     )
+
+# НОВІ МАРШРУТИ ДЛЯ РОБОТИ З ЗАДАЧАМИ (ПЛАНЕРОМ)
+@app.route('/add_task', methods=['POST'])
+@login_required
+def add_task():
+    text = request.form.get('text')
+    deadline = request.form.get('deadline', '')
+    author = request.form.get('author', 'Продажі')
+    if text:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO tasks (text, deadline, author, status) VALUES (%s, %s, %s, 'in_progress')", (text, deadline, author))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    return redirect(url_for('index', tab='tasks'))
+
+@app.route('/toggle_task/<int:task_id>', methods=['POST'])
+@login_required
+def toggle_task(task_id):
+    current_status = request.form.get('current_status')
+    new_status = 'completed' if current_status == 'in_progress' else 'in_progress'
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE tasks SET status=%s WHERE id=%s", (new_status, task_id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for('index', tab='tasks'))
+
+@app.route('/delete_task/<int:task_id>', methods=['POST'])
+@login_required
+def delete_task(task_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM tasks WHERE id=%s", (task_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for('index', tab='tasks'))
 
 @app.route('/add_client', methods=['POST'])
 @login_required
@@ -343,6 +403,8 @@ def add_client():
     next_event_date = request.form.get('next_event_date', '')
     next_event_type = request.form.get('next_event_type', '')
     mayer_reg = request.form.get('mayer_reg', 'Ні')
+    whatsapp_1 = request.form.get('whatsapp_1', '')
+    whatsapp_2 = request.form.get('whatsapp_2', '')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
@@ -362,10 +424,10 @@ def add_client():
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
-                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2)
         )
         conn.commit()
         cursor.close()
@@ -384,6 +446,8 @@ def edit_client(client_id):
     next_event_date = request.form.get('next_event_date', '')
     next_event_type = request.form.get('next_event_type', '')
     mayer_reg = request.form.get('mayer_reg', 'Ні')
+    whatsapp_1 = request.form.get('whatsapp_1', '')
+    whatsapp_2 = request.form.get('whatsapp_2', '')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
@@ -404,9 +468,9 @@ def edit_client(client_id):
         cursor.execute(
             """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
                                   website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
-                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s WHERE id=%s""",
+                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s WHERE id=%s""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, client_id)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, client_id)
         )
         conn.commit()
         cursor.close()
@@ -475,7 +539,7 @@ def client_detail(client_id):
     
     if request.method == 'POST':
         result_text = request.form.get('result')
-        author = request.form.get('author', 'Продажі') # ЗБІР РОЛІ З ФОРМИ КАРТКИ
+        author = request.form.get('author', 'Продажі') 
         if result_text:
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
             cursor.execute(
@@ -492,7 +556,7 @@ def client_detail(client_id):
     fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
                        'contact_person', 'position', 'phone', 'email', 
                        'contact_person_2', 'position_2', 'phone_2', 'email_2', 
-                       'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg']
+                       'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp_1', 'whatsapp_2']
     for field in fields_to_check:
         if field not in client or client[field] is None:
             if field == 'interest_level':
@@ -542,8 +606,8 @@ def export_excel():
     query = """
         SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
                c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
-               c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.email AS "Email 1",
-               c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.email_2 AS "Email 2",
+               c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.whatsapp_1 AS "WhatsApp 1", c.email AS "Email 1",
+               c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.whatsapp_2 AS "WhatsApp 2", c.email_2 AS "Email 2",
                c.next_event_date AS "Дата наступної події", c.next_event_type AS "Вид наступної події"
         FROM clients c ORDER BY c.name ASC
     """
