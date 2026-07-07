@@ -87,6 +87,12 @@
                         <label class="form-label mb-1">Веб-сайт</label>
                         <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website }}">
                     </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label mb-1 text-success fw-bold">🟢 Номер WhatsApp</label>
+                        <input type="text" name="whatsapp" class="form-control form-control-sm border-success fw-bold text-success" value="{{ client.whatsapp or '' }}" placeholder="+380...">
+                    </div>
+                    
                     <div class="mb-2">
                         <label class="form-label mb-1">Країна</label>
                         <input type="text" name="country" class="form-control form-control-sm" value="{{ client.country }}">
