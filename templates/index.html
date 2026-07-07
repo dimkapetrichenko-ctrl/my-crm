@@ -36,6 +36,7 @@
                 <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
                 <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-4">💰 Річний план</button>
+                <button onclick="switchWindow('tasks-win')" id="btn-tasks-win" class="btn btn-md btn-outline-light fw-bold px-4">📝 Задачник</button>
             </div>
         </div>
     </div>
@@ -149,7 +150,7 @@
                             {% for client in clients %}
                             <tr style="border-bottom: 1.5px solid #6c757d;" class="{% if client.next_event_date == today_date %}table-warning fw-bold text-dark{% elif loop.index0 % 2 == 1 %}table-light{% else %}bg-white{% endif %}">
                                 <td style="padding: 6px 8px; min-width: 150px;">
-                                    <strong style="font-size: 0.90rem; color: #111;">{{ client.name }}</strong>
+                                    <a href="/client/{{ client.id }}" class="fw-bold text-decoration-none text-dark" style="font-size: 0.90rem;">{{ client.name }}</a>
                                     {% if client.website %}
                                         <br><a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-decoration-none small text-primary" style="font-size: 0.74rem; display: inline-block;">🔗 {{ client.website | replace('https://','') | replace('www.','') }}</a>
                                     {% endif %}
@@ -181,6 +182,116 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="window-tasks-win" class="crm-window" style="display: none;">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-primary">
+                <div class="card-header bg-dark text-white py-1.5 fw-bold">➕ Створити нове завдання</div>
+                <div class="card-body p-2.5 bg-light" style="font-size: 0.85rem;">
+                    <form action="/add_task" method="POST">
+                        <div class="mb-2">
+                            <label class="form-label mb-0 fw-bold">Зміст завдання:</label>
+                            <textarea name="text" class="form-control form-control-sm" rows="4" placeholder="Напишіть, що необхідно виконати..." required></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label mb-0 small text-muted">Термін виконання (Дедлайн):</label>
+                            <input type="date" name="deadline" class="form-control form-control-sm fw-bold text-danger">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label mb-0 small text-muted">Відповідальна особа:</label>
+                            <select name="author" class="form-select form-select-sm fw-bold">
+                                <option value="Продажі" selected>💼 Відділ продажів</option>
+                                <option value="CEO">📁 Керівництво CEO</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-success w-100 fw-bold">💾 Додати в планер</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card bg-light border-primary shadow-xs h-100">
+                        <div class="card-header bg-primary text-white py-1.5 fw-bold d-flex justify-content-between align-items-center">
+                            <span>🚀 Активні завдання (В процесі)</span>
+                        </div>
+                        <div class="card-body p-2" style="max-height: 70vh; overflow-y: auto;">
+                            {% set ns_in_progress = namespace(count=0) %}
+                            {% for task in tasks if task.status == 'in_progress' %}
+                                {% set ns_in_progress.count = ns_in_progress.count + 1 %}
+                                <div class="card mb-2 shadow-sm border-start border-primary border-3 bg-white">
+                                    <div class="card-body p-2.5">
+                                        <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
+                                            {% if task.author == 'CEO' %}
+                                                <span class="badge bg-danger px-2 py-1">📁 CEO</span>
+                                            {% else %}
+                                                <span class="badge bg-primary px-2 py-1">💼 Продажі</span>
+                                            {% endif %}
+                                            <span class="badge bg-light text-danger border border-danger font-monospace small">⏳ {{ task.deadline or 'Без дедлайну' }}</span>
+                                        </div>
+                                        <p class="mb-2 text-dark font-medium" style="white-space: pre-line; font-size: 0.9rem;">{{ task.text }}</p>
+                                        <div class="d-flex gap-1.5 justify-content-end">
+                                            <form action="/toggle_task/{{ task.id }}" method="POST" class="mb-0">
+                                                <input type="hidden" name="current_status" value="in_progress">
+                                                <button type="submit" class="btn btn-xs btn-success fw-bold py-0.5 px-2">✅ Виконано</button>
+                                            </form>
+                                            <form action="/delete_task/{{ task.id }}" method="POST" class="mb-0" onsubmit="return confirm('Видалити завдання?');">
+                                                <button type="submit" class="btn btn-xs btn-outline-secondary py-0.5 px-1.5">🗑️</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            {% if ns_in_progress.count == 0 %}
+                                <div class="text-center text-muted py-4 small fw-bold">🌴 Немає активних завдань. Все опрацьовано!</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card bg-light border-success shadow-xs h-100">
+                        <div class="card-header bg-success text-white py-1.5 fw-bold">
+                            <span>✅ Завершені завдання (Виконано)</span>
+                        </div>
+                        <div class="card-body p-2" style="max-height: 70vh; overflow-y: auto;">
+                            {% set ns_completed = namespace(count=0) %}
+                            {% for task in tasks if task.status == 'completed' %}
+                                {% set ns_completed.count = ns_completed.count + 1 %}
+                                <div class="card mb-2 shadow-xs border-start border-success border-3 bg-white" style="opacity: 0.8;">
+                                    <div class="card-body p-2.5 bg-light-xs">
+                                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                            <span class="badge bg-secondary px-2">
+                                                {% if task.author == 'CEO' %}📁 CEO{% else %}💼 Продажі{% endif %}
+                                            </span>
+                                            <span class="text-muted text-decoration-line-through font-monospace small">Закрито</span>
+                                        </div>
+                                        <p class="mb-2 text-muted text-decoration-line-through small" style="white-space: pre-line;">{{ task.text }}</p>
+                                        <div class="d-flex gap-1.5 justify-content-end">
+                                            <form action="/toggle_task/{{ task.id }}" method="POST" class="mb-0">
+                                                <input type="hidden" name="current_status" value="completed">
+                                                <button type="submit" class="btn btn-xs btn-outline-warning text-dark py-0.5 px-1.5" style="font-size: 0.72rem;">🔄 Повернути</button>
+                                            </form>
+                                            <form action="/delete_task/{{ task.id }}" method="POST" class="mb-0" onsubmit="return confirm('Видалити назавжди з архіву?');">
+                                                <button type="submit" class="btn btn-xs btn-outline-danger py-0.5 px-1.5">🗑️</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            {% if ns_completed.count == 0 %}
+                                <div class="text-center text-muted py-4 small">Архів виконаних завдань порожній.</div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -591,16 +702,17 @@ function syncClientId() {
 function switchWindow(targetWinId) {
     document.querySelectorAll('.crm-window').forEach(win => win.style.display = 'none');
     document.getElementById('window-' + targetWinId).style.display = 'block';
-    ['today-win', 'calendar-win', 'all-win', 'finance-win'].forEach(id => {
+    ['today-win', 'calendar-win', 'all-win', 'finance-win', 'tasks-win'].forEach(id => {
         let btn = document.getElementById('btn-' + id);
         if (btn) btn.className = "btn btn-md btn-outline-light fw-bold px-4";
     });
     let activeBtn = document.getElementById('btn-' + targetWinId);
     if (activeBtn) {
         if(targetWinId === 'today-win') activeBtn.className = "btn btn-md btn-warning fw-bold px-4 shadow";
-        if(targetWinId === 'calendar-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-4 shadow";
-        if(targetWinId === 'all-win') activeBtn.className = "btn btn-md btn-success fw-bold px-4 shadow";
-        if(targetWinId === 'finance-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-4 shadow";
+        else if(targetWinId === 'calendar-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-4 shadow";
+        else if(targetWinId === 'all-win') activeBtn.className = "btn btn-md btn-success fw-bold px-4 shadow";
+        else if(targetWinId === 'finance-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-4 shadow";
+        else if(targetWinId === 'tasks-win') activeBtn.className = "btn btn-md btn-info text-white fw-bold px-4 shadow";
     }
 }
 
@@ -671,7 +783,9 @@ function showTasksForDate(dateStr) {
 window.onload = function() {
     renderCalendar();
     const urlParams = new URLSearchParams(window.location.search);
-    if(urlParams.get('tab') === 'finance' || urlParams.get('finance_month') !== null) { 
+    if(urlParams.get('tab') === 'tasks') {
+        switchWindow('tasks-win');
+    } else if(urlParams.get('tab') === 'finance' || urlParams.get('finance_month') !== null) { 
         switchWindow('finance-win'); 
     } else {
         switchWindow('all-win');
