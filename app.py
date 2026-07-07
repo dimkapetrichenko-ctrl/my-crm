@@ -1,4 +1,5 @@
 import os
+import json  # Обов'язковий імпорт бібліотеки json для календаря!
 import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime
@@ -54,11 +55,11 @@ def init_db():
             date TEXT,
             result TEXT,
             author TEXT,
-            FOREIGN KEY(client_id) REFERENCES clients(id)
+            FOREIGN KEY(client_id) REFERENCES clients (id) ON DELETE CASCADE
         )
     ''')
     
-    # Автоматичний апгрейд полів таблиці історії перемовин
+    # Автоматичний апгрейд полей таблиці історії перемовин
     try:
         cursor.execute("SELECT author FROM negotiations LIMIT 1")
     except sqlite3.OperationalError:
@@ -67,6 +68,7 @@ def init_db():
         conn.commit()
         
     conn.commit()
+    cursor.close()
     conn.close()
 
 # Ініціалізація бази даних при старті
@@ -82,7 +84,7 @@ def index():
     country_filter = request.args.get('country', '').strip()
     finance_month_filter = request.args.get('finance_month', '').strip()
     
-    # Збір аналітики для лівої панелі
+    # Збір аналітики для лівої панелі контрагентів
     cursor.execute("SELECT COUNT(*) FROM clients")
     total_clients = cursor.fetchone()[0]
     
@@ -128,14 +130,14 @@ def index():
         last_activity = last_act_row[0] if last_act_row and last_act_row[0] else ''
         
         clients.append({
-            'id': row['id'], 'name': row['name'], 'country': row['country'], 'address': row['address'],
-            'contact_person': row['contact_person'], 'position': row['position'], 'phone': row['phone'],
-            'whatsapp_1': row['whatsapp_1'], 'email': row['email'], 'contact_person_2': row['contact_person_2'],
-            'position_2': row['position_2'], 'phone_2': row['phone_2'], 'whatsapp_2': row['whatsapp_2'],
-            'email_2': row['email_2'], 'next_event_date': row['next_event_date'], 'next_event_type': row['next_event_type'],
+            'id': row['id'], 'name': row['name'], 'country': row['country'] if row['country'] else '', 'address': row['address'] if row['address'] else '',
+            'contact_person': row['contact_person'] if row['contact_person'] else '', 'position': row['position'] if row['position'] else '', 'phone': row['phone'] if row['phone'] else '',
+            'whatsapp_1': row['whatsapp_1'] if row['whatsapp_1'] else '', 'email': row['email'] if row['email'] else '', 'contact_person_2': row['contact_person_2'] if row['contact_person_2'] else '',
+            'position_2': row['position_2'] if row['position_2'] else '', 'phone_2': row['phone_2'] if row['phone_2'] else '', 'whatsapp_2': row['whatsapp_2'] if row['whatsapp_2'] else '',
+            'email_2': row['email_2'] if row['email_2'] else '', 'next_event_date': row['next_event_date'] if row['next_event_date'] else '', 'next_event_type': row['next_event_type'] if row['next_event_type'] else '',
             'buyer_type': row['buyer_type'] if row['buyer_type'] else 'не вказано', 'brands': row['brands'] if row['brands'] else '-',
             'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано', 'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні',
-            'planned_revenue': row['planned_revenue'], 'actual_revenue': row['actual_revenue'], 'revenue_month': row['revenue_month'],
+            'planned_revenue': float(row['planned_revenue'] or 0), 'actual_revenue': float(row['actual_revenue'] or 0), 'revenue_month': row['revenue_month'] if row['revenue_month'] else '',
             'last_activity': last_activity
         })
         
@@ -144,10 +146,15 @@ def index():
     for c in clients:
         if c['planned_revenue'] > 0 or c['actual_revenue'] > 0:
             if not finance_month_filter or finance_month_filter == c['revenue_month']:
-                finance_plans.append(c)
+                # Мапимо структуру під очікування шаблону річного плану
+                finance_plans.append({
+                    'id': c['id'], 'client_id': c['id'], 'client_name': c['name'], 'country': c['country'] if c['country'] else '-',
+                    'planned_amount': c['planned_revenue'], 'actual_amount': c['actual_revenue'], 'month_name': c['revenue_month'] if c['revenue_month'] else '-',
+                    'payment_date': '-'
+                })
                 
-    total_planned = sum(f['planned_revenue'] for f in finance_plans)
-    total_actual = sum(f['actual_revenue'] for f in finance_plans)
+    total_planned = sum(f['planned_amount'] for f in finance_plans)
+    total_actual = sum(f['actual_amount'] for f in finance_plans)
     total_remaining = total_planned - total_actual
     
     # Дані для календаря дій JavaScript
@@ -157,7 +164,7 @@ def index():
         if c['next_event_date']:
             busy_dates.append(c['next_event_date'])
             clients_js_data.append({
-                'id': c['id'], 'name': c['name'].replace("'", "\\'"), 'country': c['country'],
+                'id': c['id'], 'name': c['name'].replace("'", "\\'").replace('"', '\\"'), 'country': c['country'],
                 'next_event_date': c['next_event_date'], 'next_event_type': c['next_event_type']
             })
             
@@ -165,6 +172,7 @@ def index():
     json_busy_dates = json.dumps(busy_dates, ensure_ascii=False)
     today_str = datetime.now().strftime('%Y-%m-%d')
     
+    cursor.close()
     conn.close()
     return render_template(
         'index.html', clients=clients, all_selector_clients=all_selector_clients,
@@ -221,6 +229,7 @@ def add_client():
             next_event_date, next_event_type
         ))
         conn.commit()
+        cursor.close()
         conn.close()
     return redirect(url_for('index'))
 
@@ -269,6 +278,7 @@ def edit_client(client_id):
         next_event_date, next_event_type, client_id
     ))
     conn.commit()
+    cursor.close()
     conn.close()
     return redirect(url_for('client_detail', client_id=client_id))
 
@@ -293,6 +303,7 @@ def add_finance_plan():
             UPDATE clients SET planned_revenue=?, actual_revenue=?, revenue_month=? WHERE id=?
         ''', (planned_amount, actual_amount, month_name, client_id))
         conn.commit()
+        cursor.close()
         conn.close()
     return redirect(url_for('index', finance_month=month_name))
 
@@ -315,6 +326,7 @@ def edit_finance_plan(plan_id):
         UPDATE clients SET planned_revenue=?, actual_revenue=?, revenue_month=? WHERE id=?
     ''', (planned_amount, actual_amount, month_name, plan_id))
     conn.commit()
+    cursor.close()
     conn.close()
     return redirect(url_for('index', finance_month=month_name))
 
@@ -324,31 +336,9 @@ def delete_finance_plan(plan_id):
     cursor = conn.cursor()
     cursor.execute('UPDATE clients SET planned_revenue=0, actual_revenue=0, revenue_month=\'\' WHERE id=?', (plan_id,))
     conn.commit()
+    cursor.close()
     conn.close()
     return redirect(url_for('index'))
-
-@app.route('/client/<int:client_id>', methods=['GET', 'POST'])
-def client_detail(client_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    if request.method == 'POST':
-        result = request.form.get('result')
-        author = request.form.get('author', 'Продажі')
-        
-        if result:
-            current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
-            cursor.execute(
-                'INSERT INTO negotiations (client_id, date, result, author) VALUES (?, ?, ?, ?)',
-                (client_id, current_time, result, author)
-            )
-            conn.commit()
-            return redirect(url_for('client_detail', client_id=client_id))
-            
-    client = cursor.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
-    history = cursor.execute('SELECT * FROM negotiations WHERE client_id = ? ORDER BY id DESC', (client_id,)).fetchall()
-    conn.close()
-    return render_template('client.html', client=client, history=history)
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
 def edit_negotiation(neg_id):
@@ -359,6 +349,7 @@ def edit_negotiation(neg_id):
         cursor = conn.cursor()
         cursor.execute('UPDATE negotiations SET result = ? WHERE id = ?', (new_result, neg_id))
         conn.commit()
+        cursor.close()
         conn.close()
     return redirect(url_for('client_detail', client_id=client_id))
 
@@ -369,18 +360,9 @@ def delete_negotiation(neg_id):
     cursor = conn.cursor()
     cursor.execute('DELETE FROM negotiations WHERE id = ?', (neg_id,))
     conn.commit()
+    cursor.close()
     conn.close()
     return redirect(url_for('client_detail', client_id=client_id))
-
-@app.route('/delete_client/<int:client_id>', methods=['POST'])
-def delete_client(client_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM negotiations WHERE client_id = ?', (client_id,))
-    cursor.execute('DELETE FROM clients WHERE id = ?', (client_id,))
-    conn.commit()
-    conn.close()
-    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
