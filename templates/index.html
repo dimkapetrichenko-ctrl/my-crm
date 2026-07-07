@@ -68,7 +68,7 @@
 
             <div class="card shadow-sm">
                 <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">📊 Аналітика бази</h6>
+                    <h6 class="mb-0 fw-bold">📊 Analitika бази</h6>
                     {% if interest_filter or country_filter or search_query %}
                         <a href="{{ url_for('index') }}" class="btn btn-xs btn-danger py-0 px-1.5 fw-bold" style="font-size: 0.72rem; border-radius: 3px;">❌ Скинути</a>
                     {% endif %}
@@ -251,7 +251,7 @@
         
         <div class="col-md-7 mb-3">
             <div class="card shadow-sm border-dark h-100">
-                <div class="card-header bg-dark text-white py-2 fw-bold" id="selected-date-title">🎯  Клацніть на день з цифрою, щоб переглянути розгорнуті справи</div>
+                <div class="card-header bg-dark text-white py-2 fw-bold" id="selected-date-title">🎯 Клацніть на день з цифрою, щоб переглянути розгорнуті справи</div>
                 <div class="card-body p-0" id="calendar-tasks-box">
                     <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у календарі, щоб побачити заплановані перемовини.</div>
                 </div>
@@ -415,17 +415,13 @@
                                 <option value="Дилер сг техніки">Дилер сг техніки</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label mb-0">Країна</label>
                             <input type="text" name="country" class="form-control form-control-sm" placeholder="Наприклад: Польща або Україна">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label mb-0">Веб-сайт</label>
                             <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label mb-0 text-success fw-bold">🟢 Номер WhatsApp</label>
-                            <input type="text" name="whatsapp" class="form-control form-control-sm border-success" placeholder="+380...">
                         </div>
                         <div class="col-12">
                             <label class="form-label mb-0">Адреса</label>
@@ -460,18 +456,22 @@
                                 </div>
                             </div>
                         </div>
+                        
                         <div class="col-md-6 border-end">
                             <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №1</h6>
                             <input type="text" name="contact_person" class="form-control form-control-sm mb-1" placeholder="ПІБ">
                             <input type="text" name="position" class="form-control form-control-sm mb-1" placeholder="Посада">
                             <input type="text" name="phone" class="form-control form-control-sm mb-1" placeholder="Телефон">
+                            <input type="text" name="whatsapp_1" class="form-control form-control-sm mb-1 border-success text-success fw-bold" placeholder="🟢 WhatsApp №1">
                             <input type="email" name="email" class="form-control form-control-sm" placeholder="Email">
                         </div>
+                        
                         <div class="col-md-6">
                             <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №2</h6>
                             <input type="text" name="contact_person_2" class="form-control form-control-sm mb-1" placeholder="ПІБ">
                             <input type="text" name="position_2" class="form-control form-control-sm mb-1" placeholder="Посада">
                             <input type="text" name="phone_2" class="form-control form-control-sm mb-1" placeholder="Телефон">
+                            <input type="text" name="whatsapp_2" class="form-control form-control-sm mb-1 border-success text-success fw-bold" placeholder="🟢 WhatsApp №2">
                             <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
                         </div>
                         <div class="col-12 bg-light p-2 rounded border">
@@ -483,7 +483,7 @@
                                 <div class="col-md-6">
                                     <select name="next_event_type" class="form-select form-select-sm">
                                         <option value="" selected>-- Оберіть вид дії --</option>
-                                        <option value="call">📞  Дзвінок</option>
+                                        <option value="call">📞 Дзвінок</option>
                                         <option value="visit">🚗 Візит</option>
                                         <option value="email">✉️ Лист</option>
                                     </select>
