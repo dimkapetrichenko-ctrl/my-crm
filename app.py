@@ -6,6 +6,9 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 from datetime import datetime
 import pandas as pd
 import io
+import smtplib
+from email.mime.text import MIMEText
+from email.header import Header
 
 app = Flask(__name__)
 
@@ -16,9 +19,36 @@ CRM_PASSWORD = os.environ.get('CRM_PASSWORD', 'Mayer2026')
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+# Конфігурація бізнес-пошти Хостинг Україна з Render
+MAIL_SERVER = os.environ.get('MAIL_SERVER', 'mail.adm.tools')
+MAIL_PORT = 465  # Безпечний SSL порт
+MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
+
+# Внутрішня функція відправки пошти через сервер Хостинг Україна
+def send_email_notification(to_email, subject, body_text):
+    if not MAIL_USERNAME or not MAIL_PASSWORD:
+        print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
+        return False
+    try:
+        msg = MIMEText(body_text, 'plain', 'utf-8')
+        msg['Subject'] = Header(subject, 'utf-8')
+        msg['From'] = MAIL_USERNAME
+        msg['To'] = to_email
+        
+        # Підключення по захищеному SSL каналу
+        server = smtplib.SMTP_SSL(MAIL_SERVER, MAIL_PORT)
+        server.login(MAIL_USERNAME, MAIL_PASSWORD)
+        server.sendmail(MAIL_USERNAME, [to_email], msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"❌ Помилка SMTP відправки: {str(e)}")
+        return False
 
 def init_db():
     conn = get_db_connection()
@@ -54,27 +84,16 @@ def init_db():
     existing_columns = [row[0] for row in cursor.fetchall()]
     
     new_fields = {
-        'website': 'TEXT',
-        'buyer_type': 'TEXT',
-        'brands': 'TEXT',
-        'position': 'TEXT',
-        'contact_person_2': 'TEXT',
-        'position_2': 'TEXT',
-        'phone_2': 'TEXT',
-        'email_2': 'TEXT',
-        'interest_level': 'TEXT',
-        'next_event_date': 'TEXT',
-        'next_event_type': 'TEXT',
-        'mayer_reg': 'TEXT',
-        'whatsapp_1': 'TEXT',
-        'whatsapp_2': 'TEXT'
+        'website': 'TEXT', 'buyer_type': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
+        'contact_person_2': 'TEXT', 'position_2': 'TEXT', 'phone_2': 'TEXT', 'email_2': 'TEXT',
+        'interest_level': 'TEXT', 'next_event_date': 'TEXT', 'next_event_type': 'TEXT', 'mayer_reg': 'TEXT',
+        'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT'
     }
     
     for field, f_type in new_fields.items():
         if field not in existing_columns:
             cursor.execute(f"ALTER TABLE clients ADD COLUMN {field} {f_type};")
 
-    # СТВОРЕННЯ ТАБЛИЦІ ПЕРЕМОВИН З ПОЛЕМ AUTHOR
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS negotiations (
             id SERIAL PRIMARY KEY,
@@ -86,13 +105,11 @@ def init_db():
         )
     ''')
 
-    # АВТОМАТИЧНЕ ДОДАВАННЯ КОЛОНКИ AUTHOR, ЯКЩО ВОНА ЩЕ НЕ ІСНУЄ В POSTGRES
     cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='negotiations'")
     existing_neg_columns = [row[0] for row in cursor.fetchall()]
     if 'author' not in existing_neg_columns:
         cursor.execute("ALTER TABLE negotiations ADD COLUMN author TEXT DEFAULT 'Продажі';")
 
-    # СТВОРЕННЯ ТАБЛИЦІ ЗАВДАНЬ (ПЛАНЕР)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tasks (
             id SERIAL PRIMARY KEY,
@@ -103,7 +120,6 @@ def init_db():
         )
     ''')
 
-    # СТВОРЕННЯ ТАБЛИЦІ РІЧНОГО ПЛАНУ SALES_PLANS
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sales_plans (
             id SERIAL PRIMARY KEY,
@@ -185,11 +201,9 @@ def index():
             SET interest_level = 'не опрацьовано' 
             WHERE id NOT IN (SELECT DISTINCT client_id FROM negotiations);
         """)
-        
         conn.commit()
     
     country_cursor = conn.cursor()
-    # ВИПРАВЛЕНО СИНТАКСИС КРАЇН: IS NOT NULL ЗАМІСТЬ IS NOT EXISTS
     country_cursor.execute("SELECT DISTINCT country FROM clients WHERE country IS NOT NULL AND country != '' ORDER BY country ASC")
     countries = [row[0] for row in country_cursor.fetchall()]
     country_cursor.close()
@@ -214,7 +228,6 @@ def index():
     buyer_type_stats = stats_cursor.fetchall()
     stats_cursor.close()
     
-    # ФІНАНСОВИЙ БЛОК: СТАТИСТИКА ТА ФІЛЬТР МІСЯЦІВ
     dict_cursor = conn.cursor(cursor_factory=DictCursor)
     finance_sql = """
         SELECT sp.id, sp.client_id, sp.planned_amount, sp.month_name, sp.actual_amount, sp.payment_date,
@@ -250,12 +263,10 @@ def index():
     dict_cursor.execute("SELECT id, name FROM clients ORDER BY name ASC")
     all_selector_clients = dict_cursor.fetchall()
 
-    # ЗБІР АКТИВНИХ ЗАВДАНЬ ДЛЯ КАЛЕНДАРЯ ЗАДАЧНИКА
     dict_cursor.execute("SELECT id, text, deadline, author, status FROM tasks ORDER BY id DESC")
     tasks_raw = dict_cursor.fetchall()
     tasks = [dict(t) for t in tasks_raw]
 
-    # НЕЗАЛЕЖНИЙ ЗБІР ДАНИХ ДЛЯ КАЛЕНДАРЯ КЛІЄНТІВ
     cal_cursor = conn.cursor(cursor_factory=DictCursor)
     cal_cursor.execute("SELECT id, name, country, contact_person, phone, next_event_date, next_event_type FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != ''")
     all_raw_cal = cal_cursor.fetchall()
@@ -354,7 +365,32 @@ def index():
         json_tasks=json.dumps(tasks, ensure_ascii=False)
     )
 
-# МАРШРУТИ ПЛАНЕРА ЗАВДАНЬ
+# МАРШРУТ НАДСИЛАННЯ EMAIL З КАРТКИ КЛІЄНТА
+@app.route('/send_client_email', methods=['POST'])
+@login_required
+def send_client_email():
+    client_id = request.form.get('client_id')
+    to_email = request.form.get('email', '').strip()
+    subject = request.form.get('subject', 'Пропозиція від Mayer Pro').strip()
+    body_text = request.form.get('body', '').strip()
+    
+    if to_email and body_text:
+        success = send_email_notification(to_email, subject, body_text)
+        if success:
+            # Фіксуємо факт успішної відправки листа в історію перемовин
+            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            log_text = f"Надіслано Email на адресу {to_email}. Тема: \"{subject}\". Текст: {body_text}"
+            cursor.execute(
+                "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+                (client_id, current_date, log_text, 'Продажі')
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+    return redirect(url_for('client_detail', client_id=client_id))
+
 @app.route('/add_task', methods=['POST'])
 @login_required
 def add_task():
