@@ -45,7 +45,8 @@ def init_db():
             next_event_date TEXT,
             next_event_type TEXT,
             mayer_reg TEXT,
-            whatsapp TEXT
+            whatsapp TEXT,
+            whatsapp_2 TEXT
         )
     ''')
     
@@ -56,7 +57,7 @@ def init_db():
         'website': 'TEXT', 'buyer_type': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
         'contact_person_2': 'TEXT', 'position_2': 'TEXT', 'phone_2': 'TEXT', 'email_2': 'TEXT',
         'interest_level': 'TEXT', 'next_event_date': 'TEXT', 'next_event_type': 'TEXT', 
-        'mayer_reg': 'TEXT', 'whatsapp': 'TEXT'
+        'mayer_reg': 'TEXT', 'whatsapp': 'TEXT', 'whatsapp_2': 'TEXT'
     }
     
     for field, f_type in new_fields.items():
@@ -143,7 +144,7 @@ def index():
                 WHEN LOWER(country) IN ('эстония', 'estonia') THEN 'Естонія'
                 WHEN LOWER(country) IN ('венгрия', 'hungary') THEN 'Угорщина'
                 WHEN LOWER(country) IN ('румыния', 'romania') THEN 'Румунія'
-                WHEN LOWER(country) IN ('молдова', 'moldova') THEN 'Молдова'
+                WHEN LOWER(country) IN ('молдова', 'moldova') THEN 'Moldova'
                 ELSE country 
             END
             WHERE country IS NOT NULL AND country != '';
@@ -264,7 +265,7 @@ def index():
             'buyer_type': row['buyer_type'] if row['buyer_type'] else 'не вказано', 'brands': row['brands'] if row['brands'] else '-',
             'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано', 'last_activity': row['last_activity'] if row['last_activity'] else '',
             'next_event_date': str(row['next_event_date']) if row['next_event_date'] else '', 'next_event_type': str(row['next_event_type']) if row['next_event_type'] else '',
-            'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні', 'whatsapp': row['whatsapp'] if row['whatsapp'] else ''
+            'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні', 'whatsapp': row['whatsapp'] if row['whatsapp'] else '', 'whatsapp_2': row['whatsapp_2'] if row['whatsapp_2'] else ''
         })
     cursor.close()
     dict_cursor.close()
@@ -295,6 +296,7 @@ def add_client():
     next_event_type = request.form.get('next_event_type', '')
     mayer_reg = request.form.get('mayer_reg', 'Ні')
     whatsapp = request.form.get('whatsapp', '')
+    whatsapp_2 = request.form.get('whatsapp_2', '')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
@@ -314,10 +316,10 @@ def add_client():
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
-                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp, whatsapp_2) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp, whatsapp_2)
         )
         conn.commit()
         cursor.close()
@@ -337,175 +339,10 @@ def edit_client(client_id):
     next_event_type = request.form.get('next_event_type', '')
     mayer_reg = request.form.get('mayer_reg', 'Ні')
     whatsapp = request.form.get('whatsapp', '')
+    whatsapp_2 = request.form.get('whatsapp_2', '')
     
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
     
     contact_person = request.form.get('contact_person', '')
-    position = request.form.get('position', '')
-    phone = request.form.get('phone', '')
-    email = request.form.get('email', '')
-    
-    contact_person_2 = request.form.get('contact_person_2', '')
-    position_2 = request.form.get('position_2', '')
-    phone_2 = request.form.get('phone_2', '')
-    email_2 = request.form.get('email_2', '')
-    
-    if name:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
-                                  website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
-                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp=%s WHERE id=%s""",
-            (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp, client_id)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
-    return redirect(url_for('client_detail', client_id=client_id))
-
-@app.route('/delete_client/<int:client_id>', methods=['POST'])
-@login_required
-def delete_client(client_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM clients WHERE id = %s", (client_id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return redirect(url_for('index'))
-
-@app.route('/add_finance_plan', methods=['POST'])
-@login_required
-def add_finance_plan():
-    client_id = request.form.get('client_id')
-    planned_amount = request.form.get('planned_amount', 0)
-    month_name = request.form.get('month_name', '')
-    actual_amount = request.form.get('actual_amount', 0)
-    payment_date = request.form.get('payment_date', '')
-    if client_id:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO sales_plans (client_id, planned_amount, month_name, actual_amount, payment_date) VALUES (%s, %s, %s, %s, %s)", (client_id, planned_amount if planned_amount else 0, month_name, actual_amount if actual_amount else 0, payment_date))
-        conn.commit()
-        cursor.close()
-        conn.close()
-    return redirect(url_for('index', tab='finance', finance_month=month_name))
-
-@app.route('/edit_finance_plan/<int:plan_id>', methods=['POST'])
-@login_required
-def edit_finance_plan(plan_id):
-    planned_amount = request.form.get('planned_amount', 0)
-    month_name = request.form.get('month_name', '')
-    actual_amount = request.form.get('actual_amount', 0)
-    payment_date = request.form.get('payment_date', '')
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE sales_plans SET planned_amount=%s, month_name=%s, actual_amount=%s, payment_date=%s WHERE id=%s", (planned_amount if planned_amount else 0, month_name, actual_amount if actual_amount else 0, payment_date, plan_id))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return redirect(url_for('index', tab='finance', finance_month=month_name))
-
-@app.route('/delete_finance_plan/<int:plan_id>', methods=['POST'])
-@login_required
-def delete_finance_plan(plan_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM sales_plans WHERE id=%s", (plan_id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return redirect(url_for('index', tab='finance'))
-
-@app.route('/client/<int:client_id>', methods=['GET', 'POST'])
-@login_required
-def client_detail(client_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    
-    if request.method == 'POST':
-        result_text = request.form.get('result')
-        if result_text:
-            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-            cursor.execute("INSERT INTO negotiations (client_id, date, result) VALUES (%s, %s, %s)", (client_id, current_date, result_text))
-            conn.commit()
-        return redirect(url_for('client_detail', client_id=client_id))
-        
-    cursor.execute("SELECT * FROM clients WHERE id = %s", (client_id,))
-    raw_client = cursor.fetchone()
-    
-    client = dict(raw_client) if raw_client else {}
-    fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
-                       'contact_person', 'position', 'phone', 'email', 
-                       'contact_person_2', 'position_2', 'phone_2', 'email_2', 
-                       'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp']
-    for field in fields_to_check:
-        if field not in client or client[field] is None:
-            if field == 'interest_level':
-                client[field] = 'не опрацьовано'
-            elif field == 'mayer_reg':
-                client[field] = 'Ні'
-            else:
-                client[field] = ''
-    
-    cursor.execute("SELECT * FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
-    history = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    return render_template('client.html', client=client, history=history)
-
-@app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
-@login_required
-def edit_negotiation(neg_id):
-    client_id = request.form.get('client_id')
-    result_text = request.form.get('result')
-    if result_text:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE negotiations SET result = %s WHERE id = %s", (result_text, neg_id))
-        conn.commit()
-        cursor.close()
-        conn.close()
-    return redirect(url_for('client_detail', client_id=client_id))
-
-@app.route('/delete_negotiation/<int:neg_id>', methods=['POST'])
-@login_required
-def delete_negotiation(neg_id):
-    client_id = request.form.get('client_id')
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM negotiations WHERE id = %s", (neg_id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return redirect(url_for('client_detail', client_id=client_id))
-
-@app.route('/export_excel')
-@login_required
-def export_excel():
-    conn = get_db_connection()
-    query = """
-        SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
-               c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса", c.whatsapp AS "WhatsApp",
-               c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.email AS "Email 1",
-               c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.email_2 AS "Email 2",
-               c.next_event_date AS "Дата наступної події", c.next_event_type AS "Вид наступної події"
-        FROM clients c ORDER BY c.name ASC
-    """
-    df = pd.read_sql(query, conn)
-    conn.close()
-    
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Клієнти Mayer CRM')
-    output.seek(0)
-    
-    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name=f'Mayer_CRM_Clients_{datetime.now().strftime("%Y-%m-%d")}.xlsx')
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    position = request.form.get('position',
