@@ -39,24 +39,35 @@ def send_email_notification(to_email, subject, body_text):
         html_body = body_text.replace('\n', '<br>')
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
 
-        html_content = f"""
+    html_content = f"""
         <html>
-        <body style="font-family: Arial, sans-serif; color: #212529; line-height: 1.6;">
+        <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
             <div style="font-size: 15px; margin-bottom: 30px;">
                 {html_body}
             </div>
+            
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
-            <table border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #495057;">
+            
+            <table border="0" cellpadding="0" cellspacing="0" style="color: #212529;">
                 <tr>
                     <td style="vertical-align: top; padding-right: 20px;">
                         <img src="{logo_url}" alt="Mayer Pro Logo" width="220" style="display: block; max-width: 100%; height: auto;">
                     </td>
-                    <td style="vertical-align: top; border-left: 2px solid #dc3545; padding-left: 15px;">
-                        <strong style="font-size: 16px; color: #212529;">Dmytro Petrychenko</strong><br>
-                        <span style="color: #6c757d; font-weight: bold;">Business Development & Sales</span><br>
-                        <span style="color: #dc3545; font-weight: bold;">Plonaris Sp. z o.o.</span><br>
-                        🌐 <a href="https://mayer-pro.com" target="_blank" style="color: #0d6efd; text-decoration: none;">mayer-pro.com</a><br>
+                    <td style="vertical-align: top; border-left: 2px solid #dc3545; padding-left: 15px; font-size: 16px;">
+                        <span style="color: #6c757d; font-style: italic;">Z poważaniem / Kindly regards</span><br><br>
+                        <strong style="font-size: 18px;">Dmytro Petrychenko</strong><br>
+                        <span style="color: #495057; font-weight: 500;">Regional spare parts manager</span><br>
+                        <strong style="color: #dc3545;">MAYER PRO S.r.o.</strong><br>
+                        📱 +421 907 933 441<br>
+                        📱 +48 501 166 523<br>
+                        🌐 <a href="https://mayer-pro.com/en" target="_blank" style="color: #0d6efd; text-decoration: none;">mayer-pro.com/en</a><br>
                         📧 <a href="mailto:sales@mayer-pro.com" style="color: #0d6efd; text-decoration: none;">sales@mayer-pro.com</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding-top: 15px; font-size: 12px; color: #6c757d; border-top: 1px dashed #dee2e6; margin-top: 15px;">
+                        <strong>Mayer Pro s.r.o.</strong> | Address: Jegenesska, 9, 82103 Bratislava, Slovakia<br>
+                        <strong>VAT-nr:</strong> SK 2121592088
                     </td>
                 </tr>
             </table>
