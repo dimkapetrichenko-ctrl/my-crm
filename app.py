@@ -35,12 +35,8 @@ def send_email_notification(to_email, subject, body_text):
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        # Формуємо красивий HTML-шаблон листа
-        # Міняємо переноси рядків \n на HTML-тег <br>
+        # Заміна переносу рядків на HTML тег <br>
         html_body = body_text.replace('\n', '<br>')
-        
-        # URL вашого логотипу (вкажіть точну адресу вашого сервера на Render або сайту)
-        # Наприклад: https://my-crm-q24n.onrender.com/static/logotipnew.png
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
 
         html_content = f"""
@@ -49,9 +45,7 @@ def send_email_notification(to_email, subject, body_text):
             <div style="font-size: 15px; margin-bottom: 30px;">
                 {html_body}
             </div>
-            
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
-            
             <table border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #495057;">
                 <tr>
                     <td style="vertical-align: top; padding-right: 20px;">
@@ -70,7 +64,6 @@ def send_email_notification(to_email, subject, body_text):
         </html>
         """
 
-        # Міняємо формат на html
         msg = MIMEText(html_content, 'html', 'utf-8')
         msg['Subject'] = Header(subject, 'utf-8')
         msg['From'] = MAIL_USERNAME
@@ -84,31 +77,6 @@ def send_email_notification(to_email, subject, body_text):
     except Exception as e:
         print(f"❌ Помилка SMTP відправки: {str(e)}")
         return False
-
-# Маршрут обробки відправки з логуванням (повна версія)
-@app.route('/send_client_email', methods=['POST'])
-@login_required
-def send_client_email():
-    client_id = request.form.get('client_id')
-    to_email = request.form.get('email', '').strip()
-    subject = request.form.get('subject', '').strip()
-    body_text = request.form.get('body', '').strip()
-    
-    if to_email and body_text:
-        success = send_email_notification(to_email, subject, body_text)
-        if success:
-            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            log_text = f"Надіслано фірмовий HTML-Email. Тема: \"{subject}\""
-            cursor.execute(
-                "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
-                (client_id, current_date, log_text, 'Продажі')
-            )
-            conn.commit()
-            cursor.close()
-            conn.close()
-    return redirect(url_for('client_detail', client_id=client_id))
 
 def init_db():
     conn = get_db_connection()
@@ -199,6 +167,7 @@ def init_db():
 if DATABASE_URL:
     init_db()
 
+# ГАРАНТОВАНЕ ВИЗНАЧЕННЯ ДЕКОРАТОРА НА СУМАРНОМУ ВЕРХУ КОДУ
 def login_required(f):
     from functools import wraps
     @wraps(f)
@@ -425,23 +394,21 @@ def index():
         json_tasks=json.dumps(tasks, ensure_ascii=False)
     )
 
-# МАРШРУТ НАДСИЛАННЯ EMAIL З КАРТКИ КЛІЄНТА
 @app.route('/send_client_email', methods=['POST'])
 @login_required
 def send_client_email():
     client_id = request.form.get('client_id')
     to_email = request.form.get('email', '').strip()
-    subject = request.form.get('subject', 'Пропозиція від Mayer Pro').strip()
+    subject = request.form.get('subject', '').strip()
     body_text = request.form.get('body', '').strip()
     
     if to_email and body_text:
         success = send_email_notification(to_email, subject, body_text)
         if success:
-            # Фіксуємо факт успішної відправки листа в історію перемовин
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
             conn = get_db_connection()
             cursor = conn.cursor()
-            log_text = f"Надіслано Email на адресу {to_email}. Тема: \"{subject}\". Текст: {body_text}"
+            log_text = f"Надіслано фірмовий HTML-Email. Тема: \"{subject}\""
             cursor.execute(
                 "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
                 (client_id, current_date, log_text, 'Продажі')
