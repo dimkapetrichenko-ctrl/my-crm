@@ -29,7 +29,7 @@ def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-# Внутрішня функція відправки HTML-пошти з фірмовим підписом
+# Внутрішня функція відправки HTML-пошти з новим офіційним підписом Aptos
 def send_email_notification(to_email, subject, body_text):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
@@ -39,7 +39,7 @@ def send_email_notification(to_email, subject, body_text):
         html_body = body_text.replace('\n', '<br>')
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
 
-    html_content = f"""
+        html_content = f"""
         <html>
         <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
             <div style="font-size: 15px; margin-bottom: 30px;">
@@ -178,7 +178,7 @@ def init_db():
 if DATABASE_URL:
     init_db()
 
-# ГАРАНТОВАНЕ ВИЗНАЧЕННЯ ДЕКОРАТОРА НА СУМАРНОМУ ВЕРХУ КОДУ
+# Декоратор авторизації
 def login_required(f):
     from functools import wraps
     @wraps(f)
@@ -670,7 +670,7 @@ def delete_negotiation(neg_id):
     client_id = request.form.get('client_id')
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM negotiations WHERE id = %s", (neg_id,))
+    cursor.execute("DELETE FROM negotiations WHERE id = %s", (client_id,))
     conn.commit()
     cursor.close()
     conn.close()
