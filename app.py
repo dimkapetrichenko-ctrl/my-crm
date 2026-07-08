@@ -29,18 +29,53 @@ def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-# Внутрішня функція відправки пошти через сервер Хостинг Україна
+# Внутрішня функція відправки HTML-пошти з фірмовим підписом
 def send_email_notification(to_email, subject, body_text):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        msg = MIMEText(body_text, 'plain', 'utf-8')
+        # Формуємо красивий HTML-шаблон листа
+        # Міняємо переноси рядків \n на HTML-тег <br>
+        html_body = body_text.replace('\n', '<br>')
+        
+        # URL вашого логотипу (вкажіть точну адресу вашого сервера на Render або сайту)
+        # Наприклад: https://my-crm-q24n.onrender.com/static/logotipnew.png
+        logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
+
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #212529; line-height: 1.6;">
+            <div style="font-size: 15px; margin-bottom: 30px;">
+                {html_body}
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
+            
+            <table border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #495057;">
+                <tr>
+                    <td style="vertical-align: top; padding-right: 20px;">
+                        <img src="{logo_url}" alt="Mayer Pro Logo" width="220" style="display: block; max-width: 100%; height: auto;">
+                    </td>
+                    <td style="vertical-align: top; border-left: 2px solid #dc3545; padding-left: 15px;">
+                        <strong style="font-size: 16px; color: #212529;">Dmytro Petrychenko</strong><br>
+                        <span style="color: #6c757d; font-weight: bold;">Business Development & Sales</span><br>
+                        <span style="color: #dc3545; font-weight: bold;">Plonaris Sp. z o.o.</span><br>
+                        🌐 <a href="https://mayer-pro.com" target="_blank" style="color: #0d6efd; text-decoration: none;">mayer-pro.com</a><br>
+                        📧 <a href="mailto:sales@mayer-pro.com" style="color: #0d6efd; text-decoration: none;">sales@mayer-pro.com</a>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+
+        # Міняємо формат на html
+        msg = MIMEText(html_content, 'html', 'utf-8')
         msg['Subject'] = Header(subject, 'utf-8')
         msg['From'] = MAIL_USERNAME
         msg['To'] = to_email
         
-        # Підключення по захищеному SSL каналу
         server = smtplib.SMTP_SSL(MAIL_SERVER, MAIL_PORT)
         server.login(MAIL_USERNAME, MAIL_PASSWORD)
         server.sendmail(MAIL_USERNAME, [to_email], msg.as_string())
@@ -49,6 +84,31 @@ def send_email_notification(to_email, subject, body_text):
     except Exception as e:
         print(f"❌ Помилка SMTP відправки: {str(e)}")
         return False
+
+# Маршрут обробки відправки з логуванням (повна версія)
+@app.route('/send_client_email', methods=['POST'])
+@login_required
+def send_client_email():
+    client_id = request.form.get('client_id')
+    to_email = request.form.get('email', '').strip()
+    subject = request.form.get('subject', '').strip()
+    body_text = request.form.get('body', '').strip()
+    
+    if to_email and body_text:
+        success = send_email_notification(to_email, subject, body_text)
+        if success:
+            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            log_text = f"Надіслано фірмовий HTML-Email. Тема: \"{subject}\""
+            cursor.execute(
+                "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+                (client_id, current_date, log_text, 'Продажі')
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+    return redirect(url_for('client_detail', client_id=client_id))
 
 def init_db():
     conn = get_db_connection()
