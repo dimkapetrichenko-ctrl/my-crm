@@ -614,7 +614,7 @@ def client_detail(client_id):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
     
-if request.method == 'POST':
+    if request.method == 'POST':
         result_text = request.form.get('result')
         author = request.form.get('author', 'Продажі') 
         contact_type = request.form.get('contact_type', 'call') # Отримуємо тип контакту
