@@ -6,11 +6,11 @@
         <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">◀ Назад до списку</a>
         
         {% if client.email %}
-        <button class="btn btn-primary fw-bold shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#emailFormCollapse" aria-expanded="false" aria-controls="emailFormCollapse">
+        <button class="btn btn-primary btn-sm fw-bold shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#emailFormCollapse" aria-expanded="false" aria-controls="emailFormCollapse">
             ✉️ Надіслати Email
         </button>
         {% else %}
-        <button class="btn btn-secondary fw-bold shadow-sm" disabled title="У даного клієнта не заповнено поле Email">
+        <button class="btn btn-secondary btn-sm fw-bold shadow-sm" disabled title="У даного клієнта не заповнено поле Email">
             ✉️ Надіслати Email (Немає адреси)
         </button>
         {% endif %}
@@ -29,9 +29,9 @@
             </div>
             
             <div class="mb-2">
-    <label for="subject" class="form-label mb-0.5 small text-muted">Тема листа:</label>
-    <input type="text" class="form-control form-control-sm bg-light text-dark fw-bold" id="subject" name="subject" placeholder="Введіть тему листа..." required>
-</div>
+                <label for="subject" class="form-label mb-0.5 small text-muted">Тема листа:</label>
+                <input type="text" class="form-control form-control-sm bg-light text-dark fw-bold" id="subject" name="subject" placeholder="Введіть тему листа..." required>
+            </div>
             
             <div class="mb-3">
                 <label for="body" class="form-label mb-0.5 small text-muted">Текст повідомлення (Комерційна пропозиція):</label>
@@ -176,7 +176,8 @@
         </div>
     </div>
 
-<div class="card shadow-sm mb-3">
+    <div class="col-md-7">
+        <div class="card shadow-sm mb-3">
             <div class="card-header bg-dark text-white py-2">
                 <h5 class="mb-0">✍️ Додати результат розмови</h5>
             </div>
@@ -217,19 +218,6 @@
                 </form>
             </div>
         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="author" value="CEO" id="role_ceo" onclick="localStorage.setItem('crm_role', 'CEO')">
-                            <label class="form-check-label fw-bold text-danger" for="role_ceo">📁 CEO</label>
-                        </div>
-                    </div>
-
-                    <div class="mb-2">
-                        <textarea name="result" class="form-control" rows="3" required placeholder="Наприклад: Надіслали комерційну пропозицію, чекають на дзвінок..."></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-success fw-bold px-4">Записати в історію</button>
-                </form>
-            </div>
-        </div>
 
         <div class="card shadow-sm">
             <div class="card-header bg-secondary text-white py-2">
@@ -263,7 +251,7 @@
                                 <input type="hidden" name="client_id" value="{{ client.id }}">
                                 <textarea name="result" class="form-control form-control-sm mb-2" rows="2" required>{{ item.result }}</textarea>
                                 <button type="submit" class="btn btn-xs btn-success py-0 px-2">Оновити</button>
-                                <button type="button" class="btn btn-xs btn-secondary py-0 px-2" onclick="document.getElementById('edit-neg-{{ item.id }}').style.display='none';">Скасувати</button>
+                                <button type="button" class="btn btn-xs btn-secondary py-0 px-2" onclick="document.getElementById('edit-neg-{{ item.id }}').style.none;">Скасувати</button>
                             </form>
                         </div>
                     </div>
