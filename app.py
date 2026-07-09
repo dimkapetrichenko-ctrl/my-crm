@@ -628,7 +628,7 @@ def client_detail(client_id):
         prefix = type_tags.get(contact_type, '')
         
         if result_text:
-            # Додаємо тег типу до початку тексту
+            # Додаємо тег типу до початку текста
             final_text = f"{prefix}{result_text}"
             
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -677,29 +677,26 @@ def edit_negotiation(neg_id):
         conn.close()
     return redirect(url_for('client_detail', client_id=client_id))
 
+# ЧИСТИЙ ТА РОБОЧИЙ SQL МАРШРУТ ВИДАЛЕННЯ АКТИВНОСТІ
 @app.route('/delete_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
-@app.route('/delete_negotiation/<int:neg_id>', methods=['POST'])
 def delete_negotiation(neg_id):
-    # 1. Шукаємо запис в базі даних за його ID
-    negotiation = Negotiation.query.get_or_404(neg_id)
+    client_id = request.form.get('client_id')
     
-    # 2. Запам'ятовуємо ID клієнта, щоб знати, куди повернутися після видалення
-    client_id = negotiation.client_id  
-    
+    conn = get_db_connection()
+    cursor = conn.cursor()
     try:
-        # 3. Видаляємо запис із сесії бази даних
-        db.session.delete(negotiation)
-        
-        # 4. ОБОВ'ЯЗКОВО зберігаємо зміни в базі даних
-        db.session.commit()
-        flash('Активність успішно видалена!', 'success')
+        # Пряме SQL видалення за унікальним ID активності
+        cursor.execute("DELETE FROM negotiations WHERE id = %s", (neg_id,))
+        conn.commit()
     except Exception as e:
-        db.session.rollback()
-        flash(f'Помилка при видаленні: {str(e)}', 'danger')
-    
-    # 5. Повертаємо користувача назад на картку саме цього клієнта
-    return redirect(url_for('client_page', client_id=client_id))
+        print(f"❌ Помилка видалення активності з бази: {str(e)}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+        
+    return redirect(url_for('client_detail', client_id=client_id))
 
 @app.route('/export_excel')
 @login_required
