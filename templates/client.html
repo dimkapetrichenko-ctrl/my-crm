@@ -176,8 +176,7 @@
         </div>
     </div>
 
-    <div class="col-md-7">
-        <div class="card shadow-sm mb-3">
+<div class="card shadow-sm mb-3">
             <div class="card-header bg-dark text-white py-2">
                 <h5 class="mb-0">✍️ Додати результат розмови</h5>
             </div>
@@ -189,6 +188,35 @@
                             <input class="form-check-input" type="radio" name="author" value="Продажі" id="role_sales" checked onclick="localStorage.setItem('crm_role', 'Продажі')">
                             <label class="form-check-label fw-bold text-primary" for="role_sales">💼 Продажі</label>
                         </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="author" value="CEO" id="role_ceo" onclick="localStorage.setItem('crm_role', 'CEO')">
+                            <label class="form-check-label fw-bold text-danger" for="role_ceo">📁 CEO</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 d-flex gap-3" style="font-size: 0.85rem; border-top: 1px dashed #dee2e6; padding-top: 8px;">
+                        <span class="fw-bold text-muted">Тип контакту:</span>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="contact_type" value="call" id="type_call" checked>
+                            <label class="form-check-label fw-bold text-dark" for="type_call">📞 Дзвінок</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="contact_type" value="visit" id="type_visit">
+                            <label class="form-check-label fw-bold text-dark" for="type_visit">🚗 Візит</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="contact_type" value="email" id="type_email">
+                            <label class="form-check-label fw-bold text-dark" for="type_email">✉️ Лист</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <textarea name="result" class="form-control" rows="3" required placeholder="Наприклад: Обговорили постачання робочих органів для Vaderstad, сформували замовлення..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-success fw-bold px-4">Записати в історію</button>
+                </form>
+            </div>
+        </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="author" value="CEO" id="role_ceo" onclick="localStorage.setItem('crm_role', 'CEO')">
                             <label class="form-check-label fw-bold text-danger" for="role_ceo">📁 CEO</label>
