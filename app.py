@@ -614,14 +614,27 @@ def client_detail(client_id):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
     
-    if request.method == 'POST':
+if request.method == 'POST':
         result_text = request.form.get('result')
         author = request.form.get('author', 'Продажі') 
+        contact_type = request.form.get('contact_type', 'call') # Отримуємо тип контакту
+        
+        # Співставляємо тип із красивим емодзі-тегом для стрічки
+        type_tags = {
+            'call': '[📞 Дзвінок] ',
+            'visit': '[🚗 Візит] ',
+            'email': '[✉️ Лист] '
+        }
+        prefix = type_tags.get(contact_type, '')
+        
         if result_text:
+            # Додаємо тег типу до початку тексту
+            final_text = f"{prefix}{result_text}"
+            
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
             cursor.execute(
                 "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
-                (client_id, current_date, result_text, author)
+                (client_id, current_date, final_text, author)
             )
             conn.commit()
         return redirect(url_for('client_detail', client_id=client_id))
