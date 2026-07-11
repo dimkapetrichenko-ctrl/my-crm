@@ -74,16 +74,10 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
-    try:
-        # Автоматично знаходимо посилання (http:// або https:// або www.) і робимо їх клікабельними
-        url_pattern = r'(https?://[^\s<>"]+|www\.[^\s<>"]+)'
-        def make_clickable(match):
-            url = match.group(0)
-            href = url if url.startswith('http') else f'http://{url}'
-            return f'<a href="{href}" target="_blank" style="color: #0d6efd; text-decoration: underline;">{url}</a>'
-        
-        # Обробляємо текст через регулярний вираз (Quill вже надіслав HTML, тому .replace('\n', '<br>') не потрібен)
-        html_body = re.sub(url_pattern, make_clickable, body_text)
+      try:
+        # Quill.js уже надіслав ідеальний HTML-код з робочими клікабельними посиланнями,
+        # тому ми просто беремо чистий текст без додаткових обробок!
+        html_body = body_text
         
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
