@@ -74,9 +74,9 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
-      try:
-        # Quill.js уже надіслав ідеальний HTML-код з робочими клікабельними посиланнями,
-        # тому ми просто беремо чистий текст без додаткових обробок!
+    try:
+        # Quill.js уже надіслав ідеальний HTML-код з робочими посиланнями,
+        # тому ми просто беремо чистий текст без додаткових re.sub конвертацій!
         html_body = body_text
         
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
