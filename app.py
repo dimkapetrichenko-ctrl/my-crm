@@ -7,8 +7,10 @@ from datetime import datetime
 import pandas as pd
 import io
 import smtplib
+import imaplib
+import email
 from email.mime.text import MIMEText
-from email.header import Header
+from email.header import Header, decode_header
 
 app = Flask(__name__)
 
@@ -29,7 +31,44 @@ def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-# ОНОВЛЕНА ФУНКЦІЯ ВІДПРАВКИ (Додано параметр promo_banner)
+# ========================================================
+# ГАРАНТОВАНЕ ВИЗНАЧЕННЯ ДЕКОРАТОРА НА САМОМУ ВЕРХУ КОДУ
+# ========================================================
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# БЕЗПЕЧНИЙ ДЕКОДЕР ТІЛА ЛИСТА
+def decode_email_body(msg):
+    body = ""
+    if msg.is_multipart():
+        for part in msg.walk():
+            content_type = part.get_content_type()
+            content_disposition = str(part.get("Content-Disposition"))
+            if content_type == "text/plain" and "attachment" not in content_disposition:
+                charset = part.get_content_charset() or 'utf-8'
+                try:
+                    payload = part.get_payload(decode=True)
+                    body = payload.decode(charset, errors='ignore')
+                    break
+                except Exception:
+                    pass
+    else:
+        charset = msg.get_content_charset() or 'utf-8'
+        try:
+            payload = msg.get_payload(decode=True)
+            body = payload.decode(charset, errors='ignore')
+        except Exception:
+            body = "[Помилка декодування тексту листа]"
+            
+    return body.strip()
+
+# Внутрішня функція відправки HTML-пошти з новим офіційним підписом Aptos
 def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
@@ -39,7 +78,6 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
-        # Якщо галочка активна, формуємо HTML-блок для банера
         banner_html = ""
         if promo_banner:
             banner_html = f"""
@@ -55,7 +93,9 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
                 {html_body}
             </div>
             
-            {banner_html} <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
+            {banner_html}
+
+            <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
             <table border="0" cellpadding="0" cellspacing="0" style="color: #212529;">
                 <tr>
                     <td style="vertical-align: top; padding-right: 20px;">
@@ -96,38 +136,6 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
     except Exception as e:
         print(f"❌ Помилка SMTP відправки: {str(e)}")
         return False
-
-# ОНОВЛЕНІ МАРШРУТ URL ДЛЯ ОБРОБКИ ФОРМИ З КАРТКИ КЛІЄНТА
-@app.route('/send_client_email', methods=['POST'])
-@login_required
-def send_client_email():
-    client_id = request.form.get('client_id')
-    to_email = request.form.get('email', '').strip()
-    subject = request.form.get('subject', '').strip()
-    body_text = request.form.get('body', '').strip()
-    
-    # Отримуємо статус галочки (якщо вибрано, прийде 'on', інакше None)
-    promo_banner = request.form.get('promo_banner') == 'on'
-    
-    if to_email and body_text:
-        success = send_email_notification(to_email, subject, body_text, promo_banner=promo_banner)
-        if success:
-            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            # Робимо позначку в історії активностей, чи надсилався лист разом з банером
-            banner_log = " (+ Англійський промо-банер)" if promo_banner else ""
-            log_text = f"Надіслано фірмовий HTML-Email{banner_log}. Тема: \"{subject}\""
-            
-            cursor.execute(
-                "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
-                (client_id, current_date, log_text, 'Продажі')
-            )
-            conn.commit()
-            cursor.close()
-            conn.close()
-    return redirect(url_for('client_detail', client_id=client_id))
 
 def init_db():
     conn = get_db_connection()
@@ -217,16 +225,6 @@ def init_db():
 
 if DATABASE_URL:
     init_db()
-
-# Декоратор авторизації
-def login_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -452,14 +450,18 @@ def send_client_email():
     to_email = request.form.get('email', '').strip()
     subject = request.form.get('subject', '').strip()
     body_text = request.form.get('body', '').strip()
+    promo_banner = request.form.get('promo_banner') == 'on'
     
     if to_email and body_text:
-        success = send_email_notification(to_email, subject, body_text)
+        success = send_email_notification(to_email, subject, body_text, promo_banner=promo_banner)
         if success:
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
             conn = get_db_connection()
             cursor = conn.cursor()
-            log_text = f"Надіслано фірмовий HTML-Email. Тема: \"{subject}\""
+            
+            banner_log = " (+ Англійський промо-банер)" if promo_banner else ""
+            log_text = f"Надіслано фірмовий HTML-Email{banner_log}. Тема: \"{subject}\""
+            
             cursor.execute(
                 "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
                 (client_id, current_date, log_text, 'Продажі')
@@ -468,6 +470,74 @@ def send_client_email():
             cursor.close()
             conn.close()
     return redirect(url_for('client_detail', client_id=client_id))
+
+@app.route('/sync_emails', methods=['POST'])
+@login_required
+def sync_emails():
+    if not MAIL_USERNAME or not MAIL_PASSWORD:
+        return jsonify({'success': False, 'message': 'Налаштування IMAP відсутні на Render!'})
+    try:
+        mail = imaplib.IMAP4_SSL('mail.adm.tools', 993)
+        mail.login(MAIL_USERNAME, MAIL_PASSWORD)
+        mail.select("INBOX")
+        
+        status, response_data = mail.search(None, 'UNSEEN')
+        email_ids = response_data[0].split()
+        
+        if not email_ids:
+            mail.close()
+            mail.logout()
+            return jsonify({'success': True, 'message': 'Вхідна скринька перевірена. Нових листів від дилерів немає.'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        imported_count = 0
+
+        for e_id in email_ids:
+            _, msg_data = mail.fetch(e_id, '(RFC822)')
+            raw_email = msg_data[0][1]
+            msg = email.message_from_bytes(raw_email)
+            
+            from_header = msg.get("From", "")
+            from_email = email.utils.parseaddr(from_header)[1].lower().strip()
+            
+            subject_header = msg.get("Subject", "")
+            subject_decoded = ""
+            for part, encoding in decode_header(subject_header):
+                if isinstance(part, bytes):
+                    subject_decoded += part.decode(encoding or 'utf-8', errors='ignore')
+                else:
+                    subject_decoded += str(part)
+            
+            cursor.execute(
+                "SELECT id FROM clients WHERE LOWER(email) = %s OR LOWER(email_2) = %s",
+                (from_email, from_email)
+            )
+            client_row = cursor.fetchone()
+            
+            if client_row:
+                client_id = client_row[0]
+                email_body = decode_email_body(msg)
+                
+                final_history_text = f"[📩 Вхідний лист] Тема: \"{subject_decoded.strip()}\"\n\n{email_body}"
+                current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+                
+                cursor.execute(
+                    "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+                    (client_id, current_date, final_history_text, 'Продажі')
+                )
+                mail.store(e_id, '+FLAGS', '\\Seen')
+                imported_count += 1
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        mail.close()
+        mail.logout()
+        
+        return jsonify({'success': True, 'message': f'Синхронізація завершена! Успішно імпортовано відповідей: {imported_count}'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Помилка IMAP: {str(e)}'})
 
 @app.route('/add_task', methods=['POST'])
 @login_required
@@ -657,9 +727,8 @@ def client_detail(client_id):
     if request.method == 'POST':
         result_text = request.form.get('result')
         author = request.form.get('author', 'Продажі') 
-        contact_type = request.form.get('contact_type', 'call') # Отримуємо тип контакту
+        contact_type = request.form.get('contact_type', 'call')
         
-        # Співставляємо тип із красивим емодзі-тегом для стрічки
         type_tags = {
             'call': '[📞 Дзвінок] ',
             'visit': '[🚗 Візит] ',
@@ -668,9 +737,7 @@ def client_detail(client_id):
         prefix = type_tags.get(contact_type, '')
         
         if result_text:
-            # Додаємо тег типу до початку текста
             final_text = f"{prefix}{result_text}"
-            
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
             cursor.execute(
                 "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
@@ -717,16 +784,13 @@ def edit_negotiation(neg_id):
         conn.close()
     return redirect(url_for('client_detail', client_id=client_id))
 
-# ЧИСТИЙ ТА РОБОЧИЙ SQL МАРШРУТ ВИДАЛЕННЯ АКТИВНОСТІ
 @app.route('/delete_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
 def delete_negotiation(neg_id):
     client_id = request.form.get('client_id')
-    
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Пряме SQL видалення за унікальним ID активності
         cursor.execute("DELETE FROM negotiations WHERE id = %s", (neg_id,))
         conn.commit()
     except Exception as e:
