@@ -1,6 +1,6 @@
 import os
 import json
-import re  # ДОДАТИ ЦЕЙ ІМПОРТ
+import re
 import psycopg2
 from psycopg2.extras import DictCursor
 from flask import Flask, render_template, request, redirect, url_for, session, send_file, jsonify
@@ -44,7 +44,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# БЕЗПЕЧНИЙ ДЕКОДЕР ТІЛА ЛИСТА
+# БЕЗПЕЧНИЙ ДЕКОДЕР ТІЛА ЛИСТА ДЛЯ IMAP РОБОТА
 def decode_email_body(msg):
     body = ""
     if msg.is_multipart():
@@ -69,25 +69,26 @@ def decode_email_body(msg):
             
     return body.strip()
 
+# ВНУТРІШНЯ ФУНКЦІЯ ВІДПРАВКИ HTML-ПОШТИ (Банер на початку листа)
 def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        # Автоматично робимо активними посилання, якщо ти вставив їх як текст
+        # Автоматично знаходимо посилання (http:// або https:// або www.) і робимо їх клікабельними
         url_pattern = r'(https?://[^\s<>"]+|www\.[^\s<>"]+)'
         def make_clickable(match):
             url = match.group(0)
             href = url if url.startswith('http') else f'http://{url}'
             return f'<a href="{href}" target="_blank" style="color: #0d6efd; text-decoration: underline;">{url}</a>'
         
-        # Обробляємо текст (Quill вже надіслав HTML, тому .replace('\n', '<br>') НЕ потрібен!)
+        # Обробляємо текст через регулярний вираз (Quill вже надіслав HTML, тому .replace('\n', '<br>') не потрібен)
         html_body = re.sub(url_pattern, make_clickable, body_text)
         
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
-        # Формуємо HTML-блок для банера
+        # Формуємо HTML-блок для банера, якщо активована галочка
         banner_html = ""
         if promo_banner:
             banner_html = f"""
@@ -96,12 +97,14 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
             </div>
             """
 
-        # Збираємо лист: спочатку банер, потім текст звернення
+        # Збираємо структуру HTML-листа
         html_content = f"""
         <html>
         <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
             
-            {banner_html} <div style="font-size: 15px; margin-bottom: 30px;">
+            {banner_html}
+
+            <div style="font-size: 15px; margin-bottom: 30px;">
                 {html_body}
             </div>
 
