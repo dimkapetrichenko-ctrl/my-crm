@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% block content %}
 
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+
 <div class="row mb-3">
     <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">◀ Назад до списку</a>
@@ -18,8 +20,6 @@
 </div>
 
 <div class="collapse my-3" id="emailFormCollapse">
-    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
-
     <div class="card card-body bg-dark text-white border-secondary shadow-sm">
         <h5 class="card-title text-warning mb-3">📬 Нове повідомлення для: {{ client.name }}</h5>
         <form action="/send_client_email" method="POST" id="crmEmailForm">
@@ -45,7 +45,8 @@
             <div class="mb-3 text-dark bg-light rounded">
                 <label class="form-label mb-0.5 small text-white bg-dark w-100 p-1 rounded-top m-0">Текст повідомлення:</label>
                 <input type="hidden" name="body" id="emailBodyHidden">
-                <div id="editor-container" style="height: 250px; font-size: 15px;">
+                
+                <div id="editor-container" style="height: 250px; font-size: 15px; bg-white;">
                     <p>Доброго дня!</p>
                 </div>
             </div>
@@ -56,38 +57,13 @@
             </div>
         </form>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
-    <script>
-        // Ініціалізація редактора з панеллю інструментів (жирний, колір, списки)
-        const quill = new Quill('#editor-container', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    ['bold', 'italic', 'underline', 'strike'],        # Виділення тексту
-                    [{ 'color': [] }, { 'background': [] }],          # Колір шрифту та маркер
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],     # Списки
-                    ['clean']                                         # Очистити форматування
-                ]
-            }
-        });
-
-        # Скрипт перехоплення відправки форми: забираємо HTML-код з редактора і кладемо в приховане поле
-        const form = document.getElementById('crmEmailForm');
-        form.onsubmit = function() {
-            const emailBodyHidden = document.getElementById('emailBodyHidden');
-            # Беремо саме HTML вміст разом із жирністю та кольорами
-            emailBodyHidden.value = quill.getSemanticHTML();
-            return true;
-        };
-    </script>
 </div>
 
 <div class="row">
     <div class="col-md-5 mb-4">
         <div class="card shadow-sm">
             <div class="card-header bg-dark text-white py-2">
-                <h5 class="mb-0">⚙️  {{ client.name }}</h5>
+                <h5 class="mb-0">⚙️ Редагувать картку: {{ client.name }}</h5>
             </div>
             <div class="card-body p-3" style="font-size: 0.9rem;">
                 <form action="{{ url_for('edit_client', client_id=client.id) }}" method="POST">
@@ -303,13 +279,40 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // Збереження ролі користувача (CEO/Продажі)
         const savedRole = localStorage.getItem('crm_role');
         if (savedRole === 'CEO') {
             document.getElementById('role_ceo').checked = true;
         } else {
             document.getElementById('role_sales').checked = true;
+        }
+
+        // КУЛЕНЕПРОБИВНА ІНІЦІАЛІЗАЦІЯ ВІЗУАЛЬНОГО РЕДАКТОРА
+        if (document.getElementById('editor-container')) {
+            const quill = new Quill('#editor-container', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['clean']
+                    ]
+                }
+            });
+
+            // Перехоплення відправки форми листа клієнту
+            const emailForm = document.getElementById('crmEmailForm');
+            if (emailForm) {
+                emailForm.onsubmit = function() {
+                    const emailBodyHidden = document.getElementById('emailBodyHidden');
+                    emailBodyHidden.value = quill.getSemanticHTML();
+                    return true;
+                };
+            }
         }
     });
 </script>
