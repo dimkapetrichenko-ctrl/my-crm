@@ -18,9 +18,11 @@
 </div>
 
 <div class="collapse my-3" id="emailFormCollapse">
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+
     <div class="card card-body bg-dark text-white border-secondary shadow-sm">
         <h5 class="card-title text-warning mb-3">📬 Нове повідомлення для: {{ client.name }}</h5>
-        <form action="/send_client_email" method="POST">
+        <form action="/send_client_email" method="POST" id="crmEmailForm">
             <input type="hidden" name="client_id" value="{{ client.id }}">
             
             <div class="mb-2">
@@ -33,24 +35,52 @@
                 <input type="text" class="form-control form-control-sm bg-light text-dark fw-bold" id="subject" name="subject" placeholder="Введіть тему листа..." required>
             </div>
             
-            <div class="mb-3">
-                <label for="body" class="form-label mb-0.5 small text-muted">Текст повідомлення (Комерційна пропозиція):</label>
-                <textarea class="form-control form-control-sm bg-light text-dark" id="body" name="body" rows="6" placeholder="Доброго дня! Надіслали вам оновлену пропозицію на комплектуючі для сільгосптехніки..." required></textarea>
+            <div class="form-check mb-3 mt-2">
+                <input class="form-check-input" type="checkbox" name="promo_banner" id="promoBannerCheck">
+                <label class="form-check-label fw-bold text-warning" for="promoBannerCheck" style="cursor: pointer;">
+                    🖼️ Додати до листа англійський промо-банер (Презентація MAYER PRO)
+                </label>
+            </div>
+
+            <div class="mb-3 text-dark bg-light rounded">
+                <label class="form-label mb-0.5 small text-white bg-dark w-100 p-1 rounded-top m-0">Текст повідомлення:</label>
+                <input type="hidden" name="body" id="emailBodyHidden">
+                <div id="editor-container" style="height: 250px; font-size: 15px;">
+                    <p>Доброго дня!</p>
+                </div>
             </div>
             
             <div class="d-flex justify-content-end gap-2">
                 <button class="btn btn-sm btn-outline-secondary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#emailFormCollapse">Скасувати</button>
-               <div class="form-check mb-3 mt-2">
-    <input class="form-check-input" type="checkbox" name="promo_banner" id="promoBannerCheck">
-    <label class="form-check-label fw-bold text-dark" for="promoBannerCheck" style="cursor: pointer;">
-        🖼️ Додати до листа англійський промо-банер (Презентація MAYER PRO)
-    </label>
-    <div class="small text-muted">Зображення автоматично вбудується під текстом твого листа перед фірмовим підписом.</div>
-</div>
                 <button type="submit" class="btn btn-sm btn-success fw-bold px-4 shadow-sm">🚀 Відправити лист через sales@</button>
             </div>
         </form>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <script>
+        // Ініціалізація редактора з панеллю інструментів (жирний, колір, списки)
+        const quill = new Quill('#editor-container', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline', 'strike'],        # Виділення тексту
+                    [{ 'color': [] }, { 'background': [] }],          # Колір шрифту та маркер
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],     # Списки
+                    ['clean']                                         # Очистити форматування
+                ]
+            }
+        });
+
+        # Скрипт перехоплення відправки форми: забираємо HTML-код з редактора і кладемо в приховане поле
+        const form = document.getElementById('crmEmailForm');
+        form.onsubmit = function() {
+            const emailBodyHidden = document.getElementById('emailBodyHidden');
+            # Беремо саме HTML вміст разом із жирністю та кольорами
+            emailBodyHidden.value = quill.getSemanticHTML();
+            return true;
+        };
+    </script>
 </div>
 
 <div class="row">
