@@ -29,15 +29,24 @@ def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-# Внутрішня функція відправки HTML-пошти з новим офіційним підписом Aptos
-def send_email_notification(to_email, subject, body_text):
+# ОНОВЛЕНА ФУНКЦІЯ ВІДПРАВКИ (Додано параметр promo_banner)
+def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        # Заміна переносу рядків на HTML тег <br>
         html_body = body_text.replace('\n', '<br>')
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
+        banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
+
+        # Якщо галочка активна, формуємо HTML-блок для банера
+        banner_html = ""
+        if promo_banner:
+            banner_html = f"""
+            <div style="margin-top: 25px; margin-bottom: 25px;">
+                <img src="{banner_url}" alt="MAYER PRO Promotion" style="max-width: 100%; height: auto; display: block; border-radius: 4px; border: 1px solid #dee2e6;">
+            </div>
+            """
 
         html_content = f"""
         <html>
@@ -46,8 +55,7 @@ def send_email_notification(to_email, subject, body_text):
                 {html_body}
             </div>
             
-            <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
-            
+            {banner_html} <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
             <table border="0" cellpadding="0" cellspacing="0" style="color: #212529;">
                 <tr>
                     <td style="vertical-align: top; padding-right: 20px;">
@@ -88,6 +96,38 @@ def send_email_notification(to_email, subject, body_text):
     except Exception as e:
         print(f"❌ Помилка SMTP відправки: {str(e)}")
         return False
+
+# ОНОВЛЕНІ МАРШРУТ URL ДЛЯ ОБРОБКИ ФОРМИ З КАРТКИ КЛІЄНТА
+@app.route('/send_client_email', methods=['POST'])
+@login_required
+def send_client_email():
+    client_id = request.form.get('client_id')
+    to_email = request.form.get('email', '').strip()
+    subject = request.form.get('subject', '').strip()
+    body_text = request.form.get('body', '').strip()
+    
+    # Отримуємо статус галочки (якщо вибрано, прийде 'on', інакше None)
+    promo_banner = request.form.get('promo_banner') == 'on'
+    
+    if to_email and body_text:
+        success = send_email_notification(to_email, subject, body_text, promo_banner=promo_banner)
+        if success:
+            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Робимо позначку в історії активностей, чи надсилався лист разом з банером
+            banner_log = " (+ Англійський промо-банер)" if promo_banner else ""
+            log_text = f"Надіслано фірмовий HTML-Email{banner_log}. Тема: \"{subject}\""
+            
+            cursor.execute(
+                "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+                (client_id, current_date, log_text, 'Продажі')
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+    return redirect(url_for('client_detail', client_id=client_id))
 
 def init_db():
     conn = get_db_connection()
