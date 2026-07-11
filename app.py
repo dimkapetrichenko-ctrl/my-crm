@@ -68,7 +68,7 @@ def decode_email_body(msg):
             
     return body.strip()
 
-# Внутрішня функція відправки HTML-пошти з новим офіційним підписом Aptos
+# Внутрішня функція відправки HTML-пошти (Банер СУВОРО НА ПОЧАТКУ листа)
 def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
@@ -78,22 +78,23 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
+        # Формуємо HTML-блок для банера
         banner_html = ""
         if promo_banner:
             banner_html = f"""
-            <div style="margin-top: 25px; margin-bottom: 25px;">
+            <div style="margin-bottom: 25px;">
                 <img src="{banner_url}" alt="MAYER PRO Promotion" style="max-width: 100%; height: auto; display: block; border-radius: 4px; border: 1px solid #dee2e6;">
             </div>
             """
 
+        # Збираємо лист: спочатку банер, потім текст звернення
         html_content = f"""
         <html>
         <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
-            <div style="font-size: 15px; margin-bottom: 30px;">
+            
+            {banner_html} <div style="font-size: 15px; margin-bottom: 30px;">
                 {html_body}
             </div>
-            
-            {banner_html}
 
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
             <table border="0" cellpadding="0" cellspacing="0" style="color: #212529;">
