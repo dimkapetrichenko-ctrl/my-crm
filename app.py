@@ -75,14 +75,10 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        # Quill.js уже надіслав ідеальний HTML-код з робочими посиланнями,
-        # тому ми просто беремо чистий текст без додаткових re.sub конвертацій!
         html_body = body_text
-        
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
-        # Формуємо HTML-блок для банера, якщо активована галочка
         banner_html = ""
         if promo_banner:
             banner_html = f"""
@@ -91,17 +87,13 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
             </div>
             """
 
-        # Збираємо структуру HTML-листа
         html_content = f"""
         <html>
         <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
-            
             {banner_html}
-
             <div style="font-size: 15px; margin-bottom: 30px;">
                 {html_body}
             </div>
-
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
             <table border="0" cellpadding="0" cellspacing="0" style="color: #212529;">
                 <tr>
@@ -225,6 +217,21 @@ def init_db():
             FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
         )
     ''')
+
+    # СТВОРЕННЯ ТАБЛИЦІ ДЛЯ УПУЩЕНОГО ПОПИТУ
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS lost_demand (
+            id SERIAL PRIMARY KEY,
+            client_id INTEGER,
+            article TEXT NOT NULL,
+            title TEXT,
+            quantity INTEGER DEFAULT 1,
+            status TEXT DEFAULT 'lost',
+            note TEXT,
+            created_at TEXT,
+            FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
+        )
+    ''')
     
     conn.commit()
     cursor.close()
@@ -345,6 +352,27 @@ def index():
         })
     total_remaining = total_planned - total_actual
     
+    # ЗЧИТУВАННЯ СТАТИСТИКИ УПУЩЕНОГО ПОПИТУ
+    dict_cursor.execute("""
+        SELECT ld.*, c.name as client_name 
+        FROM lost_demand ld 
+        LEFT JOIN clients c ON ld.client_id = c.id 
+        ORDER BY ld.id DESC
+    """)
+    raw_demand = dict_cursor.fetchall()
+    lost_demand_list = [dict(d) for d in raw_demand]
+
+    # ТОП ДЕФІЦИТНИХ АРТИКУЛІВ (Групування за артикулом)
+    dict_cursor.execute("""
+        SELECT article, title, COUNT(*) as request_count, SUM(quantity) as total_qty
+        FROM lost_demand
+        GROUP BY article, title
+        ORDER BY request_count DESC, total_qty DESC
+        LIMIT 10
+    """)
+    top_demand_raw = dict_cursor.fetchall()
+    top_demand = [dict(t) for t in top_demand_raw]
+
     dict_cursor.execute("SELECT id, name FROM clients ORDER BY name ASC")
     all_selector_clients = dict_cursor.fetchall()
 
@@ -447,8 +475,53 @@ def index():
         json_busy_dates=json_busy_dates,
         today_date=today_str,
         tasks=tasks,
-        json_tasks=json.dumps(tasks, ensure_ascii=False)
+        json_tasks=json.dumps(tasks, ensure_ascii=False),
+        lost_demand_list=lost_demand_list,
+        top_demand=top_demand
     )
+
+# МАРШРУТ ДОДАВАННЯ УПУЩЕНОГО ПОПИТУ
+@app.route('/add_lost_demand', methods=['POST'])
+@login_required
+def add_lost_demand():
+    client_id = request.form.get('client_id')
+    article = request.form.get('article', '').strip()
+    title = request.form.get('title', '').strip()
+    quantity = request.form.get('quantity', 1)
+    status = request.form.get('status', 'lost')
+    note = request.form.get('note', '').strip()
+    created_at = datetime.now().strftime("%Y-%m-%d %H:%M")
+    
+    if article:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO lost_demand (client_id, article, title, quantity, status, note, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (client_id if client_id else None, article, title, quantity, status, note, created_at)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+    if client_id:
+        return redirect(url_for('client_detail', client_id=client_id))
+    return redirect(url_for('index', tab='demand'))
+
+# МАРШРУТ ВИДАЛЕННЯ НОТАТКИ ДЕФІЦИТУ
+@app.route('/delete_lost_demand/<int:demand_id>', methods=['POST'])
+@login_required
+def delete_lost_demand(demand_id):
+    client_id = request.form.get('client_id')
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM lost_demand WHERE id = %s", (demand_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    if client_id:
+        return redirect(url_for('client_detail', client_id=client_id))
+    return redirect(url_for('index', tab='demand'))
 
 @app.route('/send_client_email', methods=['POST'])
 @login_required
@@ -772,10 +845,14 @@ def client_detail(client_id):
     
     cursor.execute("SELECT * FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
     history = cursor.fetchall()
+
+    # Отримання упущеного попиту по конкретному клієнту
+    cursor.execute("SELECT * FROM lost_demand WHERE client_id = %s ORDER BY id DESC", (client_id,))
+    client_lost_demand = cursor.fetchall()
     
     cursor.close()
     conn.close()
-    return render_template('client.html', client=client, history=history)
+    return render_template('client.html', client=client, history=history, client_lost_demand=client_lost_demand)
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
