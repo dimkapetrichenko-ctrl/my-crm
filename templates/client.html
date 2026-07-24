@@ -190,6 +190,59 @@
     </div>
 
     <div class="col-md-7">
+        <div class="card shadow-sm mb-3 border-danger">
+            <div class="card-header bg-danger text-white py-1.5 fw-bold d-flex justify-content-between align-items-center">
+                <span>📦 Зафіксувати відсутній товар (упущений попит)</span>
+            </div>
+            <div class="card-body p-2 bg-light" style="font-size: 0.85rem;">
+                <form action="/add_lost_demand" method="POST">
+                    <input type="hidden" name="client_id" value="{{ client.id }}">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <input type="text" name="article" class="form-control form-control-sm fw-bold text-danger" placeholder="Артикул / OEM *" required>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" name="title" class="form-control form-control-sm" placeholder="Назва / Бренд (напр: Кільце Väderstad)">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="number" name="quantity" class="form-control form-control-sm fw-bold" value="1" min="1" placeholder="К-сть">
+                        </div>
+                        <div class="col-md-4">
+                            <select name="status" class="form-select form-select-sm fw-bold">
+                                <option value="lost" selected>🔴 Немає (Відмова)</option>
+                                <option value="waiting">🟡 Чекає поставки</option>
+                                <option value="replaced">🟢 Запропоновано аналог</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <input type="text" name="note" class="form-control form-control-sm" placeholder="Коментар (напр: запропонував аналог 428311 за 160€)">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-danger fw-bold w-100 mt-2">💾 Записати дефіцит</button>
+                </form>
+
+                {% if client_lost_demand %}
+                <div class="mt-2 border-top pt-2">
+                    <div class="fw-bold text-muted mb-1" style="font-size:0.78rem;">Зафіксовані дефіцитні позиції даного клієнта:</div>
+                    <ul class="list-group list-group-flush" style="font-size:0.8rem;">
+                        {% for item in client_lost_demand %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-1">
+                            <div>
+                                <strong class="text-danger">{{ item.article }}</strong> — {{ item.title or '' }} ({{ item.quantity }} шт.)
+                                <br><span class="text-muted small">{{ item.note or '' }}</span>
+                            </div>
+                            <form action="/delete_lost_demand/{{ item.id }}" method="POST" onsubmit="return confirm('Видалити?');">
+                                <input type="hidden" name="client_id" value="{{ client.id }}">
+                                <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1">🗑️</button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
         <div class="card shadow-sm mb-3">
             <div class="card-header bg-dark text-white py-2">
                 <h5 class="mb-0">✍️ Додати результат розмови</h5>
@@ -282,7 +335,6 @@
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Збереження ролі користувача (CEO/Продажі)
         const savedRole = localStorage.getItem('crm_role');
         if (savedRole === 'CEO') {
             document.getElementById('role_ceo').checked = true;
@@ -290,7 +342,6 @@
             document.getElementById('role_sales').checked = true;
         }
 
-        // КУЛЕНЕПРОБИВНА ІНІЦІАЛІЗАЦІЯ ВІЗУАЛЬНОГО РЕДАКТОРА
         if (document.getElementById('editor-container')) {
             const quill = new Quill('#editor-container', {
                 theme: 'snow',
@@ -304,7 +355,6 @@
                 }
             });
 
-            // Перехоплення відправки форми листа клієнту
             const emailForm = document.getElementById('crmEmailForm');
             if (emailForm) {
                 emailForm.onsubmit = function() {
