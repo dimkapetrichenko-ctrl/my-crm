@@ -162,10 +162,15 @@
                     <div class="mb-1"><input type="text" name="whatsapp_2" class="form-control form-control-sm border-success text-success fw-bold" value="{{ client.whatsapp_2 or '' }}" placeholder="🟢 WhatsApp №2"></div>
                     <div class="mb-2"><input type="email" name="email_2" class="form-control form-control-sm" value="{{ client.email_2 }}" placeholder="Email"></div>
 
-                    <h6 class="text-primary mt-3 border-bottom pb-1 mb-1">📅 Планування наступної дії</h6>
+                    <h6 class="text-primary mt-3 border-bottom pb-1 mb-1 d-flex justify-content-between align-items-center">
+                        <span>📅 Планування наступної дії</span>
+                        <button type="button" class="btn btn-xs btn-outline-primary py-0 px-1" data-bs-toggle="modal" data-bs-target="#workloadModal" onclick="renderWorkloadCalendar()">
+                            📊 Календар навантаження
+                        </button>
+                    </h6>
                     <div class="row g-2">
                         <div class="col-6">
-                            <input type="date" name="next_event_date" class="form-control form-control-sm" value="{{ client.next_event_date }}">
+                            <input type="date" name="next_event_date" id="next_event_date_input" class="form-control form-control-sm fw-bold" value="{{ client.next_event_date }}" onchange="checkWorkload(this.value)">
                         </div>
                         <div class="col-6">
                             <select name="next_event_type" class="form-select form-select-sm">
@@ -176,6 +181,7 @@
                             </select>
                         </div>
                     </div>
+                    <div id="workload_badge_box" class="mt-1" style="font-size: 0.78rem;"></div>
 
                     <div class="mt-3">
                         <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold">Зберегти зміни</button>
@@ -332,14 +338,141 @@
     </div>
 </div>
 
+<div class="modal fade" id="workloadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-primary">
+            <div class="modal-header bg-primary text-white py-2">
+                <h6 class="modal-title fw-bold">📅 Оберіть вільну дату (Завантаженість подій)</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2 bg-light">
+                <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                    <button type="button" class="btn btn-xs btn-dark fw-bold px-2 py-1" onclick="changeWMonth(-1)">◀</button>
+                    <h6 id="wMonthTitle" class="mb-0 fw-bold font-monospace">---</h6>
+                    <button type="button" class="btn btn-xs btn-dark fw-bold px-2 py-1" onclick="changeWMonth(1)">▶</button>
+                </div>
+                <table class="table table-bordered text-center align-middle bg-white shadow-xs table-sm mb-1" style="font-size: 0.85rem; table-layout: fixed;">
+                    <thead class="table-secondary fw-bold">
+                        <tr>
+                            <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th class="text-danger">Сб</th><th class="text-danger">Нд</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wCalendarBody"></tbody>
+                </table>
+                <div class="d-flex justify-content-around mt-2 small text-muted" style="font-size:0.75rem;">
+                    <span>🟢 0-2 події (Вільний день)</span>
+                    <span>🟡 3-4 події (Середнє)</span>
+                    <span>🔴 5+ подій (Завантажений)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script>
+    // Отримуємо об'єкт із кількістю подій по кожній даті з Flask
+    const eventsByDate = JSON.parse({{ json_events_by_date | tojson | safe }});
+
+    let wYear = new Date().getFullYear();
+    let wMonth = new Date().getMonth();
+    const wMonthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+
+    // Перевірка та показування плашки при виборі дати
+    function checkWorkload(dateStr) {
+        const badgeBox = document.getElementById('workload_badge_box');
+        if (!dateStr) {
+            badgeBox.innerHTML = '';
+            return;
+        }
+        const count = eventsByDate[dateStr] || 0;
+        let badgeHtml = '';
+        if (count === 0) {
+            badgeHtml = `<span class="badge bg-success w-100 py-1">🟢 На ${dateStr} немає подій (День вільний)</span>`;
+        } else if (count <= 2) {
+            badgeHtml = `<span class="badge bg-info text-dark w-100 py-1">🟢 На ${dateStr} заплановано: ${count} под.</span>`;
+        } else if (count <= 4) {
+            badgeHtml = `<span class="badge bg-warning text-dark w-100 py-1">🟡 На ${dateStr} заплановано: ${count} под. (Помірне навантаження)</span>`;
+        } else {
+            badgeHtml = `<span class="badge bg-danger w-100 py-1">🔴 На ${dateStr} заплановано: ${count} под. (Високе завантаження!)</span>`;
+        }
+        badgeBox.innerHTML = badgeHtml;
+    }
+
+    // Логіка модального календаря завантаженості
+    function renderWorkloadCalendar() {
+        document.getElementById('wMonthTitle').innerText = wMonthNames[wMonth] + " " + wYear;
+        const firstDayIndex = new Date(wYear, wMonth, 1).getDay();
+        const shiftDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+        const totalDays = new Date(wYear, wMonth + 1, 0).getDate();
+        
+        let gridHtml = "<tr>";
+        for (let i = 0; i < shiftDay; i++) { gridHtml += "<td></td>"; }
+        let currentDayCount = shiftDay;
+
+        for (let day = 1; day <= totalDays; day++) {
+            if (currentDayCount === 7) { gridHtml += "</tr><tr>"; currentDayCount = 0; }
+            
+            let mNum = wMonth + 1;
+            let mStr = mNum < 10 ? "0" + mNum : mNum;
+            let dStr = day < 10 ? "0" + day : day;
+            let dateKey = `${wYear}-${mStr}-${dStr}`;
+            
+            let count = eventsByDate[dateKey] || 0;
+            let bgClass = "bg-light text-dark";
+            let badgeClass = "badge bg-secondary";
+
+            if (count > 0 && count <= 2) {
+                bgClass = "bg-success-subtle text-success border-success";
+                badgeClass = "badge bg-success";
+            } else if (count >= 3 && count <= 4) {
+                bgClass = "bg-warning-subtle text-dark border-warning";
+                badgeClass = "badge bg-warning text-dark";
+            } else if (count >= 5) {
+                bgClass = "bg-danger-subtle text-danger border-danger";
+                badgeClass = "badge bg-danger";
+            }
+
+            gridHtml += `
+                <td class="${bgClass} p-2 text-center" style="cursor:pointer; height:45px;" onclick="selectWorkloadDate('${dateKey}')">
+                    <strong class="d-block">${day}</strong>
+                    <span class="${badgeClass}" style="font-size:0.65rem;">${count}</span>
+                </td>`;
+            currentDayCount++;
+        }
+        while (currentDayCount < 7 && currentDayCount > 0) { gridHtml += "<td></td>"; currentDayCount++; }
+        gridHtml += "</tr>";
+        document.getElementById('wCalendarBody').innerHTML = gridHtml;
+    }
+
+    function changeWMonth(dir) {
+        wMonth += dir;
+        if (wMonth > 11) { wMonth = 0; wYear++; }
+        if (wMonth < 0) { wMonth = 11; wYear--; }
+        renderWorkloadCalendar();
+    }
+
+    function selectWorkloadDate(dateStr) {
+        const input = document.getElementById('next_event_date_input');
+        input.value = dateStr;
+        checkWorkload(dateStr);
+        const modalEl = document.getElementById('workloadModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         const savedRole = localStorage.getItem('crm_role');
         if (savedRole === 'CEO') {
             document.getElementById('role_ceo').checked = true;
         } else {
             document.getElementById('role_sales').checked = true;
+        }
+
+        // Перевіряємо початкову дату, яка завантажилась у картку
+        const initDate = document.getElementById('next_event_date_input').value;
+        if (initDate) {
+            checkWorkload(initDate);
         }
 
         if (document.getElementById('editor-container')) {
