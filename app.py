@@ -846,13 +846,22 @@ def client_detail(client_id):
     cursor.execute("SELECT * FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
     history = cursor.fetchall()
 
-    # Отримання упущеного попиту по конкретному клієнту
     cursor.execute("SELECT * FROM lost_demand WHERE client_id = %s ORDER BY id DESC", (client_id,))
     client_lost_demand = cursor.fetchall()
+
+    # Збираємо кількість запланованих дій по всіх датах для візуалізації завантаженості
+    cursor.execute("""
+        SELECT next_event_date, COUNT(*) 
+        FROM clients 
+        WHERE next_event_date IS NOT NULL AND next_event_date != '' 
+        GROUP BY next_event_date
+    """)
+    events_by_date = dict(cursor.fetchall())
+    json_events_by_date = json.dumps(events_by_date, ensure_ascii=False)
     
     cursor.close()
     conn.close()
-    return render_template('client.html', client=client, history=history, client_lost_demand=client_lost_demand)
+    return render_template('client.html', client=client, history=history, client_lost_demand=client_lost_demand, json_events_by_date=json_events_by_date)
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
