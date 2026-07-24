@@ -32,11 +32,12 @@
     <div class="col-12">
         <div class="card shadow-sm bg-dark text-white">
             <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center">
-                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-4 shadow">📋 Загальний список клієнтів</button>
-                <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-4">🔥 Заплановані дії на сьогодні</button>
-                <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-4">📅 Календар дій</button>
-                <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-4">💰 Річний план</button>
-                <button onclick="switchWindow('tasks-win')" id="btn-tasks-win" class="btn btn-md btn-outline-light fw-bold px-4">📝 Задачник</button>
+                <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-3 shadow">📋 Список клієнтів</button>
+                <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-3">🔥 Дії на сьогодні</button>
+                <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-3">📅 Календар дій</button>
+                <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-3">💰 Річний план</button>
+                <button onclick="switchWindow('tasks-win')" id="btn-tasks-win" class="btn btn-md btn-outline-light fw-bold px-3">📝 Задачник</button>
+                <button onclick="switchWindow('demand-win')" id="btn-demand-win" class="btn btn-md btn-outline-light fw-bold px-3">📦 Упущений попит</button>
             </div>
         </div>
     </div>
@@ -188,6 +189,79 @@
     </div>
 </div>
 
+<div id="window-demand-win" class="crm-window" style="display: none;">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white py-2 fw-bold">🔥 ТОП-10 дефіцитних артикулів</div>
+                <div class="card-body p-2 bg-light">
+                    <ul class="list-group list-group-flush">
+                        {% for top in top_demand %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-2">
+                            <div>
+                                <strong class="text-dark">{{ top.article }}</strong>
+                                <br><small class="text-muted">{{ top.title or 'Без назви' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-danger rounded-pill fw-bold">{{ top.request_count }} запов.</span>
+                                <br><small class="fw-bold text-primary">{{ top.total_qty }} шт.</small>
+                            </div>
+                        </li>
+                        {% endfor %}
+                        {% if not top_demand %}
+                        <li class="list-group-item text-center text-muted py-3">Немає збережених запитів.</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm border-dark">
+                <div class="card-header bg-dark text-white py-2 fw-bold">📋 Журнал запитів відсутніх товарів</div>
+                <div class="table-responsive" style="max-height: 75vh; overflow-y: auto;">
+                    <table class="table table-bordered table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Дата</th><th>Артикул</th><th>Назва/Бренд</th><th>К-сть</th><th>Клієнт</th><th>Статус</th><th>Коментар</th><th>Дія</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dem in lost_demand_list %}
+                            <tr>
+                                <td class="font-monospace small">{{ dem.created_at }}</td>
+                                <td><strong class="text-danger">{{ dem.article }}</strong></td>
+                                <td>{{ dem.title or '-' }}</td>
+                                <td class="fw-bold text-center">{{ dem.quantity }}</td>
+                                <td>
+                                    {% if dem.client_id %}
+                                    <a href="/client/{{ dem.client_id }}" class="fw-bold text-decoration-none">🏢 {{ dem.client_name }}</a>
+                                    {% else %}-{% endif %}
+                                </td>
+                                <td>
+                                    {% if dem.status == 'lost' %}<span class="badge bg-danger">🔴 Відмова</span>
+                                    {% elif dem.status == 'waiting' %}<span class="badge bg-warning text-dark">🟡 В очікуванні</span>
+                                    {% else %}<span class="badge bg-success">🟢 Заміна/Аналог</span>{% endif %}
+                                </td>
+                                <td style="white-space: pre-line;">{{ dem.note or '-' }}</td>
+                                <td>
+                                    <form action="/delete_lost_demand/{{ dem.id }}" method="POST" onsubmit="return confirm('Видалити запис?');">
+                                        <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not lost_demand_list %}
+                            <tr><td colspan="8" class="text-center text-muted py-4">Журнал порожній. Вносьте запити з карток клієнтів.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="window-tasks-win" class="crm-window" style="display: none;">
     <div class="row g-3">
         <div class="col-md-7">
@@ -319,7 +393,7 @@
             <div class="card shadow-sm border-dark h-100">
                 <div class="card-header bg-dark text-white py-2 fw-bold" id="selected-date-title">🎯 Клацніть на день з цифрою, щоб переглянути розгорнуті справи</div>
                 <div class="card-body p-0" id="calendar-tasks-box">
-                    <div class="text-center text-muted py-4">Будь ласка, натисніть на any день у календарі, щоб побачити заплановані перемовини.</div>
+                    <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у календарі, щоб побачити заплановані перемовини.</div>
                 </div>
             </div>
         </div>
@@ -692,17 +766,18 @@ function syncClientId() {
 function switchWindow(targetWinId) {
     document.querySelectorAll('.crm-window').forEach(win => win.style.display = 'none');
     document.getElementById('window-' + targetWinId).style.display = 'block';
-    ['today-win', 'calendar-win', 'all-win', 'finance-win', 'tasks-win'].forEach(id => {
+    ['today-win', 'calendar-win', 'all-win', 'finance-win', 'tasks-win', 'demand-win'].forEach(id => {
         let btn = document.getElementById('btn-' + id);
-        if (btn) btn.className = "btn btn-md btn-outline-light fw-bold px-4";
+        if (btn) btn.className = "btn btn-md btn-outline-light fw-bold px-3";
     });
     let activeBtn = document.getElementById('btn-' + targetWinId);
     if (activeBtn) {
-        if(targetWinId === 'today-win') activeBtn.className = "btn btn-md btn-warning fw-bold px-4 shadow";
-        else if(targetWinId === 'calendar-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-4 shadow";
-        else if(targetWinId === 'all-win') activeBtn.className = "btn btn-md btn-success fw-bold px-4 shadow";
-        else if(targetWinId === 'finance-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-4 shadow";
-        else if(targetWinId === 'tasks-win') activeBtn.className = "btn btn-md btn-info text-white fw-bold px-4 shadow";
+        if(targetWinId === 'today-win') activeBtn.className = "btn btn-md btn-warning fw-bold px-3 shadow";
+        else if(targetWinId === 'calendar-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-3 shadow";
+        else if(targetWinId === 'all-win') activeBtn.className = "btn btn-md btn-success fw-bold px-3 shadow";
+        else if(targetWinId === 'finance-win') activeBtn.className = "btn btn-md btn-primary fw-bold px-3 shadow";
+        else if(targetWinId === 'tasks-win') activeBtn.className = "btn btn-md btn-info text-white fw-bold px-3 shadow";
+        else if(targetWinId === 'demand-win') activeBtn.className = "btn btn-md btn-danger fw-bold px-3 shadow";
     }
 }
 
@@ -770,7 +845,6 @@ function showTasksForDate(dateStr) {
     box.innerHTML = html;
 }
 
-// ================= ЛОГІКА КАЛЕНДАРЯ ДЛЯ ЗАДАЧНИКА =================
 function renderTasksCalendar() {
     const labelEl = document.getElementById('tasks-calendar-title');
     if (!labelEl) return;
@@ -872,6 +946,8 @@ window.onload = function() {
         switchWindow('tasks-win');
     } else if(urlParams.get('tab') === 'finance' || urlParams.get('finance_month') !== null) { 
         switchWindow('finance-win'); 
+    } else if(urlParams.get('tab') === 'demand') {
+        switchWindow('demand-win');
     } else {
         switchWindow('all-win');
     }
