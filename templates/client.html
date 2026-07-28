@@ -379,7 +379,7 @@
     const wMonthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
     // Перевірка та показування плашки при виборі дати
-    function checkWorkload(dateStr) {
+   function checkWorkload(dateStr) {
         const badgeBox = document.getElementById('workload_badge_box');
         if (!dateStr) {
             badgeBox.innerHTML = '';
@@ -387,20 +387,19 @@
         }
         const count = eventsByDate[dateStr] || 0;
         let badgeHtml = '';
-        if (count === 0) {
-            badgeHtml = `<span class="badge bg-success w-100 py-1">🟢 На ${dateStr} немає подій (День вільний)</span>`;
-        } else if (count <= 2) {
-            badgeHtml = `<span class="badge bg-info text-dark w-100 py-1">🟢 На ${dateStr} заплановано: ${count} под.</span>`;
-        } else if (count <= 4) {
-            badgeHtml = `<span class="badge bg-warning text-dark w-100 py-1">🟡 На ${dateStr} заплановано: ${count} под. (Помірне навантаження)</span>`;
+        
+        if (count <= 10) {
+            badgeHtml = `<span class="badge bg-success w-100 py-1">🟢 На ${dateStr} заплановано: ${count} под. (День вільний)</span>`;
+        } else if (count <= 15) {
+            badgeHtml = `<span class="badge bg-warning text-dark w-100 py-1">🟡 На ${dateStr} заплановано: ${count} pop. (Помірне навантаження)</span>`;
         } else {
             badgeHtml = `<span class="badge bg-danger w-100 py-1">🔴 На ${dateStr} заплановано: ${count} под. (Високе завантаження!)</span>`;
         }
         badgeBox.innerHTML = badgeHtml;
     }
 
-    // Логіка модального календаря завантаженості
-    function renderWorkloadCalendar() {
+    // Нове кольорове забарвлення для модального календаря
+function renderWorkloadCalendar() {
         document.getElementById('wMonthTitle').innerText = wMonthNames[wMonth] + " " + wYear;
         const firstDayIndex = new Date(wYear, wMonth, 1).getDay();
         const shiftDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
@@ -422,13 +421,14 @@
             let bgClass = "bg-light text-dark";
             let badgeClass = "badge bg-secondary";
 
-            if (count > 0 && count <= 2) {
+            // Нова шкала кольорів за твоїми лімітами
+            if (count <= 10 && count > 0) {
                 bgClass = "bg-success-subtle text-success border-success";
                 badgeClass = "badge bg-success";
-            } else if (count >= 3 && count <= 4) {
+            } else if (count >= 11 && count <= 15) {
                 bgClass = "bg-warning-subtle text-dark border-warning";
                 badgeClass = "badge bg-warning text-dark";
-            } else if (count >= 5) {
+            } else if (count > 15) {
                 bgClass = "bg-danger-subtle text-danger border-danger";
                 badgeClass = "badge bg-danger";
             }
