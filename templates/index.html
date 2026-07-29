@@ -98,12 +98,12 @@
                                 </th>
                                 <th>
                                     <select id="filter-interest" class="form-select form-select-sm text-center" onchange="filterClientsTable()">
-    <option value="">Всі статуси</option>
-    <option value="зацікавленість">😍 Висока</option>
-    <option value="середня">🤔 Середня</option>
-    <option value="немає">😴 Немає</option>
-    <option value="не опрацьовано">❓ Не опр.</option>
-</select>
+                                        <option value="">Всі статуси</option>
+                                        <option value="зацікавленість">😍 Висока</option>
+                                        <option value="середня зацікавленість">🤔 Середня</option>
+                                        <option value="немає зацікавленості">😴 Немає</option>
+                                        <option value="не опрацьовано">❓ Не опр.</option>
+                                    </select>
                                 </th>
                                 <th>
                                     <select id="filter-mayer" class="form-select form-select-sm text-center" onchange="filterClientsTable()">
@@ -739,7 +739,10 @@ function filterClientsTable() {
         if (nameVal && !rName.includes(nameVal)) match = false;
         if (typeVal && !rType.includes(typeVal)) match = false;
         if (countryVal && !rCountry.includes(countryVal)) match = false;
-        if (interestVal && !rInterest.includes(interestVal)) match = false;
+        
+        // СУВОРЕ ПОРІВНЯННЯ ДЛЯ СТАТУСУ (щоб 'середня зацікавленість' не підтягувалася під 'зацікавленість')
+        if (interestVal && rInterest !== interestVal) match = false;
+        
         if (mayerVal && rMayer !== mayerVal) match = false;
         if (lastVal && !rLast.includes(lastVal)) match = false;
         if (nextVal && !rNext.includes(nextVal)) match = false;
