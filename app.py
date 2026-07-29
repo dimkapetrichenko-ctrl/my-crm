@@ -76,6 +76,7 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         return False
     try:
         html_body = body_text
+        
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
@@ -90,10 +91,13 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         html_content = f"""
         <html>
         <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
+            
             {banner_html}
+
             <div style="font-size: 15px; margin-bottom: 30px;">
                 {html_body}
             </div>
+
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
             <table border="0" cellpadding="0" cellspacing="0" style="color: #212529;">
                 <tr>
@@ -401,9 +405,11 @@ def index():
     cal_cursor.close()
     
     cursor = conn.cursor(cursor_factory=DictCursor)
+    # ВИБІРКА ДАТИ ТА ТЕКСТУ ОСТАННЬОЇ АКТИВНОСТІ КЛІЄНТА
     sql = """
         SELECT c.*, 
-               (SELECT MAX(n.date)::TEXT FROM negotiations n WHERE n.client_id = c.id) AS last_activity 
+               (SELECT MAX(n.date)::TEXT FROM negotiations n WHERE n.client_id = c.id) AS last_activity,
+               (SELECT n.result FROM negotiations n WHERE n.client_id = c.id ORDER BY n.id DESC LIMIT 1) AS last_activity_text
         FROM clients c 
         WHERE 1=1
     """
@@ -443,6 +449,7 @@ def index():
             'brands': row['brands'] if row['brands'] else '-',
             'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано',
             'last_activity': row['last_activity'] if row['last_activity'] else '',
+            'last_activity_text': row['last_activity_text'] if row['last_activity_text'] else '',
             'next_event_date': str(row['next_event_date']) if row['next_event_date'] else '',
             'next_event_type': str(row['next_event_type']) if row['next_event_type'] else '',
             'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні'
@@ -849,7 +856,6 @@ def client_detail(client_id):
     cursor.execute("SELECT * FROM lost_demand WHERE client_id = %s ORDER BY id DESC", (client_id,))
     client_lost_demand = cursor.fetchall()
 
-    # Збираємо кількість запланованих дій по всіх датах для візуалізації завантаженості
     cursor.execute("""
         SELECT next_event_date, COUNT(*) 
         FROM clients 
@@ -910,18 +916,4 @@ def export_excel():
     df = pd.read_sql(query, conn)
     conn.close()
     
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Клієнти Mayer CRM')
-    output.seek(0)
-    
-    return send_file(
-        output,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=f'Mayer_CRM_Clients_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
-    )
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    output
