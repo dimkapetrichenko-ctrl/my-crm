@@ -69,11 +69,11 @@
                             <tr>
                                 <th style="width: 20%;">Компанія</th>
                                 <th style="width: 13%;">Тип клієнта</th>
-                                <th style="width: 10%;">Країна</th>
-                                <th style="text-align: center; width: 14%;">Зацікавленість</th>
-                                <th style="text-align: center; width: 8%;">MAYER</th>
-                                <th style="width: 12%;">Остання подія</th>
-                                <th style="width: 15%;">Наступна подія</th>
+                                <th style="width: 12%;">Країна</th>
+                                <th style="text-align: center; width: 13%;">Зацікавленість</th>
+                                <th style="text-align: center; width: 7%;">MAYER</th>
+                                <th style="width: 11%;">Остання подія</th>
+                                <th style="width: 16%;">Наступна подія</th>
                                 <th style="text-align: center; width: 8%;">Дія</th>
                             </tr>
                             <tr class="bg-secondary p-1" id="excel-filter-row">
@@ -94,7 +94,12 @@
                                     </select>
                                 </th>
                                 <th>
-                                    <input type="text" id="filter-country" class="form-control form-control-sm" placeholder="🔍 Країна..." onkeyup="filterClientsTable()">
+                                    <select id="filter-country" class="form-select form-select-sm" onchange="filterClientsTable()">
+                                        <option value="">Всі країни</option>
+                                        {% for c_item in countries %}
+                                        <option value="{{ c_item|lower }}">{{ c_item }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </th>
                                 <th>
                                     <select id="filter-interest" class="form-select form-select-sm text-center" onchange="filterClientsTable()">
@@ -116,7 +121,13 @@
                                     <input type="text" id="filter-last" class="form-control form-control-sm" placeholder="🔍 Дата..." onkeyup="filterClientsTable()">
                                 </th>
                                 <th>
-                                    <input type="text" id="filter-next" class="form-control form-control-sm" placeholder="🔍 Дата/Тип..." onkeyup="filterClientsTable()">
+                                    <select id="filter-next-type" class="form-select form-select-sm" onchange="filterClientsTable()">
+                                        <option value="">Всі події</option>
+                                        <option value="call">📞 Дзвінок</option>
+                                        <option value="visit">🚗 Візит</option>
+                                        <option value="email">✉️ Лист</option>
+                                        <option value="no_event">❌ Без дій</option>
+                                    </select>
                                 </th>
                                 <th class="text-center">
                                     <button type="button" class="btn btn-xs btn-light fw-bold py-0 px-1" onclick="resetTableFilters()" title="Скинути фільтри">❌</button>
@@ -133,7 +144,8 @@
                                 data-interest="{{ (client.interest_level or 'не опрацьовано')|lower }}"
                                 data-mayer="{{ client.mayer_reg or 'Ні' }}"
                                 data-last="{{ (client.last_activity or '')|lower }}"
-                                data-next="{{ (client.next_event_date or '')|lower }} {{ (client.next_event_type or '')|lower }}">
+                                data-next-date="{{ (client.next_event_date or '')|lower }}"
+                                data-next-type="{{ (client.next_event_type or '')|lower }}">
                                 
                                 <td style="padding: 6px 8px; min-width: 180px;">
                                     <a href="/client/{{ client.id }}" class="fw-bold text-decoration-none text-primary">🏢 {{ client.name }}</a>
@@ -720,7 +732,7 @@ function filterClientsTable() {
     const interestVal = (document.getElementById('filter-interest')?.value || '').toLowerCase().trim();
     const mayerVal = (document.getElementById('filter-mayer')?.value || '').toLowerCase().trim();
     const lastVal = (document.getElementById('filter-last')?.value || '').toLowerCase().trim();
-    const nextVal = (document.getElementById('filter-next')?.value || '').toLowerCase().trim();
+    const nextTypeVal = (document.getElementById('filter-next-type')?.value || '').toLowerCase().trim();
 
     const rows = document.querySelectorAll('#clients-table-body .client-row');
     let visibleCount = 0;
@@ -732,20 +744,31 @@ function filterClientsTable() {
         const rInterest = row.getAttribute('data-interest') || '';
         const rMayer = (row.getAttribute('data-mayer') || '').toLowerCase();
         const rLast = row.getAttribute('data-last') || '';
-        const rNext = row.getAttribute('data-next') || '';
+        const rNextDate = row.getAttribute('data-next-date') || '';
+        const rNextType = row.getAttribute('data-next-type') || '';
 
         let match = true;
 
         if (nameVal && !rName.includes(nameVal)) match = false;
         if (typeVal && !rType.includes(typeVal)) match = false;
-        if (countryVal && !rCountry.includes(countryVal)) match = false;
         
-        // СУВОРЕ ПОРІВНЯННЯ ДЛЯ СТАТУСУ (щоб 'середня зацікавленість' не підтягувалася під 'зацікавленість')
+        // ФІЛЬТР КРАЇНИ (ЗІ СПИСКУ КРАЇН У БАЗІ)
+        if (countryVal && rCountry !== countryVal) match = false;
+        
+        // СУВОРЕ ПОРІВНЯННЯ СТАТУСУ ЗАЦІКАВЛЕНОСТІ
         if (interestVal && rInterest !== interestVal) match = false;
         
         if (mayerVal && rMayer !== mayerVal) match = false;
         if (lastVal && !rLast.includes(lastVal)) match = false;
-        if (nextVal && !rNext.includes(nextVal)) match = false;
+        
+        // ФІЛЬТР ТИПУ НАСТУПНОЇ ПОДІЇ
+        if (nextTypeVal) {
+            if (nextTypeVal === 'no_event') {
+                if (rNextDate !== '') match = false;
+            } else {
+                if (rNextType !== nextTypeVal) match = false;
+            }
+        }
 
         if (match) {
             row.style.display = '';
@@ -767,7 +790,7 @@ function resetTableFilters() {
     if (document.getElementById('filter-interest')) document.getElementById('filter-interest').value = '';
     if (document.getElementById('filter-mayer')) document.getElementById('filter-mayer').value = '';
     if (document.getElementById('filter-last')) document.getElementById('filter-last').value = '';
-    if (document.getElementById('filter-next')) document.getElementById('filter-next').value = '';
+    if (document.getElementById('filter-next-type')) document.getElementById('filter-next-type').value = '';
     filterClientsTable();
 }
 
