@@ -136,16 +136,16 @@
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label mb-1">Веб-сайт</label>
-                        <div class="input-group">
-                            <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website or '' }}">
-                            {% if client.website and has_ai_key %}
-                            <button type="submit" formaction="/scan_client_site/{{ client.id }}" class="btn btn-sm btn-outline-primary fw-bold" onclick="this.innerHTML='⏳...';">
-                                🤖 Сканувати ШІ
-                            </button>
-                            {% endif %}
-                        </div>
-                    </div>
+    <label class="form-label mb-1">Веб-сайт</label>
+    <div class="input-group">
+        <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website or '' }}" placeholder="www.example.com">
+        {% if client.website %}
+        <button type="submit" formaction="/scan_client_site/{{ client.id }}" class="btn btn-sm btn-outline-primary fw-bold" onclick="this.innerHTML='⏳ Сканування...';">
+            🤖 Сканувати ШІ
+        </button>
+        {% endif %}
+    </div>
+</div>
                     <div class="mb-2">
                         <label class="form-label mb-1">Країна</label>
                         <input type="text" name="country" class="form-control form-control-sm" value="{{ client.country }}">
