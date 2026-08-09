@@ -52,7 +52,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# ФУНКЦІЯ АНАЛІЗУ ВЕБ-САЙТУ КОНТРАГЕНТА ЧЕРЕЗ ШІ-АГЕНТ GEMINI
+# ОНОВЛЕНА, ПОКРАЩЕНА ФУНКЦІЯ АНАЛІЗУ ВЕБ-САЙТУ
 def analyze_website_with_ai(website_url):
     if not website_url or not GEMINI_API_KEY:
         return None
@@ -62,22 +62,78 @@ def analyze_website_with_ai(website_url):
         url = 'https://' + url
 
     try:
-        # Скануємо текстовий вміст головної сторінки
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.get(url, timeout=12, headers=headers, verify=False)
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        response = requests.get(url, timeout=15, headers=headers, verify=False)
         response.encoding = response.apparent_encoding or 'utf-8'
         
-        soup = BeautifulSoup(response.text, 'html.parser')
-        for element in soup(["script", "style", "header", "footer", "nav"]):
+        raw_html = response.text
+        soup = BeautifulSoup(raw_html, 'html.parser')
+        
+        # 1. Видаляємо ТІЛЬКИ скрипти та стилі (НЕ видаляємо header, footer, nav - там живуть бренди!)
+        for element in soup(["script", "style", "noscript", "svg"]):
             element.extract()
             
         text_content = soup.get_text(separator=' ', strip=True)
-        # Обрізаємо занадто довгий текст для економії токенів (перші ~5000 символів)
-        text_content = " ".join(text_content.split())[:5000]
+        # Збільшуємо обсяг тексту до 15 000 символів, щоб захопити увесь каталог і футер
+        clean_text = " ".join(text_content.split())[:15000]
 
-        if not text_content or len(text_content) < 100:
+        if not clean_text or len(clean_text) < 100:
             return None
 
+        # 2. Гібридний прямий пошук у тексті сторінки (Python Regex)
+        lower_raw = raw_html.lower()
+        direct_detected = []
+        
+        brand_patterns = {
+            "Vaderstad": [r'vaderstad', r'väderstad'],
+            "Gaspardo": [r'gaspardo', r'maschio gaspardo'],
+            "Horsch": [r'horsch'],
+            "Pottinger": [r'pottinger', r'pöttinger', r'poettinger'],
+            "Kverneland": [r'kverneland']
+        }
+        
+        for brand_name, patterns in brand_patterns.items():
+            for pat in patterns:
+                if re.search(pat, lower_raw):
+                    if brand_name not in direct_detected:
+                        direct_detected.append(brand_name)
+                    break
+
+        # 3. Підключення Gemini для фінального висновку та розпізнавання типів
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+        Ти — галузевий аналітик B2B ринку сільськогосподарської техніки та запчастин. 
+        Проаналізуй текст з веб-сайту компанії:
+        "{clean_text}"
+
+        Попередній алгоритм вже знайшов на сторінці згадки про такі бренди: {direct_detected}.
+
+        Завдання:
+        1. Підтвердь або доповни список брендів (шукай: Vaderstad, Gaspardo, Horsch, Pottinger, Kverneland).
+        2. Визнач, чи це агро-дилер/інтернет-магазин запчастин/фермерське господарство.
+
+        Поверни відповідь виключно у форматі JSON (без використання markdown блоків ```json):
+        {{
+            "is_relevant_dealer": true/false (true якщо це агро-дилер, магазин запчастин чи сервіс),
+            "detected_brands": [] (масив брендів строго з переліку: "Vaderstad", "Gaspardo", "Horsch", "Pottinger", "Kverneland", "Інші"),
+            "buyer_type": "Дилер сг техніки" або "інтернет-магазин" або "гуртовий клієнт" або "виробник" або "фермерське господарство" або "не вказано",
+            "summary": "Короткий висновок українською мовою (1 речення)"
+        }}
+        """
+        
+        ai_response = model.generate_content(prompt)
+        clean_json_str = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
+        parsed = json.loads(clean_json_str)
+        
+        # Об'єднуємо деталі, знайдені у коді сторінки та розпізнані ШІ
+        combined_brands = list(set(parsed.get('detected_brands', []) + direct_detected))
+        parsed['detected_brands'] = combined_brands
+        
+        return parsed
+
+    except Exception as e:
+        print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
+        return None
         # Формуємо завдання ШІ-Агенту
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
