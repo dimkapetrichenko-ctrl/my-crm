@@ -12,6 +12,9 @@ import imaplib
 import email
 from email.mime.text import MIMEText
 from email.header import Header, decode_header
+import requests
+from bs4 import BeautifulSoup
+import google.generativeai as genai
 
 app = Flask(__name__)
 
@@ -28,6 +31,11 @@ MAIL_PORT = 465  # Безпечний SSL порт
 MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
 MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 
+# Налаштування ШІ Gemini API
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
@@ -43,6 +51,57 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+# ФУНКЦІЯ АНАЛІЗУ ВЕБ-САЙТУ КОНТРАГЕНТА ЧЕРЕЗ ШІ-АГЕНТ GEMINI
+def analyze_website_with_ai(website_url):
+    if not website_url or not GEMINI_API_KEY:
+        return None
+    
+    url = website_url.strip()
+    if not url.startswith('http'):
+        url = 'https://' + url
+
+    try:
+        # Скануємо текстовий вміст головної сторінки
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        response = requests.get(url, timeout=12, headers=headers, verify=False)
+        response.encoding = response.apparent_encoding or 'utf-8'
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        for element in soup(["script", "style", "header", "footer", "nav"]):
+            element.extract()
+            
+        text_content = soup.get_text(separator=' ', strip=True)
+        # Обрізаємо занадто довгий текст для економії токенів (перші ~5000 символів)
+        text_content = " ".join(text_content.split())[:5000]
+
+        if not text_content or len(text_content) < 100:
+            return None
+
+        # Формуємо завдання ШІ-Агенту
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+        Ти — галузевий аналітик B2B ринку сільськогосподарської техніки. Проаналізуй наступний текст із веб-сайту компанії:
+        "{text_content}"
+
+        Визнач, чи займається ця компанія торгівлею сільгосптехнікою, сервісом або продажем агрозапчастин.
+        Особливо зверни увагу, чи є на сайті згадки про запчастини або обладнання брендів: Vaderstad (Väderstad), Gaspardo, Pottinger (Pöttinger), Horsch.
+
+        Поверни відповідь виключно у форматі JSON (без використання markdown блоків ```json):
+        {{
+            "is_relevant_dealer": true чи false (true якщо це агро-дилер, агро-магазин чи великий фермер),
+            "detected_brands": [] (масив з назв знайдених брендів строго з переліку: "Vaderstad", "Gaspardo", "Horsch", "Pottinger", "Інші"),
+            "buyer_type": "Дилер сг техніки" або "інтернет-магазин" або "гуртовий клієнт" або "виробник" або "фермерське господарство" або "не вказано",
+            "summary": "Короткий висновок українською мовою (1 речення, наприклад: Продають запчастини для сівалок та ґрунтообробки Horsch та Vaderstad)"
+        }}
+        """
+        
+        ai_response = model.generate_content(prompt)
+        clean_text = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
+        return json.loads(clean_text)
+    except Exception as e:
+        print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
+        return None
 
 # БЕЗПЕЧНИЙ ДЕКОДЕР ТІЛА ЛИСТА ДЛЯ IMAP РОБОТА
 def decode_email_body(msg):
@@ -76,9 +135,8 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         return False
     try:
         html_body = body_text
-        
-        logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
-        banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
+        logo_url = "[https://my-crm-q24n.onrender.com/static/logotipnew.png](https://my-crm-q24n.onrender.com/static/logotipnew.png)" 
+        banner_url = "[https://my-crm-q24n.onrender.com/static/promo_en.jpg](https://my-crm-q24n.onrender.com/static/promo_en.jpg)"
 
         banner_html = ""
         if promo_banner:
@@ -91,13 +149,10 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         html_content = f"""
         <html>
         <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
-            
             {banner_html}
-
             <div style="font-size: 15px; margin-bottom: 30px;">
                 {html_body}
             </div>
-
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
             <table border="0" cellpadding="0" cellspacing="0" style="color: #212529;">
                 <tr>
@@ -111,7 +166,7 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
                         <strong style="color: #dc3545;">MAYER PRO S.r.o.</strong><br>
                         📱 +421 907 933 441<br>
                         📱 +48 501 166 523<br>
-                        🌐 <a href="https://mayer-pro.com/en" target="_blank" style="color: #0d6efd; text-decoration: none;">mayer-pro.com/en</a><br>
+                        🌐 <a href="[https://mayer-pro.com/en](https://mayer-pro.com/en)" target="_blank" style="color: #0d6efd; text-decoration: none;">[mayer-pro.com/en](https://mayer-pro.com/en)</a><br>
                         📧 <a href="mailto:sales@mayer-pro.com" style="color: #0d6efd; text-decoration: none;">sales@mayer-pro.com</a>
                     </td>
                 </tr>
@@ -222,7 +277,6 @@ def init_db():
         )
     ''')
 
-    # СТВОРЕННЯ ТАБЛИЦІ ДЛЯ УПУЩЕНОГО ПОПИТУ
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS lost_demand (
             id SERIAL PRIMARY KEY,
@@ -356,7 +410,6 @@ def index():
         })
     total_remaining = total_planned - total_actual
     
-    # ЗЧИТУВАННЯ СТАТИСТИКИ УПУЩЕНОГО ПОПИТУ
     dict_cursor.execute("""
         SELECT ld.*, c.name as client_name 
         FROM lost_demand ld 
@@ -366,7 +419,6 @@ def index():
     raw_demand = dict_cursor.fetchall()
     lost_demand_list = [dict(d) for d in raw_demand]
 
-    # ТОП ДЕФІЦИТНИХ АРТИКУЛІВ (Групування за артикулом)
     dict_cursor.execute("""
         SELECT article, title, COUNT(*) as request_count, SUM(quantity) as total_qty
         FROM lost_demand
@@ -405,7 +457,6 @@ def index():
     cal_cursor.close()
     
     cursor = conn.cursor(cursor_factory=DictCursor)
-    # ВИБІРКА ДАТИ ТА ТЕКСТУ ОСТАННЬОЇ АКТИВНОСТІ КЛІЄНТА
     sql = """
         SELECT c.*, 
                (SELECT MAX(n.date)::TEXT FROM negotiations n WHERE n.client_id = c.id) AS last_activity,
@@ -487,7 +538,75 @@ def index():
         top_demand=top_demand
     )
 
-# МАРШРУТ ДОДАВАННЯ УПУЩЕНОГО ПОПИТУ
+# МАРШРУТ ШІ-СКАНУВАННЯ ПООДИНОКОГО САЙТУ
+@app.route('/scan_client_site/<int:client_id>', methods=['POST'])
+@login_required
+def scan_client_site(client_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    cursor.execute("SELECT website FROM clients WHERE id = %s", (client_id,))
+    client = cursor.fetchone()
+    
+    if client and client['website']:
+        result = analyze_website_with_ai(client['website'])
+        if result:
+            brands_str = ", ".join(result.get('detected_brands', [])) if result.get('detected_brands') else '-'
+            buyer_type = result.get('buyer_type', 'не вказано')
+            interest_level = 'зацікавленість' if result.get('is_relevant_dealer') else 'немає зацікавленості'
+            
+            cursor.execute("""
+                UPDATE clients 
+                SET brands = %s, buyer_type = %s, interest_level = %s 
+                WHERE id = %s
+            """, (brands_str, buyer_type, interest_level, client_id))
+            
+            log_text = f"[🤖 ШІ-Сканер] Агент перевірив сайт. Висновок: {result.get('summary')}. Виявлені бренди: {brands_str}"
+            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+            cursor.execute(
+                "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+                (client_id, current_date, log_text, 'CEO')
+            )
+            conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for('client_detail', client_id=client_id))
+
+# МАРШРУТ МАСОВОГО ШІ-АУДИТУ ВСІЄЇ БАЗИ (Парсить тільки клієнтів з сайтами, де бренди ще порожні або '-')
+@app.route('/mass_ai_scan', methods=['POST'])
+@login_required
+def mass_ai_scan():
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    cursor.execute("SELECT id, website FROM clients WHERE website IS NOT NULL AND website != '' AND (brands IS NULL OR brands = '-' OR brands = '')")
+    target_clients = cursor.fetchall()
+    
+    scanned_count = 0
+    for row in target_clients:
+        result = analyze_website_with_ai(row['website'])
+        if result:
+            brands_str = ", ".join(result.get('detected_brands', [])) if result.get('detected_brands') else '-'
+            buyer_type = result.get('buyer_type', 'не вказано')
+            interest_level = 'зацікавленість' if result.get('is_relevant_dealer') else 'немає зацікавленості'
+            
+            cursor.execute("""
+                UPDATE clients 
+                SET brands = %s, buyer_type = %s, interest_level = %s 
+                WHERE id = %s
+            """, (brands_str, buyer_type, interest_level, row['id']))
+            
+            log_text = f"[🤖 ШІ Масовий Аудит] Авто-перевірка сайту. {result.get('summary')}. Знайдено брендів: {brands_str}"
+            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+            cursor.execute(
+                "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+                (row['id'], current_date, log_text, 'CEO')
+            )
+            scanned_count += 1
+            
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for('index'))
+
 @app.route('/add_lost_demand', methods=['POST'])
 @login_required
 def add_lost_demand():
@@ -514,7 +633,6 @@ def add_lost_demand():
         return redirect(url_for('client_detail', client_id=client_id))
     return redirect(url_for('index', tab='demand'))
 
-# МАРШРУТ ВИДАЛЕННЯ НОТАТКИ ДЕФІЦИТУ
 @app.route('/delete_lost_demand/<int:demand_id>', methods=['POST'])
 @login_required
 def delete_lost_demand(demand_id):
@@ -865,9 +983,12 @@ def client_detail(client_id):
     events_by_date = dict(cursor.fetchall())
     json_events_by_date = json.dumps(events_by_date, ensure_ascii=False)
     
+    # ПЕРЕДАЄМО НАЯВНІСТЬ КЛЮЧA ШІ В ШАБЛОН ДЛЯ ВІДОБРАЖЕННЯ КНОПОК СКАНИРОВАНИЯ
+    has_ai_key = GEMINI_API_KEY is not None and GEMINI_API_KEY != ""
+
     cursor.close()
     conn.close()
-    return render_template('client.html', client=client, history=history, client_lost_demand=client_lost_demand, json_events_by_date=json_events_by_date)
+    return render_template('client.html', client=client, history=history, client_lost_demand=client_lost_demand, json_events_by_date=json_events_by_date, has_ai_key=has_ai_key)
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
@@ -916,4 +1037,18 @@ def export_excel():
     df = pd.read_sql(query, conn)
     conn.close()
     
-    output
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Клієнти Mayer CRM')
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Mayer_CRM_Clients_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
+    )
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
