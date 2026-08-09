@@ -52,7 +52,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# ОНОВЛЕНА, ПОКРАЩЕНА ФУНКЦІЯ АНАЛІЗУ ВЕБ-САЙТУ
+# ТОЧНА ТА РОЗУМНА ФУНКЦІЯ АНАЛІЗУ ВЕБ-САЙТУ (БЕЗ ФАЛЬШИВИХ СПРАЦЬОВУВАНЬ)
 def analyze_website_with_ai(website_url):
     if not website_url or not GEMINI_API_KEY:
         return None
@@ -66,19 +66,54 @@ def analyze_website_with_ai(website_url):
         response = requests.get(url, timeout=15, headers=headers, verify=False)
         response.encoding = response.apparent_encoding or 'utf-8'
         
-        raw_html = response.text
-        soup = BeautifulSoup(raw_html, 'html.parser')
+        soup = BeautifulSoup(response.text, 'html.parser')
         
-        # 1. Видаляємо ТІЛЬКИ скрипти та стилі (НЕ видаляємо header, footer, nav - там живуть бренди!)
-        for element in soup(["script", "style", "noscript", "svg"]):
+        # Видаляємо скрипти, стилі та службові SEO-теги
+        for element in soup(["script", "style", "noscript", "svg", "meta"]):
             element.extract()
             
         text_content = soup.get_text(separator=' ', strip=True)
-        # Збільшуємо обсяг тексту до 15 000 символів, щоб захопити увесь каталог і футер
-        clean_text = " ".join(text_content.split())[:15000]
+        clean_text = " ".join(text_content.split())[:12000]
 
         if not clean_text or len(clean_text) < 100:
             return None
+
+        # Передаємо очищений текст у Gemini для інтелектуального аналізу контексту
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+        Ти — фахівець з аудиту каталогів сільгосптехніки та запчастин. 
+        Проаналізуй видимий текст із веб-сайту інтернет-магазину/дилера:
+        "{clean_text}"
+
+        Твоє завдання — перевірити наявність пропозицій (запчастин, обладнання, товарів у каталозі) для брендів:
+        - Vaderstad (Väderstad)
+        - Gaspardo (Maschio Gaspardo)
+        - Horsch
+        - Pottinger (Pöttinger)
+        - Kverneland
+
+        УВАГА ВАЖЛИВО:
+        Додавай бренд у список "detected_brands" ТІЛЬКИ якщо на сайті ДІЙСНО є товари, запчастини або категорії для цього бренду. 
+        Якщо бренд згадується лише випадково, у контексті порівняння, або товарів даного бренду НЕМАЄ в наявності/асортименті — НЕ додавай його!
+
+        Поверни відповідь виключно у форматі JSON (без використання markdown блоків ```json):
+        {{
+            "is_relevant_dealer": true/false (true якщо це агро-дилер, магазин запчастин чи сервіс),
+            "detected_brands": [] (масив брендів строго з переліку: "Vaderstad", "Gaspardo", "Horsch", "Pottinger", "Kverneland", "Інші"),
+            "buyer_type": "Дилер сг техніки" або "інтернет-магазин" або "гуртовий клієнт" або "виробник" або "фермерське господарство" або "не вказано",
+            "summary": "Короткий висновок українською мовою (1 речення, наприклад: На сайті виявлено запчастини для Kverneland та Gaspardo)"
+        }}
+        """
+        
+        ai_response = model.generate_content(prompt)
+        clean_json_str = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
+        parsed = json.loads(clean_json_str)
+        
+        return parsed
+
+    except Exception as e:
+        print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
+        return None
 
         # 2. Гібридний прямий пошук у тексті сторінки (Python Regex)
         lower_raw = raw_html.lower()
