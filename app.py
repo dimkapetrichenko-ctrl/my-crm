@@ -52,7 +52,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# ТОЧНА ТА РОЗУМНА ФУНКЦІЯ АНАЛІЗУ ВЕБ-САЙТУ (БЕЗ ФАЛЬШИВИХ СПРАЦЬОВУВАНЬ)
+# РОЗУМНА ТA ВИПРАВЛЕНА ФУНКЦІЯ АНАЛІЗУ ВЕБ-САЙТУ КОНТРАГЕНТА
 def analyze_website_with_ai(website_url):
     if not website_url or not GEMINI_API_KEY:
         return None
@@ -62,134 +62,65 @@ def analyze_website_with_ai(website_url):
         url = 'https://' + url
 
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'uk-UA,uk;q=0.9,en-US;q=0.8,en;q=0.7,pl;q=0.6,hu;q=0.5'
+        }
+        # Вимикаємо сувору перевірку SSL (verify=False), щоб не падати на європейських сайтах із простроченими сертифікатами
         response = requests.get(url, timeout=15, headers=headers, verify=False)
         response.encoding = response.apparent_encoding or 'utf-8'
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Видаляємо скрипти, стилі та службові SEO-теги
+        # Видаляємо тільки технічне сміття (залишаємо меню та каталоги, де прописані бренди)
         for element in soup(["script", "style", "noscript", "svg", "meta"]):
             element.extract()
             
         text_content = soup.get_text(separator=' ', strip=True)
-        clean_text = " ".join(text_content.split())[:12000]
+        # Збільшуємо ліміт до 15 000 символів, щоб повністю прочитати угорські/польські сайти
+        clean_text = " ".join(text_content.split())[:15000]
 
         if not clean_text or len(clean_text) < 100:
             return None
 
-        # Передаємо очищений текст у Gemini для інтелектуального аналізу контексту
+        # Формуємо завдання ШІ з чіткими критеріями відсіювання
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
-        Ти — фахівець з аудиту каталогів сільгосптехніки та запчастин. 
-        Проаналізуй видимий текст із веб-сайту інтернет-магазину/дилера:
+        Ти — досвідчений B2B аналітик агросектору та запчастин до сільгосптехніки. 
+        Проаналізуй наступний текст, зчитаний з головної сторінки сайту компанії:
         "{clean_text}"
 
-        Твоє завдання — перевірити наявність пропозицій (запчастин, обладнання, товарів у каталозі) для брендів:
+        Твоє завдання — визначити, чи пропонує ця компанія товари, запчастини або техніку наступних брендів:
         - Vaderstad (Väderstad)
         - Gaspardo (Maschio Gaspardo)
         - Horsch
         - Pottinger (Pöttinger)
         - Kverneland
 
-        УВАГА ВАЖЛИВО:
-        Додавай бренд у список "detected_brands" ТІЛЬКИ якщо на сайті ДІЙСНО є товари, запчастини або категорії для цього бренду. 
-        Якщо бренд згадується лише випадково, у контексті порівняння, або товарів даного бренду НЕМАЄ в наявності/асортименті — НЕ додавай його!
+        ⚠️ СУВОРІ ПРАВИЛА АНАЛІЗУ:
+        1. Вноси бренд до списку "detected_brands" ТІЛЬКИ якщо компанія реально має його в асортименті, каталозі товарів, є його дилером або продає запчастини до нього.
+        2. Якщо бренд згадується просто випадково (наприклад, у статті блогу, у новинах, у тексті порівняння, або написано, що товарів НЕМАЄ в наявності) — НЕ додавай його до списку! Будь дуже критичним, усувай фальшиві згадки.
+        3. Зверни увагу на угорські та європейські варіації назв (наприклад, Maschio Gaspardo — це бренд Gaspardo; Pöttinger/Poettinger — це Pottinger).
 
-        Поверни відповідь виключно у форматі JSON (без використання markdown блоків ```json):
+        Поверни відповідь виключно у форматі чистого JSON (без використання markdown блоків ```json):
         {{
-            "is_relevant_dealer": true/false (true якщо це агро-дилер, магазин запчастин чи сервіс),
+            "is_relevant_dealer": true чи false (true якщо це агро-дилер, агро-магазин чи велика компанія),
             "detected_brands": [] (масив брендів строго з переліку: "Vaderstad", "Gaspardo", "Horsch", "Pottinger", "Kverneland", "Інші"),
             "buyer_type": "Дилер сг техніки" або "інтернет-магазин" або "гуртовий клієнт" або "виробник" або "фермерське господарство" або "не вказано",
-            "summary": "Короткий висновок українською мовою (1 речення, наприклад: На сайті виявлено запчастини для Kverneland та Gaspardo)"
+            "summary": "Короткий висновок українською мовою (1 речення, поясни чому саме обрав такі бренди)"
         }}
         """
         
         ai_response = model.generate_content(prompt)
+        # Очищаємо відповідь від можливої розмітки markdown
         clean_json_str = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
-        parsed = json.loads(clean_json_str)
         
-        return parsed
-
-    except Exception as e:
-        print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
-        return None
-
-        # 2. Гібридний прямий пошук у тексті сторінки (Python Regex)
-        lower_raw = raw_html.lower()
-        direct_detected = []
-        
-        brand_patterns = {
-            "Vaderstad": [r'vaderstad', r'väderstad'],
-            "Gaspardo": [r'gaspardo', r'maschio gaspardo'],
-            "Horsch": [r'horsch'],
-            "Pottinger": [r'pottinger', r'pöttinger', r'poettinger'],
-            "Kverneland": [r'kverneland']
-        }
-        
-        for brand_name, patterns in brand_patterns.items():
-            for pat in patterns:
-                if re.search(pat, lower_raw):
-                    if brand_name not in direct_detected:
-                        direct_detected.append(brand_name)
-                    break
-
-        # 3. Підключення Gemini для фінального висновку та розпізнавання типів
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"""
-        Ти — галузевий аналітик B2B ринку сільськогосподарської техніки та запчастин. 
-        Проаналізуй текст з веб-сайту компанії:
-        "{clean_text}"
-
-        Попередній алгоритм вже знайшов на сторінці згадки про такі бренди: {direct_detected}.
-
-        Завдання:
-        1. Підтвердь або доповни список брендів (шукай: Vaderstad, Gaspardo, Horsch, Pottinger, Kverneland).
-        2. Визнач, чи це агро-дилер/інтернет-магазин запчастин/фермерське господарство.
-
-        Поверни відповідь виключно у форматі JSON (без використання markdown блоків ```json):
-        {{
-            "is_relevant_dealer": true/false (true якщо це агро-дилер, магазин запчастин чи сервіс),
-            "detected_brands": [] (масив брендів строго з переліку: "Vaderstad", "Gaspardo", "Horsch", "Pottinger", "Kverneland", "Інші"),
-            "buyer_type": "Дилер сг техніки" або "інтернет-магазин" або "гуртовий клієнт" або "виробник" або "фермерське господарство" або "не вказано",
-            "summary": "Короткий висновок українською мовою (1 речення)"
-        }}
-        """
-        
-        ai_response = model.generate_content(prompt)
-        clean_json_str = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
-        parsed = json.loads(clean_json_str)
-        
-        # Об'єднуємо деталі, знайдені у коді сторінки та розпізнані ШІ
-        combined_brands = list(set(parsed.get('detected_brands', []) + direct_detected))
-        parsed['detected_brands'] = combined_brands
-        
-        return parsed
-
-    except Exception as e:
-        print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
-        return None
-        # Формуємо завдання ШІ-Агенту
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"""
-        Ти — галузевий аналітик B2B ринку сільськогосподарської техніки. Проаналізуй наступний текст із веб-сайту компанії:
-        "{text_content}"
-
-        Визнач, чи займається ця компанія торгівлею сільгосптехнікою, сервісом або продажем агрозапчастин.
-        Особливо зверни увагу, чи є на сайті згадки про запчастини або обладнання брендів: Vaderstad (Väderstad), Gaspardo, Pottinger (Pöttinger), Horsch.
-
-        Поверни відповідь виключно у форматі JSON (без використання markdown блоків ```json):
-        {{
-            "is_relevant_dealer": true чи false (true якщо це агро-дилер, агро-магазин чи великий фермер),
-            "detected_brands": [] (масив з назв знайдених брендів строго з переліку: "Vaderstad", "Gaspardo", "Horsch", "Pottinger", "Інші"),
-            "buyer_type": "Дилер сг техніки" або "інтернет-магазин" або "гуртовий клієнт" або "виробник" або "фермерське господарство" або "не вказано",
-            "summary": "Короткий висновок українською мовою (1 речення, наприклад: Продають запчастини для сівалок та ґрунтообробки Horsch та Vaderstad)"
-        }}
-        """
-        
-        ai_response = model.generate_content(prompt)
-        clean_text = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
-        return json.loads(clean_text)
+        # Безпечний пошук JSON структури, якщо модель додала зайвий текст
+        json_match = re.search(r'\{.*\}', clean_json_str, re.DOTALL)
+        if json_match:
+            clean_json_str = json_match.group(0)
+            
+        return json.loads(clean_json_str)
     except Exception as e:
         print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
         return None
@@ -219,7 +150,7 @@ def decode_email_body(msg):
             
     return body.strip()
 
-# ВНУТРІШНЯ ФУНКЦІЯ ВІДПРАВКИ HTML-ПОШТИ (Банер на початку листа)
+# ВНУТРІШНЯ ФУНКЦІЯ ВІДПРАВКИ HTML-ПОШТИ
 def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
@@ -603,6 +534,8 @@ def index():
     json_clients = json.dumps(clients_js_data, ensure_ascii=False)
     json_busy_dates = json.dumps(busy_dates, ensure_ascii=False)
     
+    has_ai_key = GEMINI_API_KEY is not None and GEMINI_API_KEY != ""
+
     return render_template(
         'index.html', 
         clients=clients, 
@@ -626,7 +559,8 @@ def index():
         tasks=tasks,
         json_tasks=json.dumps(tasks, ensure_ascii=False),
         lost_demand_list=lost_demand_list,
-        top_demand=top_demand
+        top_demand=top_demand,
+        has_ai_key=has_ai_key
     )
 
 # МАРШРУТ ШІ-СКАНУВАННЯ ПООДИНОКОГО САЙТУ
@@ -662,7 +596,7 @@ def scan_client_site(client_id):
     conn.close()
     return redirect(url_for('client_detail', client_id=client_id))
 
-# МАРШРУТ МАСОВОГО ШІ-АУДИТУ ВСІЄЇ БАЗИ (Парсить тільки клієнтів з сайтами, де бренди ще порожні або '-')
+# МАРШРУТ МАСОВОГО ШІ-АУДИТУ ВСІЄЇ БАЗИ
 @app.route('/mass_ai_scan', methods=['POST'])
 @login_required
 def mass_ai_scan():
@@ -1074,7 +1008,6 @@ def client_detail(client_id):
     events_by_date = dict(cursor.fetchall())
     json_events_by_date = json.dumps(events_by_date, ensure_ascii=False)
     
-    # ПЕРЕДАЄМО НАЯВНІСТЬ КЛЮЧA ШІ В ШАБЛОН ДЛЯ ВІДОБРАЖЕННЯ КНОПОК СКАНИРОВАНИЯ
     has_ai_key = GEMINI_API_KEY is not None and GEMINI_API_KEY != ""
 
     cursor.close()
