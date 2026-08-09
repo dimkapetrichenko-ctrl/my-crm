@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+<link href="[https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css](https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css)" rel="stylesheet" />
 
 <div class="row mb-3">
     <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -137,7 +137,14 @@
 
                     <div class="mb-2">
                         <label class="form-label mb-1">Веб-сайт</label>
-                        <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website }}">
+                        <div class="input-group">
+                            <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website or '' }}">
+                            {% if client.website and has_ai_key %}
+                            <button type="submit" formaction="/scan_client_site/{{ client.id }}" class="btn btn-sm btn-outline-primary fw-bold" onclick="this.innerHTML='⏳...';">
+                                🤖 Сканувати ШІ
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1">Країна</label>
@@ -360,84 +367,54 @@
                     <tbody id="wCalendarBody"></tbody>
                 </table>
                 <div class="d-flex justify-content-around mt-2 small text-muted" style="font-size:0.75rem;">
-    <span>🟢 0-10 подій (Вільний день)</span>
-    <span>🟡 11-15 подій (Помірне)</span>
-    <span>🔴 15+ подій (Завантажений)</span>
-</div>
+                    <span>🟢 0-10 подій (Вільний день)</span>
+                    <span>🟡 11-15 подій (Помірне)</span>
+                    <span>🔴 15+ подій (Завантажений)</span>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script src="[https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js](https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js)"></script>
 <script>
-    // Отримуємо об'єкт із кількістю подій по кожній даті з Flask
     const eventsByDate = JSON.parse({{ json_events_by_date | tojson | safe }});
-
     let wYear = new Date().getFullYear();
     let wMonth = new Date().getMonth();
     const wMonthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-    // Перевірка та показування плашки при виборі дати
    function checkWorkload(dateStr) {
         const badgeBox = document.getElementById('workload_badge_box');
-        if (!dateStr) {
-            badgeBox.innerHTML = '';
-            return;
-        }
+        if (!dateStr) { badgeBox.innerHTML = ''; return; }
         const count = eventsByDate[dateStr] || 0;
         let badgeHtml = '';
-        
-        if (count <= 10) {
-            badgeHtml = `<span class="badge bg-success w-100 py-1">🟢 На ${dateStr} заплановано: ${count} под. (День вільний)</span>`;
-        } else if (count <= 15) {
-            badgeHtml = `<span class="badge bg-warning text-dark w-100 py-1">🟡 На ${dateStr} заплановано: ${count} pop. (Помірне навантаження)</span>`;
-        } else {
-            badgeHtml = `<span class="badge bg-danger w-100 py-1">🔴 На ${dateStr} заплановано: ${count} под. (Високе завантаження!)</span>`;
-        }
+        if (count <= 10) { badgeHtml = `<span class="badge bg-success w-100 py-1">🟢 На ${dateStr} заплановано: ${count} под. (День вільний)</span>`; } 
+        else if (count <= 15) { badgeHtml = `<span class="badge bg-warning text-dark w-100 py-1">🟡 На ${dateStr} заплановано: ${count} pop. (Помірне навантаження)</span>`; } 
+        else { badgeHtml = `<span class="badge bg-danger w-100 py-1">🔴 На ${dateStr} заплановано: ${count} под. (Високе завантаження!)</span>`; }
         badgeBox.innerHTML = badgeHtml;
     }
 
-    // Нове кольорове забарвлення для модального календаря
-function renderWorkloadCalendar() {
+    function renderWorkloadCalendar() {
         document.getElementById('wMonthTitle').innerText = wMonthNames[wMonth] + " " + wYear;
         const firstDayIndex = new Date(wYear, wMonth, 1).getDay();
         const shiftDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
         const totalDays = new Date(wYear, wMonth + 1, 0).getDate();
-        
         let gridHtml = "<tr>";
         for (let i = 0; i < shiftDay; i++) { gridHtml += "<td></td>"; }
         let currentDayCount = shiftDay;
-
         for (let day = 1; day <= totalDays; day++) {
             if (currentDayCount === 7) { gridHtml += "</tr><tr>"; currentDayCount = 0; }
-            
             let mNum = wMonth + 1;
             let mStr = mNum < 10 ? "0" + mNum : mNum;
             let dStr = day < 10 ? "0" + day : day;
             let dateKey = `${wYear}-${mStr}-${dStr}`;
-            
             let count = eventsByDate[dateKey] || 0;
             let bgClass = "bg-light text-dark";
             let badgeClass = "badge bg-secondary";
-
-            // Нова шкала кольорів за твоїми лімітами
-            if (count <= 10 && count > 0) {
-                bgClass = "bg-success-subtle text-success border-success";
-                badgeClass = "badge bg-success";
-            } else if (count >= 11 && count <= 15) {
-                bgClass = "bg-warning-subtle text-dark border-warning";
-                badgeClass = "badge bg-warning text-dark";
-            } else if (count > 15) {
-                bgClass = "bg-danger-subtle text-danger border-danger";
-                badgeClass = "badge bg-danger";
-            }
-
-            gridHtml += `
-                <td class="${bgClass} p-2 text-center" style="cursor:pointer; height:45px;" onclick="selectWorkloadDate('${dateKey}')">
-                    <strong class="d-block">${day}</strong>
-                    <span class="${badgeClass}" style="font-size:0.65rem;">${count}</span>
-                </td>`;
+            if (count <= 10 && count > 0) { bgClass = "bg-success-subtle text-success border-success"; badgeClass = "badge bg-success"; } 
+            else if (count >= 11 && count <= 15) { bgClass = "bg-warning-subtle text-dark border-warning"; badgeClass = "badge bg-warning text-dark"; } 
+            else if (count > 15) { bgClass = "bg-danger-subtle text-danger border-danger"; badgeClass = "badge bg-danger"; }
+            gridHtml += `<td class="${bgClass} p-2 text-center" style="cursor:pointer; height:45px;" onclick="selectWorkloadDate('${dateKey}')"><strong class="d-block">${day}</strong><span class="${badgeClass}" style="font-size:0.65rem;">${count}</span></td>`;
             currentDayCount++;
         }
         while (currentDayCount < 7 && currentDayCount > 0) { gridHtml += "<td></td>"; currentDayCount++; }
@@ -445,59 +422,23 @@ function renderWorkloadCalendar() {
         document.getElementById('wCalendarBody').innerHTML = gridHtml;
     }
 
-    function changeWMonth(dir) {
-        wMonth += dir;
-        if (wMonth > 11) { wMonth = 0; wYear++; }
-        if (wMonth < 0) { wMonth = 11; wYear--; }
-        renderWorkloadCalendar();
-    }
-
-    function selectWorkloadDate(dateStr) {
-        const input = document.getElementById('next_event_date_input');
-        input.value = dateStr;
-        checkWorkload(dateStr);
-        const modalEl = document.getElementById('workloadModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-    }
+    function changeWMonth(dir) { wMonth += dir; if (wMonth > 11) { wMonth = 0; wYear++; } if (wMonth < 0) { wMonth = 11; wYear--; } renderWorkloadCalendar(); }
+    function selectWorkloadDate(dateStr) { const input = document.getElementById('next_event_date_input'); input.value = dateStr; checkWorkload(dateStr); const modalEl = document.getElementById('workloadModal'); const modal = bootstrap.Modal.getInstance(modalEl); if (modal) modal.hide(); }
 
     document.addEventListener("DOMContentLoaded", function() {
         const savedRole = localStorage.getItem('crm_role');
-        if (savedRole === 'CEO') {
-            document.getElementById('role_ceo').checked = true;
-        } else {
-            document.getElementById('role_sales').checked = true;
-        }
-
-        // Перевіряємо початкову дату, яка завантажилась у картку
+        if (savedRole === 'CEO') { document.getElementById('role_ceo').checked = true; } else { document.getElementById('role_sales').checked = true; }
         const initDate = document.getElementById('next_event_date_input').value;
-        if (initDate) {
-            checkWorkload(initDate);
-        }
+        if (initDate) { checkWorkload(initDate); }
 
         if (document.getElementById('editor-container')) {
             const quill = new Quill('#editor-container', {
                 theme: 'snow',
-                modules: {
-                    toolbar: [
-                        ['bold', 'italic', 'underline', 'strike'],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        ['clean']
-                    ]
-                }
+                modules: { toolbar: [ ['bold', 'italic', 'underline', 'strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean'] ] }
             });
-
             const emailForm = document.getElementById('crmEmailForm');
-            if (emailForm) {
-                emailForm.onsubmit = function() {
-                    const emailBodyHidden = document.getElementById('emailBodyHidden');
-                    emailBodyHidden.value = quill.getSemanticHTML();
-                    return true;
-                };
-            }
+            if (emailForm) { emailForm.onsubmit = function() { const emailBodyHidden = document.getElementById('emailBodyHidden'); emailBodyHidden.value = quill.getSemanticHTML(); return true; }; }
         }
     });
 </script>
-
 {% endblock %}
