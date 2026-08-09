@@ -52,7 +52,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# РОЗУМНА ТA ВИПРАВЛЕНА ФУНКЦІЯ АНАЛІЗУ ВЕБ-САЙТУ КОНТРАГЕНТА
+# КУЛЕНЕПРОБИВНА ГІБРИДНА ФУНКЦІЯ АНАЛІЗУ САЙТІВ (PYTHON REGEX + ШІ GEMINI)
 def analyze_website_with_ai(website_url):
     if not website_url or not GEMINI_API_KEY:
         return None
@@ -64,24 +64,83 @@ def analyze_website_with_ai(website_url):
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept-Language': 'uk-UA,uk;q=0.9,en-US;q=0.8,en;q=0.7,pl;q=0.6,hu;q=0.5'
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
         }
-        # Вимикаємо сувору перевірку SSL (verify=False), щоб не падати на європейських сайтах із простроченими сертифікатами
+        
+        # Скануємо повний вихідний код сторінки
         response = requests.get(url, timeout=15, headers=headers, verify=False)
         response.encoding = response.apparent_encoding or 'utf-8'
+        raw_html = response.text
         
-        soup = BeautifulSoup(response.text, 'html.parser')
+        # 1. ЕТАП: ТОЧНИЙ ПОШУК БРЕНДІВ НА PYTHON (Шукаємо в усьому HTML коду, посиланнях та картинках)
+        lower_html = raw_html.lower()
+        detected_brands = []
         
-        # Видаляємо тільки технічне сміття (залишаємо меню та каталоги, де прописані бренди)
+        brand_rules = {
+            "Vaderstad": [r'vaderstad', r'väderstad'],
+            "Gaspardo": [r'gaspardo', r'maschio'],
+            "Horsch": [r'horsch'],
+            "Pottinger": [r'pottinger', r'pöttinger', r'poettinger'],
+            "Kverneland": [r'kverneland']
+        }
+        
+        for brand_name, patterns in brand_rules.items():
+            for pattern in patterns:
+                if re.search(pattern, lower_html):
+                    detected_brands.append(brand_name)
+                    break
+        
+        # 2. ЕТАП: ОЧИЩЕННЯ ТЕКСТУ ДЛЯ ШІ GEMINI
+        soup = BeautifulSoup(raw_html, 'html.parser')
         for element in soup(["script", "style", "noscript", "svg", "meta"]):
             element.extract()
             
         text_content = soup.get_text(separator=' ', strip=True)
-        # Збільшуємо ліміт до 15 000 символів, щоб повністю прочитати угорські/польські сайти
-        clean_text = " ".join(text_content.split())[:15000]
+        clean_text = " ".join(text_content.split())[:12000]
 
-        if not clean_text or len(clean_text) < 100:
-            return None
+        # 3. ЕТАП: ЗАПУСК GEMINI ДЛЯ АНАЛІЗУ КОНТЕКСТУ ТA ВИСНОВКУ
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+        Ти — досвідчений B2B аналітик сільськогосподарської техніки та запчастин.
+        Ознайомся з текстом головної сторінки сайту компанії:
+        "{clean_text}"
+
+        Наш технічний парсер вже виявив у коді сайту згадки про такі бренди (залиш їх, якщо вони логічні): {detected_brands}.
+
+        Завдання:
+        1. Проаналізуй сферу діяльності компанії.
+        2. Напиши короткий висновок українською мовою (1 речення) про те, чим займається компанія та які запчастини/бренди продає (на основі знайдених брендів: {detected_brands}).
+        3. Визнач тип покупця.
+
+        Поверни відповідь виключно у форматі чистого JSON (без використання markdown блоків ```json):
+        {{
+            "is_relevant_dealer": true,
+            "buyer_type": "Дилер сг техніки" або "інтернет-магазин" або "гуртовий клієнт" або "виробник" або "фермерське господарство" або "не вказано",
+            "summary": "Короткий висновок українською мовою (1 речення)"
+        }}
+        """
+        
+        ai_response = model.generate_content(prompt)
+        clean_json_str = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
+        
+        json_match = re.search(r'\{.*\}', clean_json_str, re.DOTALL)
+        if json_match:
+            clean_json_str = json_match.group(0)
+            
+        parsed_result = json.loads(clean_json_str)
+        
+        # Завжди повертаємо масив брендів, які залізобетонно знайшов Python у HTML-коді сторінки
+        if not detected_brands:
+            detected_brands = ["Інші"]
+            
+        parsed_result['detected_brands'] = detected_brands
+        parsed_result['is_relevant_dealer'] = len(detected_brands) > 0 and detected_brands != ["Інші"]
+        
+        return parsed_result
+
+    except Exception as e:
+        print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
+        return None
 
         # Формуємо завдання ШІ з чіткими критеріями відсіювання
         model = genai.GenerativeModel('gemini-1.5-flash')
