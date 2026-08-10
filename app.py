@@ -64,15 +64,16 @@ def analyze_website_with_ai(website_url):
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6,hu;q=0.5'
         }
         
-        # Скануємо повний вихідний код сторінки
+        # Скануємо повний вихідний сирий HTML-код сторінки
         response = requests.get(url, timeout=15, headers=headers, verify=False)
         response.encoding = response.apparent_encoding or 'utf-8'
         raw_html = response.text
         
-        # 1. ЕТАП: ТОЧНИЙ ПОШУК БРЕНДІВ НА PYTHON (Шукаємо в усьому HTML коду, посиланнях та картинках)
+        # 1. ЕТАП: ТОЧНИЙ ПОШУК БРЕНДІВ НА PYTHON (Шукаємо в усьому коді, посиланнях, назвах картинок та категоріях)
         lower_html = raw_html.lower()
         detected_brands = []
         
@@ -98,19 +99,19 @@ def analyze_website_with_ai(website_url):
         text_content = soup.get_text(separator=' ', strip=True)
         clean_text = " ".join(text_content.split())[:12000]
 
-        # 3. ЕТАП: ЗАПУСК GEMINI ДЛЯ АНАЛІЗУ КОНТЕКСТУ ТA ВИСНОВКУ
+        # 3. ЕТАП: ЗАПУСК GEMINI ДЛЯ СФОРМУВАННЯ СТАТУСУ ТA КОРОТКОГО ВИСНОВКУ
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
         Ти — досвідчений B2B аналітик сільськогосподарської техніки та запчастин.
         Ознайомся з текстом головної сторінки сайту компанії:
         "{clean_text}"
 
-        Наш технічний парсер вже виявив у коді сайту згадки про такі бренди (залиш їх, якщо вони логічні): {detected_brands}.
+        Наш технічний алгоритм вже виявив у коді сайту згадки про такі бренди: {detected_brands}.
 
         Завдання:
-        1. Проаналізуй сферу діяльності компанії.
-        2. Напиши короткий висновок українською мовою (1 речення) про те, чим займається компанія та які запчастини/бренди продає (на основі знайдених брендів: {detected_brands}).
-        3. Визнач тип покупця.
+        1. Проаналізуй сферу діяльності компанії на основі тексту сайту.
+        2. Визнач найбільш підходящий тип покупця.
+        3. Напиши короткий висновок українською мовою (1 речення) про те, чим займається компанія та які запчастини/бренди продає (використовуй інформацію про знайдені нами бренди: {detected_brands}).
 
         Поверни відповідь виключно у форматі чистого JSON (без використання markdown блоків ```json):
         {{
@@ -129,57 +130,16 @@ def analyze_website_with_ai(website_url):
             
         parsed_result = json.loads(clean_json_str)
         
-        # Завжди повертаємо масив брендів, які залізобетонно знайшов Python у HTML-коді сторінки
+        # Перевизначаємо масив брендів тими, які гарантовано знайшов Python Regex у коді сторінки
         if not detected_brands:
             detected_brands = ["Інші"]
+            parsed_result['is_relevant_dealer'] = False
+        else:
+            parsed_result['is_relevant_dealer'] = True
             
         parsed_result['detected_brands'] = detected_brands
-        parsed_result['is_relevant_dealer'] = len(detected_brands) > 0 and detected_brands != ["Інші"]
-        
         return parsed_result
 
-    except Exception as e:
-        print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
-        return None
-
-        # Формуємо завдання ШІ з чіткими критеріями відсіювання
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"""
-        Ти — досвідчений B2B аналітик агросектору та запчастин до сільгосптехніки. 
-        Проаналізуй наступний текст, зчитаний з головної сторінки сайту компанії:
-        "{clean_text}"
-
-        Твоє завдання — визначити, чи пропонує ця компанія товари, запчастини або техніку наступних брендів:
-        - Vaderstad (Väderstad)
-        - Gaspardo (Maschio Gaspardo)
-        - Horsch
-        - Pottinger (Pöttinger)
-        - Kverneland
-
-        ⚠️ СУВОРІ ПРАВИЛА АНАЛІЗУ:
-        1. Вноси бренд до списку "detected_brands" ТІЛЬКИ якщо компанія реально має його в асортименті, каталозі товарів, є його дилером або продає запчастини до нього.
-        2. Якщо бренд згадується просто випадково (наприклад, у статті блогу, у новинах, у тексті порівняння, або написано, що товарів НЕМАЄ в наявності) — НЕ додавай його до списку! Будь дуже критичним, усувай фальшиві згадки.
-        3. Зверни увагу на угорські та європейські варіації назв (наприклад, Maschio Gaspardo — це бренд Gaspardo; Pöttinger/Poettinger — це Pottinger).
-
-        Поверни відповідь виключно у форматі чистого JSON (без використання markdown блоків ```json):
-        {{
-            "is_relevant_dealer": true чи false (true якщо це агро-дилер, агро-магазин чи велика компанія),
-            "detected_brands": [] (масив брендів строго з переліку: "Vaderstad", "Gaspardo", "Horsch", "Pottinger", "Kverneland", "Інші"),
-            "buyer_type": "Дилер сг техніки" або "інтернет-магазин" або "гуртовий клієнт" або "виробник" або "фермерське господарство" або "не вказано",
-            "summary": "Короткий висновок українською мовою (1 речення, поясни чому саме обрав такі бренди)"
-        }}
-        """
-        
-        ai_response = model.generate_content(prompt)
-        # Очищаємо відповідь від можливої розмітки markdown
-        clean_json_str = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
-        
-        # Безпечний пошук JSON структури, якщо модель додала зайвий текст
-        json_match = re.search(r'\{.*\}', clean_json_str, re.DOTALL)
-        if json_match:
-            clean_json_str = json_match.group(0)
-            
-        return json.loads(clean_json_str)
     except Exception as e:
         print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
         return None
