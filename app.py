@@ -35,6 +35,7 @@ MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
+    print(f"🔑 [DEBUG] Стан ключа Gemini: {'ЗНАЙДЕНО' if GEMINI_API_KEY else 'ВІДСУТНІЙ'}")
 
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
