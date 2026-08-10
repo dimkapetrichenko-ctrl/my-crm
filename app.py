@@ -52,7 +52,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# КУЛЕНЕПРОБИВНА ГІБРИДНА ФУНКЦІЯ АНАЛІЗУ САЙТІВ (PYTHON REGEX + ШІ GEMINI)
 def analyze_website_with_ai(website_url):
     if not website_url or not GEMINI_API_KEY:
         return None
@@ -68,12 +67,12 @@ def analyze_website_with_ai(website_url):
             'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7,uk;q=0.6,hu;q=0.5'
         }
         
-        # Скануємо повний вихідний сирий HTML-код сторінки
+        # 1. Завантажуємо повний HTML сторінки
         response = requests.get(url, timeout=15, headers=headers, verify=False)
         response.encoding = response.apparent_encoding or 'utf-8'
         raw_html = response.text
         
-        # 1. ЕТАП: ТОЧНИЙ ПОШУК БРЕНДІВ НА PYTHON (Шукаємо в усьому коді, посиланнях, назвах картинок та категоріях)
+        # Шукаємо бренди безпосередньо у вихідному коді (посилання, класи, картинки)
         lower_html = raw_html.lower()
         detected_brands = []
         
@@ -91,27 +90,29 @@ def analyze_website_with_ai(website_url):
                     detected_brands.append(brand_name)
                     break
         
-        # 2. ЕТАП: ОЧИЩЕННЯ ТЕКСТУ ДЛЯ ШІ GEMINI
+        # 2. Очищаємо текст для аналізу контексту нейромережею
         soup = BeautifulSoup(raw_html, 'html.parser')
         for element in soup(["script", "style", "noscript", "svg", "meta"]):
             element.extract()
             
         text_content = soup.get_text(separator=' ', strip=True)
-        clean_text = " ".join(text_content.split())[:12000]
+        # Збільшуємо ліміт до 15 000 символів, щоб ШІ бачив весь каталог і кошик
+        clean_text = " ".join(text_content.split())[:15000]
 
-        # 3. ЕТАП: ЗАПУСК GEMINI ДЛЯ СФОРМУВАННЯ СТАТУСУ ТA КОРОТКОГО ВИСНОВКУ
+        # 3. Запускаємо інтелектуальну оцінку через Gemini
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
-        Ти — досвідчений B2B аналітик сільськогосподарської техніки та запчастин.
+        Ти — досвідчений B2B аналітик ринку сільгосптехніки та агрозапчастин.
         Ознайомся з текстом головної сторінки сайту компанії:
         "{clean_text}"
 
-        Наш технічний алгоритм вже виявив у коді сайту згадки про такі бренди: {detected_brands}.
+        Наш технічний алгоритм вже знайшов у коді сайту прямі згадки або посилання на такі бренди: {detected_brands}.
 
         Завдання:
-        1. Проаналізуй сферу діяльності компанії на основі тексту сайту.
-        2. Визнач найбільш підходящий тип покупця.
-        3. Напиши короткий висновок українською мовою (1 речення) про те, чим займається компанія та які запчастини/бренди продає (використовуй інформацію про знайдені нами бренди: {detected_brands}).
+        1. Проаналізуй сферу діяльності (чи це магазин, дилер, сервіс чи фермер).
+        2. Перевірь, чи є згадки {detected_brands} реальною пропозицією товарів/категорій в асортименті. Якщо бренд потрапив сюди випадково (наприклад, просто згадка в новинах за минулий рік, або написано що товарів НЕМАЄ в наявності) — прибери його.
+        3. Визнач тип покупця.
+        4. Напиши короткий висновок українською мовою (1 речення) про асортимент компанії.
 
         Поверни відповідь виключно у форматі чистого JSON (без використання markdown блоків ```json):
         {{
@@ -130,7 +131,7 @@ def analyze_website_with_ai(website_url):
             
         parsed_result = json.loads(clean_json_str)
         
-        # Перевизначаємо масив брендів тими, які гарантовано знайшов Python Regex у коді сторінки
+        # Завжди зберігаємо фінальний скоригований масив брендів
         if not detected_brands:
             detected_brands = ["Інші"]
             parsed_result['is_relevant_dealer'] = False
@@ -143,7 +144,6 @@ def analyze_website_with_ai(website_url):
     except Exception as e:
         print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
         return None
-
 # БЕЗПЕЧНИЙ ДЕКОДЕР ТІЛА ЛИСТА ДЛЯ IMAP РОБОТА
 def decode_email_body(msg):
     body = ""
