@@ -31,11 +31,13 @@ MAIL_PORT = 465  # Безпечний SSL порт
 MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
 MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 
-# Налаштування ШІ Gemini API (Глобальна стабільна версія v1)
+# Налаштування ШІ Gemini API (Примусова стабільна версія шлюзу v1)
+os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY, transport='rest', client_options={'api_version': 'v1'})
-    print(f"🔑 [DEBUG] Стан ключа Gemini: {'ЗНАЙДЕНО' if GEMINI_API_KEY else 'ВІДСУТНІЙ'}")
+    # Глобально перемикаємо шлюз бібліотеки на стабільну v1
+    import google.generativeai.types as types
+    genai.configure(api_key=GEMINI_API_KEY, transport='rest')
 
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
@@ -101,7 +103,7 @@ def analyze_website_with_ai(website_url):
         clean_text = " ".join(text_content.split())[:15000]
 
         # 3. Запускаємо інтелектуальну оцінку через Gemini
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-pro')
         prompt = f"""
         Ти — досвідчений B2B аналітик ринку сільгосптехніки та агрозапчастин.
         Ознайомся з текстом головної сторінки сайту компанії:
