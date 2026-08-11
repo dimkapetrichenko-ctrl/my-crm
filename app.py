@@ -103,7 +103,7 @@ def analyze_website_with_ai(website_url):
         clean_text = " ".join(text_content.split())[:15000]
 
         # 3. Запускаємо інтелектуальну оцінку через Gemini
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
         Ти — досвідчений B2B аналітик ринку сільгосптехніки та агрозапчастин.
         Ознайомся з текстом головної сторінки сайту компанії:
