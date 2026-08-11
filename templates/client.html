@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+<link href="[https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css](https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css)" rel="stylesheet" />
 
 <div class="row mb-3">
     <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -46,7 +46,7 @@
                 <label class="form-label mb-0.5 small text-white bg-dark w-100 p-1 rounded-top m-0">Текст повідомлення:</label>
                 <input type="hidden" name="body" id="emailBodyHidden">
                 
-                <div id="editor-container" style="height: 220px; font-size: 15px; background-color: #ffffff;">
+                <div id="editor-container" style="height: 250px; font-size: 15px; bg-white;">
                     <p>Доброго дня!</p>
                 </div>
             </div>
@@ -139,8 +139,8 @@
                         <label class="form-label mb-1">Веб-сайт</label>
                         <div class="input-group">
                             <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website or '' }}">
-                            {% if client.website %}
-                            <button type="submit" formaction="/scan_client_site/{{ client.id }}" class="btn btn-sm btn-outline-primary fw-bold" onclick="this.innerHTML='⏳ Сканування...';">
+                            {% if client.website and has_ai_key %}
+                            <button type="submit" formaction="/scan_client_site/{{ client.id }}" class="btn btn-sm btn-outline-primary fw-bold" onclick="this.innerHTML='⏳...';">
                                 🤖 Сканувати ШІ
                             </button>
                             {% endif %}
@@ -376,7 +376,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script src="[https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js](https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js)"></script>
 <script>
     const eventsByDate = JSON.parse({{ json_events_by_date | tojson | safe }});
     let wYear = new Date().getFullYear();
@@ -432,23 +432,14 @@
         if (initDate) { checkWorkload(initDate); }
 
         if (document.getElementById('editor-container')) {
-            try {
-                const quill = new Quill('#editor-container', {
-                    theme: 'snow',
-                    modules: { toolbar: [ ['bold', 'italic', 'underline', 'strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean'] ] }
-                });
-                const emailForm = document.getElementById('crmEmailForm');
-                if (emailForm) { 
-                    emailForm.onsubmit = function() { 
-                        const emailBodyHidden = document.getElementById('emailBodyHidden'); 
-                        emailBodyHidden.value = quill.getSemanticHTML(); 
-                        return true; 
-                    }; 
-                }
-            } catch (e) {
-                console.log('Quill editor init bypass:', e);
-            }
+            const quill = new Quill('#editor-container', {
+                theme: 'snow',
+                modules: { toolbar: [ ['bold', 'italic', 'underline', 'strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean'] ] }
+            });
+            const emailForm = document.getElementById('crmEmailForm');
+            if (emailForm) { emailForm.onsubmit = function() { const emailBodyHidden = document.getElementById('emailBodyHidden'); emailBodyHidden.value = quill.getSemanticHTML(); return true; }; }
         }
     });
 </script>
 {% endblock %}
+
