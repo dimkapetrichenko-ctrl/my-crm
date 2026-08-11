@@ -57,7 +57,7 @@
                     🔄 Скинути фільтри
                 </button>
                 <form action="/mass_ai_scan" method="POST" class="m-0" onsubmit="this.querySelector('button').innerHTML='🤖 Сканування...';">
-                    <button type="submit" class="btn btn-sm btn-purple text-white fw-bold shadow-sm" style="background-color: #6f42c1;">
+                    <button type="submit" class="btn btn-sm text-white fw-bold shadow-sm" style="background-color: #6f42c1;">
                         🤖 ШІ-Аудит нових сайтів
                     </button>
                 </form>
@@ -72,11 +72,11 @@
                     <table class="table table-bordered table-sm table-hover align-middle mb-0" id="mainClientsTable" style="font-size: 0.84rem; width: 100%;">
                         <thead class="table-dark" style="position: sticky; top: 0; z-index: 5; white-space: nowrap;">
                             <tr>
-                                <th style="width: 20%;">Компанії</th>
-                                <th style="width: 13%;">Тип клієнта</th>
-                                <th style="width: 10%;">Країна</th>
-                                <th style="text-align: center; width: 14%;">Зацікавленість</th>
-                                <th style="text-align: center; width: 8%;">MAYER</th>
+                                <th style="width: 18%;">Компанії</th>
+                                <th style="width: 11%;">Тип клієнта</th>
+                                <th style="width: 9%;">Країна</th>
+                                <th style="text-align: center; width: 11%;">Зацікавленість</th>
+                                <th style="text-align: center; width: 6%;">MAYER</th>
                                 <th style="width: 22%;">Опис останньої активності</th>
                                 <th style="width: 15%;">Наступна подія</th>
                                 <th style="text-align: center; width: 8%;">Дія</th>
@@ -202,10 +202,6 @@
                                 <td style="text-align: center;"><a href="/client/{{ client.id }}" class="btn btn-xs btn-outline-primary fw-bold">Картка</a></td>
                             </tr>
                             {% endfor %}
-                            
-                            {% if not clients %}
-                            <tr><td colspan="8" class="text-center text-muted py-4">База клієнтів порожня.</td></tr>
-                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -233,9 +229,6 @@
                             </div>
                         </li>
                         {% endfor %}
-                        {% if not top_demand %}
-                        <li class="list-group-item text-center text-muted py-3">Немає збережених запитів.</li>
-                        {% endif %}
                     </ul>
                 </div>
             </div>
@@ -257,11 +250,7 @@
                                 <td><strong class="text-danger">{{ dem.article }}</strong></td>
                                 <td>{{ dem.title or '-' }}</td>
                                 <td class="fw-bold text-center">{{ dem.quantity }}</td>
-                                <td>
-                                    {% if dem.client_id %}
-                                    <a href="/client/{{ dem.client_id }}" class="fw-bold text-decoration-none">🏢 {{ dem.client_name }}</a>
-                                    {% else %}-{% endif %}
-                                </td>
+                                <td>{% if dem.client_id %}<a href="/client/{{ dem.client_id }}" class="fw-bold text-decoration-none">🏢 {{ dem.client_name }}</a>{% else %}-{% endif %}</td>
                                 <td>
                                     {% if dem.status == 'lost' %}<span class="badge bg-danger">🔴 Відмова</span>
                                     {% elif dem.status == 'waiting' %}<span class="badge bg-warning text-dark">🟡 В очікуванні</span>
@@ -275,9 +264,6 @@
                                 </td>
                             </tr>
                             {% endfor %}
-                            {% if not lost_demand_list %}
-                            <tr><td colspan="8" class="text-center text-muted py-4">Журнал порожній. Вносьте запити з карток клієнтів.</td></tr>
-                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -311,17 +297,13 @@
         </div>
         <div class="col-md-5">
             <div class="card shadow-sm border-dark mb-3">
-                <div class="card-header bg-dark text-white py-1.5 fw-bold" id="selected-tasks-date-title">
-                    🎯 Оберіть день в календарі задач
-                </div>
+                <div class="card-header bg-dark text-white py-1.5 fw-bold" id="selected-tasks-date-title">🎯 Оберіть день в календарі задач</div>
                 <div class="card-body p-2 bg-white" id="tasks-list-box" style="max-height: 42vh; overflow-y: auto;">
                     <div class="text-center text-muted py-4 small">Натисніть на будь-яку дату зліва, щоб переглянути або закрити списки завдань.</div>
                 </div>
             </div>
             <div class="card shadow-sm border-secondary">
-                <div class="card-header bg-light py-1 fw-bold border-bottom text-uppercase small" style="font-size: 0.78rem; letter-spacing: 0.5px;">
-                    ➕ Створити нове завдання
-                </div>
+                <div class="card-header bg-light py-1 fw-bold border-bottom text-uppercase small" style="font-size: 0.78rem; letter-spacing: 0.5px;">➕ Створити нове завдання</div>
                 <div class="card-body p-2.5 bg-light-xs" style="font-size: 0.85rem;">
                     <form action="/add_task" method="POST">
                         <div class="mb-2">
@@ -368,10 +350,7 @@
                             <td><span class="badge bg-secondary">📍 {{ client.country or '-' }}</span></td>
                             <td>
                                 <span class="badge bg-primary text-capitalize p-2">
-                                    {% if client.next_event_type == 'call' %}📞 Дзвінок
-                                    {% elif client.next_event_type == 'visit' %}🚗 Візит
-                                    {% elif client.next_event_type == 'email' %}✉️ Лист
-                                    {% else %}{{ client.next_event_type or 'Зв\'язок' }}{% endif %}
+                                    {% if client.next_event_type == 'call' %}📞 Дзвінок{% elif client.next_event_type == 'visit' %}🚗 Візит{% else %}✉️ Лист{% endif %}
                                 </span>
                             </td>
                             <td><a href="/client/{{ client.id }}" class="btn btn-sm btn-dark fw-bold">Картка</a></td>
@@ -414,7 +393,7 @@
             <div class="card shadow-sm border-dark h-100">
                 <div class="card-header bg-dark text-white py-2 fw-bold" id="selected-date-title">🎯 Клацніть на день з цифрою, щоб переглянути розгорнуті справи</div>
                 <div class="card-body p-0" id="calendar-tasks-box">
-                    <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у каліндарі, щоб побачити заплановані перемовини.</div>
+                    <div class="text-center text-muted py-4">Будь ласка, натисніть на будь-який день у календарі, щоб побачити заплановані перемовини.</div>
                 </div>
             </div>
         </div>
@@ -501,6 +480,17 @@
                             </tr>
                             {% endfor %}
                         </tbody>
+                        <tfoot class="table-light fw-bold border-top border-dark text-dark position-sticky bottom-0">
+                            <tr>
+                                <td colspan="2" class="text-end text-uppercase">💰 Разом підсумки:</td>
+                                <td class="text-end text-primary fs-6">{{ "{:,.2f}".format(total_planned) }} €</td>
+                                <td></td>
+                                <td class="text-end text-success fs-6">{{ "{:,.2f}".format(total_actual) }} €</td>
+                                <td colspan="2" class="text-center bg-info text-white text-uppercase py-1" style="font-size: 0.78rem;">
+                                    Залишилось до виконання: <strong>{{ "{:,.2f}".format(total_remaining) }} €</strong>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -508,8 +498,122 @@
     </div>
 </div>
 
+<div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white py-2">
+                <h5 class="modal-title fw-bold" id="addClientModalLabel">➕ Створення картки нового клієнта</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/add_client" method="POST" class="mb-0">
+                <div class="modal-body p-3" style="font-size: 0.85rem; max-height: 70vh; overflow-y: auto;">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label mb-0"><b>Назва компанії *</b></label>
+                            <input type="text" name="name" class="form-control form-control-sm" required placeholder="Введіть назву компанії">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0"><b>Зацікавленість *</b></label>
+                            <select name="interest_level" class="form-select form-select-sm" required>
+                                <option value="не опрацьовано" selected>Прозорий — не опрацьовано</option>
+                                <option value="немає зацікавленості">Синій — немає</option>
+                                <option value="середня зацікавленість">Жовтий — середня</option>
+                                <option value="зацікавленість">Зелений — висока</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0"><b>Реєстрація на сайті MAYER PRO</b></label>
+                            <select name="mayer_reg" class="form-select form-select-sm">
+                                <option value="Ні" selected>Ні</option>
+                                <option value="Так">Так</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Тип покупця</label>
+                            <select name="buyer_type" class="form-select form-select-sm">
+                                <option value="не вказано" selected>не вказано</option>
+                                <option value="інтернет-магазин">інтернет-магазин</option>
+                                <option value="гуртовий клієнт">гуртовий клієнт</option>
+                                <option value="фермерське господарство">фермерське господарство</option>
+                                <option value="виробник">виробник</option>
+                                <option value="надання послуг">надання послуг</option>
+                                <option value="роздрібний покупець">роздрібний покупець</option>
+                                <option value="Дилер сг техніки">Дилер сг техніки</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Країна</label>
+                            <input type="text" name="country" class="form-control form-control-sm" placeholder="Наприклад: Польща">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Веб-сайт</label>
+                            <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label mb-0">Адреса</label>
+                            <input type="text" name="address" class="form-control form-control-sm" placeholder="Повна юридична або фізична адреса">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label mb-0"><b>Пріоритетні бренди</b></label>
+                            <div class="p-2 border rounded bg-light d-flex flex-wrap gap-2" style="font-size: 0.8rem;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Vaderstad" id="add_b_vaderstad">
+                                    <label class="form-check-label" for="add_b_vaderstad">Vaderstad</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Gaspardo" id="add_b_gaspardo">
+                                    <label class="form-check-label" for="add_b_gaspardo">Gaspardo</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Horsch" id="add_b_horsch">
+                                    <label class="form-check-label" for="add_b_horsch">Horsch</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Kverneland" id="add_b_kverneland">
+                                    <label class="form-check-label" for="add_b_kverneland">Kverneland</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="brands" value="Pottinger" id="add_b_pottinger">
+                                    <label class="form-check-label" for="add_b_pottinger">Pottinger</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 border-end">
+                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1">👤 Контактна особа №1</h6>
+                            <input type="text" name="contact_person" class="form-control form-control-sm mb-1" placeholder="ПІБ">
+                            <input type="text" name="position" class="form-control form-control-sm mb-1" placeholder="Посада">
+                            <input type="text" name="phone" class="form-control form-control-sm mb-1" placeholder="Телефон">
+                            <input type="text" name="whatsapp_1" class="form-control form-control-sm mb-1 border-success text-success fw-bold" placeholder="🟢 WhatsApp №1">
+                            <input type="email" name="email" class="form-control form-control-sm" placeholder="Email">
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1">👤 Контактна особа №2</h6>
+                            <input type="text" name="contact_person_2" class="form-control form-control-sm mb-1" placeholder="ПІБ">
+                            <input type="text" name="position_2" class="form-control form-control-sm mb-1" placeholder="Посада">
+                            <input type="text" name="phone_2" class="form-control form-control-sm mb-1" placeholder="Телефон">
+                            <input type="text" name="whatsapp_2" class="form-control form-control-sm mb-1 border-success text-success fw-bold" placeholder="🟢 WhatsApp №2">
+                            <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-sm btn-success fw-bold px-4">Створити картку</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .tasks-grid td { height: 54px; position: relative; cursor: pointer; font-weight: bold; vertical-align: top; padding-top: 5px; }
+    .tasks-grid td:hover { background-color: #f8f9fa !important; }
+    .tasks-dot-badge { position: absolute; bottom: 4px; right: 4px; font-size: 0.68rem; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; }
+    .calendar-today-highlight { outline: 2px solid #212529 !important; outline-offset: -2px; }
+</style>
+
 <script>
-// ВЕСЬ JS КОД КАЛЕНДАРІВ ТА ПЕРЕМИКАННЯ ВІКОН ЗБЕРЕЖЕНО БЕЗ ЗМІН
 const allClients = JSON.parse({{ json_clients | tojson | safe }});
 const busyDates = JSON.parse({{ json_busy_dates | tojson | safe }});
 const allTasksList = JSON.parse({{ json_tasks | tojson | safe }});
@@ -589,6 +693,156 @@ function switchWindow(targetWinId) {
         else if(targetWinId === 'demand-win') activeBtn.className = "btn btn-md btn-danger fw-bold px-3 shadow";
     }
 }
-// Інші функції рендерингу календарів залишаються аналогічними до твого коду
+
+// ГАРАНТОВАНІ ПОВНІ ФУНКЦІЇ ДЛЯ КАЛЕНДАРІВ
+function changeMonth(direction) {
+    currentMonth += direction;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    renderCalendar();
+}
+
+function renderCalendar() {
+    const labelEl = document.getElementById('calendar-month-year');
+    if (!labelEl) return;
+    labelEl.innerText = monthNames[currentMonth] + " " + currentYear;
+    const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+    const shiftDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+    const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+    let gridHtml = "<tr>";
+    for (let i = 0; i < shiftDay; i++) { gridHtml += "<td></td>"; }
+    let currentDayCount = shiftDay;
+    for (let day = 1; day <= totalDays; day++) {
+        if (currentDayCount === 7) { gridHtml += "</tr><tr>"; currentDayCount = 0; }
+        let mNum = currentMonth + 1;
+        let mStr = mNum < 10 ? "0" + mNum : mNum;
+        let dStr = day < 10 ? "0" + day : day;
+        let dateKey = `${currentYear}-${mStr}-${dStr}`;
+        let cellStyle = "cursor: pointer; padding: 12px 0; font-weight: normal;";
+        let badgeDot = "";
+        let dayTasks = allClients.filter(c => c.next_event_date === dateKey);
+        if (dayTasks.length > 0) {
+            cellStyle += " background-color: #d1e7dd; font-weight: bold; color: #0f5132; border: 1.5px solid #badbcc;";
+            badgeDot = `<br><span class='badge bg-danger rounded-pill' style='font-size:0.65rem; padding: 2px 5px;'>${dayTasks.length}</span>`;
+        }
+        gridHtml += `<td style="${cellStyle}" onclick="showTasksForDate('${dateKey}')">${day}${badgeDot}</td>`;
+        currentDayCount++;
+    }
+    while (currentDayCount < 7 && currentDayCount > 0) { gridHtml += "<td></td>"; currentDayCount++; }
+    gridHtml += "</tr>";
+    document.getElementById('calendar-grid-body').innerHTML = gridHtml;
+}
+
+function showTasksForDate(dateStr) {
+    document.getElementById('selected-date-title').innerHTML = `📅 Заплановані дії на: <span class="bg-white text-dark px-2 rounded">${dateStr}</span>`;
+    const filtered = allClients.filter(c => c.next_event_date === dateStr);
+    const box = document.getElementById('calendar-tasks-box');
+    if (filtered.length === 0) {
+        box.innerHTML = `<div class="alert alert-info text-center m-3 fw-bold">ℹ️ На цей день дій не заплановано.</div>`;
+        return;
+    }
+    let html = `<ul class="list-group list-group-flush" style="font-size:0.9rem;">`;
+    filtered.forEach(c => {
+        let icon = c.next_event_type === 'call' ? '📞 Дзвінок' : c.next_event_type === 'visit' ? '🚗 Візит' : '✉️ Лист';
+        html += `
+            <li class="list-group-item d-flex justify-content-between align-items-center p-2.5 border-bottom">
+                <div><a href="/client/${c.id}" class="fw-bold text-decoration-none text-primary fs-6">🏢 ${c.name}</a></div>
+                <div class="d-flex align-items-center gap-2"><span class="badge bg-primary">${icon}</span><a href="/client/${c.id}" class="btn btn-xs btn-dark fw-bold px-2 py-0.5 shadow-xs">Картка</a></div>
+            </li>`;
+    });
+    html += `</ul>`;
+    box.innerHTML = html;
+}
+
+function renderTasksCalendar() {
+    const labelEl = document.getElementById('tasks-calendar-title');
+    if (!labelEl) return;
+    labelEl.innerText = monthNames[tasksMonth] + " " + tasksYear;
+    const firstDayIndex = new Date(tasksYear, tasksMonth, 1).getDay();
+    const shiftDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+    const totalDays = new Date(tasksYear, tasksMonth + 1, 0).getDate();
+    let gridHtml = "<tr>";
+    for (let i = 0; i < shiftDay; i++) { gridHtml += "<td></td>"; }
+    let currentDayCount = shiftDay;
+    const today = new Date();
+
+    for (let day = 1; day <= totalDays; day++) {
+        if (currentDayCount === 7) { gridHtml += "</tr><tr>"; currentDayCount = 0; }
+        let mNum = tasksMonth + 1;
+        let mStr = mNum < 10 ? "0" + mNum : mNum;
+        let dStr = day < 10 ? "0" + day : day;
+        let dateKey = `${tasksYear}-${mStr}-${dStr}`;
+        let activeTasks = allTasksList.filter(t => t.deadline === dateKey && t.status === 'in_progress');
+        let cellStyle = "";
+        let badgeHtml = "";
+        let todayClass = (today.getFullYear() === tasksYear && today.getMonth() === tasksMonth && today.getDate() === day) ? "calendar-today-highlight" : "";
+        if (activeTasks.length > 0) {
+            cellStyle = 'style="background-color: #fff3cd; color: #856404;"';
+            badgeHtml = `<span class="tasks-dot-badge bg-warning text-dark">${activeTasks.length}</span>`;
+        }
+        gridHtml += `<td ${cellStyle} class="${todayClass}" onclick="selectTasksDate('${dateKey}')">${day}${badgeHtml}</td>`;
+        currentDayCount++;
+    }
+    while (currentDayCount < 7 && currentDayCount > 0) { gridHtml += "<td></td>"; currentDayCount++; }
+    gridHtml += "</tr>";
+    document.getElementById('tasks-calendar-body').innerHTML = gridHtml;
+}
+
+function changeTasksMonth(direction) {
+    tasksMonth += direction;
+    if (tasksMonth > 11) { tasksMonth = 0; tasksYear++; }
+    if (tasksMonth < 0) { tasksMonth = 11; tasksYear--; }
+    renderTasksCalendar();
+}
+
+function selectTasksDate(dateStr) {
+    const parts = dateStr.split('-');
+    document.getElementById('selected-tasks-date-title').innerHTML = `📌 Справи на: <span class="bg-dark text-white px-2 py-0.5 rounded font-monospace">${parts[2]}.${parts[1]}.${parts[0]}</span>`;
+    document.getElementById('tasks-input-date').value = dateStr;
+    const filtered = allTasksList.filter(t => t.deadline === dateStr);
+    const box = document.getElementById('tasks-list-box');
+    if (filtered.length === 0) {
+        box.innerHTML = `<div class="alert alert-warning text-center m-1 py-3 fw-semibold">ℹ️ Жодних завдань на цю дату немає.</div>`;
+        return;
+    }
+    let html = `<div class="list-group list-group-flush" style="font-size:0.85rem;">`;
+    filtered.forEach(t => {
+        let isDone = t.status === 'completed';
+        let textStyle = isDone ? 'text-decoration-line-through text-muted small' : 'text-dark font-medium';
+        let cardBg = isDone ? 'bg-light' : 'bg-white';
+        let authorBadge = t.author === 'CEO' ? '<span class="badge bg-danger">📁 CEO</span>' : '<span class="badge bg-primary">💼 Продажі</span>';
+        html += `
+            <div class="card mb-2 shadow-xs border-start border-primary border-3 ${cardBg}">
+                <div class="card-body p-2 d-flex justify-content-between align-items-start gap-2">
+                    <div><div class="mb-1">${authorBadge}</div><p class="mb-0 ${textStyle}">${t.text}</p></div>
+                    <div class="d-flex flex-column gap-1">
+                        <form action="/toggle_task/${t.id}" method="POST" class="mb-0"><input type="hidden" name="current_status" value="${t.status}"><button type="submit" class="btn btn-xs btn-success py-0.5 px-1.5" style="font-size:0.7rem;">${isDone ? '🔄 Повернути' : '✅ Закрити'}</button></form>
+                        <form action="/delete_task/${t.id}" method="POST" class="mb-0"><button type="submit" class="btn btn-xs btn-outline-danger py-0.5 px-1.5" style="font-size:0.7rem;">🗑️</button></form>
+                    </div>
+                </div>
+            </div>`;
+    });
+    html += `</div>`;
+    box.innerHTML = html;
+}
+
+function syncClientId() {
+    const inputVal = document.getElementById('client_search_input').value;
+    const datalist = document.getElementById('clients_datalist');
+    const options = datalist.getElementsByTagName('option');
+    let foundId = "";
+    for (let i = 0; i < options.length; i++) { if (options[i].value === inputVal) { foundId = options[i].getAttribute('data-id'); break; } }
+    document.getElementById('real_client_id').value = foundId;
+}
+
+window.onload = function() {
+    renderCalendar();
+    renderTasksCalendar();
+    const urlParams = new URLSearchParams(window.location.search);
+    if(urlParams.get('tab') === 'tasks') { switchWindow('tasks-win'); } 
+    else if(urlParams.get('tab') === 'finance' || urlParams.get('finance_month') !== null) { switchWindow('finance-win'); } 
+    else if(urlParams.get('tab') === 'demand') { switchWindow('demand-win'); } 
+    else { switchWindow('all-win'); }
+};
 </script>
 {% endblock %}
