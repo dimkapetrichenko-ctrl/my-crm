@@ -135,8 +135,8 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         return False
     try:
         html_body = body_text
-        logo_url = "[https://my-crm-q24n.onrender.com/static/logotipnew.png](https://my-crm-q24n.onrender.com/static/logotipnew.png)" 
-        banner_url = "[https://my-crm-q24n.onrender.com/static/promo_en.jpg](https://my-crm-q24n.onrender.com/static/promo_en.jpg)"
+        logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png"
+        banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
         banner_html = ""
         if promo_banner:
@@ -166,7 +166,7 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
                         <strong style="color: #dc3545;">MAYER PRO S.r.o.</strong><br>
                         📱 +421 907 933 441<br>
                         📱 +48 501 166 523<br>
-                        🌐 <a href="[https://mayer-pro.com/en](https://mayer-pro.com/en)" target="_blank" style="color: #0d6efd; text-decoration: none;">[mayer-pro.com/en](https://mayer-pro.com/en)</a><br>
+                        🌐 <a href="https://mayer-pro.com/en" target="_blank" style="color: #0d6efd; text-decoration: none;">mayer-pro.com/en</a><br>
                         📧 <a href="mailto:sales@mayer-pro.com" style="color: #0d6efd; text-decoration: none;">sales@mayer-pro.com</a>
                     </td>
                 </tr>
