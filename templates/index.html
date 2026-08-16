@@ -2,7 +2,7 @@
 {% block content %}
 
 <!-- КОМПАКТНІ ВЕРХНІ ФІНАНСОВІ ВІДЖЕТИ -->
-<div class="row g-2 mb-2">
+<div class="row g-2 mb-1">
     <div class="col-md-4">
         <div class="card py-1 px-3 border-start border-4 border-warning shadow-xs">
             <div class="d-flex justify-content-between align-items-center">
@@ -43,19 +43,11 @@
         </div>
     </div>
 </div>
-                </div>
-                <div class="bg-primary-subtle text-primary p-2.5 rounded-circle fs-4">
-                    <i class="bi bi-graph-up-arrow"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- НАВІГАЦІЯ ВКЛАДОК -->
-<div class="row mb-3">
+<div class="row mb-2">
     <div class="col-12">
-        <div class="card p-2">
+        <div class="card p-1">
             <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
                 <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-sm btn-brand fw-bold px-3 shadow-sm">
                     <i class="bi bi-people me-1"></i> Список клієнтів
@@ -84,6 +76,9 @@
         </div>
     </div>
 </div>
+```[cite: 2]
+
+* Клас `mb-4` / `mb-3` у першому рядку замінено на `mb-1`, а внутрішній паддінг панелі меню зменшено з `p-2` до `p-1`, що підтягне кнопки меню впритул до фінансових карток.
 
 <!-- ВІКНО: СПИСОК КЛІЄНТІВ -->
 <div id="window-all-win" class="crm-window">
