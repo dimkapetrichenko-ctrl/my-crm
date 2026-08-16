@@ -28,15 +28,22 @@
     </div>
 </div>
 
+<!-- ГОЛОВНЕ МЕНЮ ВКЛАДОК ІЗ ЛІЧИЛЬНИКАМИ ЗАДАЧ -->
 <div class="row mb-3">
     <div class="col-12">
         <div class="card shadow-sm bg-dark text-white">
-            <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center">
+            <div class="card-body p-2 d-flex flex-wrap gap-2 justify-content-center align-items-center">
                 <button onclick="switchWindow('all-win')" id="btn-all-win" class="btn btn-md btn-success fw-bold px-3 shadow">📋 Список клієнтів</button>
                 <button onclick="switchWindow('today-win')" id="btn-today-win" class="btn btn-md btn-outline-light fw-bold px-3">🔥 Дії на сьогодні</button>
                 <button onclick="switchWindow('calendar-win')" id="btn-calendar-win" class="btn btn-md btn-outline-light fw-bold px-3">📅 Календар дій</button>
                 <button onclick="switchWindow('finance-win')" id="btn-finance-win" class="btn btn-md btn-outline-light fw-bold px-3">💰 Річний план</button>
-                <button onclick="switchWindow('tasks-win')" id="btn-tasks-win" class="btn btn-md btn-outline-light fw-bold px-3">📝 Задачник</button>
+                
+                <button onclick="switchWindow('tasks-win')" id="btn-tasks-win" class="btn btn-md btn-outline-light fw-bold px-3 d-flex align-items-center gap-1.5">
+                    <span>📝 Задачник</span>
+                    <span id="badge-tasks-active" class="badge bg-warning text-dark px-1.5 py-0.5 rounded-pill" style="font-size: 0.72rem; display: none;" title="Активні завдання">0</span>
+                    <span id="badge-tasks-overdue" class="badge bg-danger text-white px-1.5 py-0.5 rounded-pill" style="font-size: 0.72rem; display: none;" title="Прострочені / Не виконані">0 !</span>
+                </button>
+                
                 <button onclick="switchWindow('demand-win')" id="btn-demand-win" class="btn btn-md btn-outline-light fw-bold px-3">📦 Упущений попит</button>
             </div>
         </div>
@@ -294,6 +301,13 @@
                         </thead>
                         <tbody id="tasks-calendar-body" class="font-monospace"></tbody>
                     </table>
+                    
+                    <!-- ЛЕГЕНДА СТАТУСІВ КАЛЕНДАРЯ -->
+                    <div class="d-flex justify-content-around mt-2 small text-muted font-monospace" style="font-size: 0.76rem;">
+                        <span>🟡 <strong>Активні задачі</strong></span>
+                        <span>🔴 <strong>Прострочені</strong></span>
+                        <span>🟢 <strong>Всі виконано (✔)</strong></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -615,7 +629,18 @@
 <style>
     .tasks-grid td { height: 54px; position: relative; cursor: pointer; font-weight: bold; vertical-align: top; padding-top: 5px; }
     .tasks-grid td:hover { background-color: #f8f9fa !important; }
-    .tasks-dot-badge { position: absolute; bottom: 4px; right: 4px; font-size: 0.68rem; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; }
+    .tasks-dot-badge { 
+        position: absolute; 
+        bottom: 3px; 
+        right: 3px; 
+        font-size: 0.65rem; 
+        padding: 2px 5px; 
+        border-radius: 10px; 
+        display: flex; 
+        gap: 3px; 
+        align-items: center; 
+        font-weight: bold; 
+    }
     .calendar-today-highlight { outline: 2px solid #212529 !important; outline-offset: -2px; }
 </style>
 
@@ -628,6 +653,43 @@ let currentMonth = new Date().getMonth();
 let tasksYear = new Date().getFullYear();
 let tasksMonth = new Date().getMonth();
 const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+
+// ОНОВЛЕННЯ ЛІЧИЛЬНИКІВ НА РОБОЧОМУ СТОЛІ
+function updateTasksDesktopBadges() {
+    const today = new Date().toISOString().split('T')[0];
+    let activeCount = 0;
+    let overdueCount = 0;
+
+    allTasksList.forEach(t => {
+        if (t.status === 'in_progress') {
+            activeCount++;
+            if (t.deadline && t.deadline < today) {
+                overdueCount++;
+            }
+        }
+    });
+
+    const activeBadge = document.getElementById('badge-tasks-active');
+    const overdueBadge = document.getElementById('badge-tasks-overdue');
+
+    if (activeBadge) {
+        if (activeCount > 0) {
+            activeBadge.innerText = activeCount;
+            activeBadge.style.display = 'inline-block';
+        } else {
+            activeBadge.style.display = 'none';
+        }
+    }
+
+    if (overdueBadge) {
+        if (overdueCount > 0) {
+            overdueBadge.innerText = overdueCount + ' !';
+            overdueBadge.style.display = 'inline-block';
+        } else {
+            overdueBadge.style.display = 'none';
+        }
+    }
+}
 
 function filterClientsTable() {
     const nameVal = (document.getElementById('filter-name')?.value || '').toLowerCase().trim();
@@ -700,7 +762,7 @@ function switchWindow(targetWinId) {
     }
 }
 
-// ГАРАНТОВАНІ ПОВНІ ФУНКЦІЇ ДЛЯ КАЛЕНДАРІВ
+// КАЛЕНДАР ДІЙ
 function changeMonth(direction) {
     currentMonth += direction;
     if (currentMonth < 0) { currentMonth = 11; currentYear--; }
@@ -760,6 +822,7 @@ function showTasksForDate(dateStr) {
     box.innerHTML = html;
 }
 
+// ВДОСКОНАЛЕНИЙ КАЛЕНДАР ЗАДАЧНИКА (З ПОЗНАЧКАМИ ВИКОНАНИХ ТА ПРОСТРОЧЕНИХ)
 function renderTasksCalendar() {
     const labelEl = document.getElementById('tasks-calendar-title');
     if (!labelEl) return;
@@ -771,6 +834,7 @@ function renderTasksCalendar() {
     for (let i = 0; i < shiftDay; i++) { gridHtml += "<td></td>"; }
     let currentDayCount = shiftDay;
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
     for (let day = 1; day <= totalDays; day++) {
         if (currentDayCount === 7) { gridHtml += "</tr><tr>"; currentDayCount = 0; }
@@ -778,14 +842,40 @@ function renderTasksCalendar() {
         let mStr = mNum < 10 ? "0" + mNum : mNum;
         let dStr = day < 10 ? "0" + day : day;
         let dateKey = `${tasksYear}-${mStr}-${dStr}`;
-        let activeTasks = allTasksList.filter(t => t.deadline === dateKey && t.status === 'in_progress');
+        
+        let dayTasks = allTasksList.filter(t => t.deadline === dateKey);
+        let activeTasks = dayTasks.filter(t => t.status === 'in_progress');
+        let completedTasks = dayTasks.filter(t => t.status === 'completed');
+        
         let cellStyle = "";
         let badgeHtml = "";
         let todayClass = (today.getFullYear() === tasksYear && today.getMonth() === tasksMonth && today.getDate() === day) ? "calendar-today-highlight" : "";
-        if (activeTasks.length > 0) {
-            cellStyle = 'style="background-color: #fff3cd; color: #856404;"';
-            badgeHtml = `<span class="tasks-dot-badge bg-warning text-dark">${activeTasks.length}</span>`;
+        
+        if (dayTasks.length > 0) {
+            let isOverdue = activeTasks.length > 0 && dateKey < todayStr;
+            
+            if (activeTasks.length > 0) {
+                if (isOverdue) {
+                    cellStyle = 'style="background-color: #f8d7da; color: #842029;"';
+                    badgeHtml += `<span class="badge bg-danger shadow-xs" title="Прострочено">${activeTasks.length} !</span>`;
+                } else {
+                    cellStyle = 'style="background-color: #fff3cd; color: #856404;"';
+                    badgeHtml += `<span class="badge bg-warning text-dark shadow-xs" title="В роботі">${activeTasks.length}</span>`;
+                }
+            }
+            
+            if (completedTasks.length > 0) {
+                if (activeTasks.length === 0) {
+                    cellStyle = 'style="background-color: #d1e7dd; color: #0f5132;"';
+                }
+                badgeHtml += `<span class="badge bg-success shadow-xs" title="Виконано">${completedTasks.length} ✔</span>`;
+            }
+            
+            if (badgeHtml !== "") {
+                badgeHtml = `<div class="tasks-dot-badge">${badgeHtml}</div>`;
+            }
         }
+        
         gridHtml += `<td ${cellStyle} class="${todayClass}" onclick="selectTasksDate('${dateKey}')">${day}${badgeHtml}</td>`;
         currentDayCount++;
     }
@@ -803,6 +893,8 @@ function changeTasksMonth(direction) {
 
 function selectTasksDate(dateStr) {
     const parts = dateStr.split('-');
+    const todayStr = new Date().toISOString().split('T')[0];
+    
     document.getElementById('selected-tasks-date-title').innerHTML = `📌 Справи на: <span class="bg-dark text-white px-2 py-0.5 rounded font-monospace">${parts[2]}.${parts[1]}.${parts[0]}</span>`;
     document.getElementById('tasks-input-date').value = dateStr;
     const filtered = allTasksList.filter(t => t.deadline === dateStr);
@@ -814,16 +906,30 @@ function selectTasksDate(dateStr) {
     let html = `<div class="list-group list-group-flush" style="font-size:0.85rem;">`;
     filtered.forEach(t => {
         let isDone = t.status === 'completed';
+        let isOverdue = !isDone && t.deadline < todayStr;
         let textStyle = isDone ? 'text-decoration-line-through text-muted small' : 'text-dark font-medium';
-        let cardBg = isDone ? 'bg-light' : 'bg-white';
+        let cardBg = isDone ? 'bg-light' : isOverdue ? 'bg-danger-subtle' : 'bg-white';
+        let borderStyle = isDone ? 'border-success' : isOverdue ? 'border-danger' : 'border-primary';
         let authorBadge = t.author === 'CEO' ? '<span class="badge bg-danger">📁 CEO</span>' : '<span class="badge bg-primary">💼 Продажі</span>';
+        let statusBadge = isDone ? '<span class="badge bg-success">✔ Виконано</span>' : isOverdue ? '<span class="badge bg-danger">⚠️ Прострочено</span>' : '<span class="badge bg-warning text-dark">⏳ В роботі</span>';
+        
         html += `
-            <div class="card mb-2 shadow-xs border-start border-primary border-3 ${cardBg}">
+            <div class="card mb-2 shadow-xs border-start ${borderStyle} border-3 ${cardBg}">
                 <div class="card-body p-2 d-flex justify-content-between align-items-start gap-2">
-                    <div><div class="mb-1">${authorBadge}</div><p class="mb-0 ${textStyle}">${t.text}</p></div>
+                    <div>
+                        <div class="mb-1 d-flex gap-1 align-items-center">${authorBadge} ${statusBadge}</div>
+                        <p class="mb-0 ${textStyle}">${t.text}</p>
+                    </div>
                     <div class="d-flex flex-column gap-1">
-                        <form action="/toggle_task/${t.id}" method="POST" class="mb-0"><input type="hidden" name="current_status" value="${t.status}"><button type="submit" class="btn btn-xs btn-success py-0.5 px-1.5" style="font-size:0.7rem;">${isDone ? '🔄 Повернути' : '✅ Закрити'}</button></form>
-                        <form action="/delete_task/${t.id}" method="POST" class="mb-0"><button type="submit" class="btn btn-xs btn-outline-danger py-0.5 px-1.5" style="font-size:0.7rem;">🗑️</button></form>
+                        <form action="/toggle_task/${t.id}" method="POST" class="mb-0">
+                            <input type="hidden" name="current_status" value="${t.status}">
+                            <button type="submit" class="btn btn-xs ${isDone ? 'btn-outline-secondary' : 'btn-success'} py-0.5 px-1.5 fw-bold" style="font-size:0.7rem;">
+                                ${isDone ? '🔄 Повернути' : '✅ Закрити'}
+                            </button>
+                        </form>
+                        <form action="/delete_task/${t.id}" method="POST" class="mb-0" onsubmit="return confirm('Видалити завдання?');">
+                            <button type="submit" class="btn btn-xs btn-outline-danger py-0.5 px-1.5" style="font-size:0.7rem;">🗑️</button>
+                        </form>
                     </div>
                 </div>
             </div>`;
@@ -842,6 +948,7 @@ function syncClientId() {
 }
 
 window.onload = function() {
+    updateTasksDesktopBadges();
     renderCalendar();
     renderTasksCalendar();
     const urlParams = new URLSearchParams(window.location.search);
