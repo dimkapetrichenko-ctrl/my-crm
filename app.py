@@ -1,6 +1,5 @@
 import os
 import json
-import re
 import psycopg2
 from psycopg2.extras import DictCursor
 from flask import Flask, render_template, request, redirect, url_for, session, send_file, jsonify
@@ -12,9 +11,6 @@ import imaplib
 import email
 from email.mime.text import MIMEText
 from email.header import Header, decode_header
-import requests
-from bs4 import BeautifulSoup
-import google.generativeai as genai
 
 app = Flask(__name__)
 
@@ -31,18 +27,10 @@ MAIL_PORT = 465  # Безпечний SSL порт
 MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
 MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 
-# Налаштування ШІ Gemini API
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-# ========================================================
-# ГАРАНТОВАНЕ ВИЗНАЧЕННЯ ДЕКОРАТОРА НА САМОМУ ВЕРХУ КОДУ
-# ========================================================
 def login_required(f):
     from functools import wraps
     @wraps(f)
@@ -51,57 +39,6 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
-
-# ФУНКЦІЯ АНАЛІЗУ ВЕБ-САЙТУ КОНТРАГЕНТА ЧЕРЕЗ ШІ-АГЕНТ GEMINI
-def analyze_website_with_ai(website_url):
-    if not website_url or not GEMINI_API_KEY:
-        return None
-    
-    url = website_url.strip()
-    if not url.startswith('http'):
-        url = 'https://' + url
-
-    try:
-        # Скануємо текстовий вміст головної сторінки
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.get(url, timeout=12, headers=headers, verify=False)
-        response.encoding = response.apparent_encoding or 'utf-8'
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        for element in soup(["script", "style", "header", "footer", "nav"]):
-            element.extract()
-            
-        text_content = soup.get_text(separator=' ', strip=True)
-        # Обрізаємо занадто довгий текст для економії токенів (перші ~5000 символів)
-        text_content = " ".join(text_content.split())[:5000]
-
-        if not text_content or len(text_content) < 100:
-            return None
-
-        # Формуємо завдання ШІ-Агенту
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"""
-        Ти — галузевий аналітик B2B ринку сільськогосподарської техніки. Проаналізуй наступний текст із веб-сайту компанії:
-        "{text_content}"
-
-        Визнач, чи займається ця компанія торгівлею сільгосптехнікою, сервісом або продажем агрозапчастин.
-        Особливо зверни увагу, чи є на сайті згадки про запчастини або обладнання брендів: Vaderstad (Väderstad), Gaspardo, Pottinger (Pöttinger), Horsch.
-
-        Поверни відповідь виключно у форматі JSON (без використання markdown блоків ```json):
-        {{
-            "is_relevant_dealer": true чи false (true якщо це агро-дилер, агро-магазин чи великий фермер),
-            "detected_brands": [] (масив з назв знайдених брендів строго з переліку: "Vaderstad", "Gaspardo", "Horsch", "Pottinger", "Інші"),
-            "buyer_type": "Дилер сг техніки" або "інтернет-магазин" або "гуртовий клієнт" або "виробник" або "фермерське господарство" або "не вказано",
-            "summary": "Короткий висновок українською мовою (1 речення, наприклад: Продають запчастини для сівалок та ґрунтообробки Horsch та Vaderstad)"
-        }}
-        """
-        
-        ai_response = model.generate_content(prompt)
-        clean_text = ai_response.text.strip().replace('```json', '').replace('```', '').strip()
-        return json.loads(clean_text)
-    except Exception as e:
-        print(f"❌ Помилка роботи ШІ для сайту {url}: {str(e)}")
-        return None
 
 # БЕЗПЕЧНИЙ ДЕКОДЕР ТІЛА ЛИСТА ДЛЯ IMAP РОБОТА
 def decode_email_body(msg):
@@ -128,14 +65,14 @@ def decode_email_body(msg):
             
     return body.strip()
 
-# ВНУТРІШНЯ ФУНКЦІЯ ВІДПРАВКИ HTML-ПОШТИ (Банер на початку листа)
+# ВНУТРІШНЯ ФУНКЦІЯ ВІДПРАВКИ HTML-ПОШТИ
 def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
         html_body = body_text
-        logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png"
+        logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
         banner_html = ""
@@ -538,75 +475,6 @@ def index():
         top_demand=top_demand
     )
 
-# МАРШРУТ ШІ-СКАНУВАННЯ ПООДИНОКОГО САЙТУ
-@app.route('/scan_client_site/<int:client_id>', methods=['POST'])
-@login_required
-def scan_client_site(client_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    cursor.execute("SELECT website FROM clients WHERE id = %s", (client_id,))
-    client = cursor.fetchone()
-    
-    if client and client['website']:
-        result = analyze_website_with_ai(client['website'])
-        if result:
-            brands_str = ", ".join(result.get('detected_brands', [])) if result.get('detected_brands') else '-'
-            buyer_type = result.get('buyer_type', 'не вказано')
-            interest_level = 'зацікавленість' if result.get('is_relevant_dealer') else 'немає зацікавленості'
-            
-            cursor.execute("""
-                UPDATE clients 
-                SET brands = %s, buyer_type = %s, interest_level = %s 
-                WHERE id = %s
-            """, (brands_str, buyer_type, interest_level, client_id))
-            
-            log_text = f"[🤖 ШІ-Сканер] Агент перевірив сайт. Висновок: {result.get('summary')}. Виявлені бренди: {brands_str}"
-            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-            cursor.execute(
-                "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
-                (client_id, current_date, log_text, 'CEO')
-            )
-            conn.commit()
-    cursor.close()
-    conn.close()
-    return redirect(url_for('client_detail', client_id=client_id))
-
-# МАРШРУТ МАСОВОГО ШІ-АУДИТУ ВСІЄЇ БАЗИ (Парсить тільки клієнтів з сайтами, де бренди ще порожні або '-')
-@app.route('/mass_ai_scan', methods=['POST'])
-@login_required
-def mass_ai_scan():
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    cursor.execute("SELECT id, website FROM clients WHERE website IS NOT NULL AND website != '' AND (brands IS NULL OR brands = '-' OR brands = '')")
-    target_clients = cursor.fetchall()
-    
-    scanned_count = 0
-    for row in target_clients:
-        result = analyze_website_with_ai(row['website'])
-        if result:
-            brands_str = ", ".join(result.get('detected_brands', [])) if result.get('detected_brands') else '-'
-            buyer_type = result.get('buyer_type', 'не вказано')
-            interest_level = 'зацікавленість' if result.get('is_relevant_dealer') else 'немає зацікавленості'
-            
-            cursor.execute("""
-                UPDATE clients 
-                SET brands = %s, buyer_type = %s, interest_level = %s 
-                WHERE id = %s
-            """, (brands_str, buyer_type, interest_level, row['id']))
-            
-            log_text = f"[🤖 ШІ Масовий Аудит] Авто-перевірка сайту. {result.get('summary')}. Знайдено брендів: {brands_str}"
-            current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-            cursor.execute(
-                "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
-                (row['id'], current_date, log_text, 'CEO')
-            )
-            scanned_count += 1
-            
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return redirect(url_for('index'))
-
 @app.route('/add_lost_demand', methods=['POST'])
 @login_required
 def add_lost_demand():
@@ -982,13 +850,10 @@ def client_detail(client_id):
     """)
     events_by_date = dict(cursor.fetchall())
     json_events_by_date = json.dumps(events_by_date, ensure_ascii=False)
-    
-    # ПЕРЕДАЄМО НАЯВНІСТЬ КЛЮЧA ШІ В ШАБЛОН ДЛЯ ВІДОБРАЖЕННЯ КНОПОК СКАНИРОВАНИЯ
-    has_ai_key = GEMINI_API_KEY is not None and GEMINI_API_KEY != ""
 
     cursor.close()
     conn.close()
-    return render_template('client.html', client=client, history=history, client_lost_demand=client_lost_demand, json_events_by_date=json_events_by_date, has_ai_key=has_ai_key)
+    return render_template('client.html', client=client, history=history, client_lost_demand=client_lost_demand, json_events_by_date=json_events_by_date)
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
