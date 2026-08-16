@@ -22,7 +22,7 @@
             --crm-border-subtle: #cbd5e1;
             --crm-primary: #007a33;
             --crm-primary-hover: #006329;
-            --crm-dark: #0f172a;
+            --crm-header-red: #dc2626; /* Фірмовий насичений червоний колір */
             --crm-text-main: #1e293b;
             --crm-text-muted: #64748b;
         }
@@ -34,11 +34,19 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Верхня навігаційна панель */
+        /* Червона верхня навігаційна панель */
         .navbar-custom {
-            background-color: var(--crm-dark);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            background-color: var(--crm-header-red);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+        }
+
+        /* Збільшений повністю білий логотип */
+        .brand-logo-white {
+            height: 38px; /* Збільшений розмір */
+            width: auto;
+            filter: brightness(0) invert(1); /* Робить логотип чисто білим */
+            display: inline-block;
         }
 
         /* Картки та панелі */
@@ -69,6 +77,27 @@
         }
         .btn-brand:hover {
             background-color: var(--crm-primary-hover);
+            color: #ffffff;
+        }
+
+        /* Кнопки у шапці */
+        .btn-header-light {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+        }
+        .btn-header-light:hover {
+            background-color: #ffffff;
+            color: var(--crm-header-red);
+        }
+
+        .btn-header-exit {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
+        .btn-header-exit:hover {
+            background-color: #000000;
             color: #ffffff;
         }
 
@@ -112,17 +141,17 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-2.5 px-4 mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-2 px-4 mb-4">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white" href="/">
-                <img src="/static/logotipnew.png" alt="MAYER PRO" height="28" class="d-inline-block">
-                <span class="badge bg-secondary text-uppercase" style="font-size: 0.65rem;">B2B CRM</span>
+                <img src="/static/logotipnew.png" alt="MAYER PRO" class="brand-logo-white">
+                <span class="badge bg-dark text-white text-uppercase ms-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">B2B CRM</span>
             </a>
             <div class="d-flex align-items-center gap-2">
-                <a href="/export_excel" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1.5">
+                <a href="/export_excel" class="btn btn-sm btn-header-light d-flex align-items-center gap-1.5 fw-semibold">
                     <i class="bi bi-file-earmark-spreadsheet"></i> Експорт Excel
                 </a>
-                <a href="/logout" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1">
+                <a href="/logout" class="btn btn-sm btn-header-exit d-flex align-items-center gap-1 fw-semibold">
                     <i class="bi bi-box-arrow-right"></i> Вийти
                 </a>
             </div>
