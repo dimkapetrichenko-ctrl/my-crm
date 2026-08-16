@@ -158,7 +158,9 @@ def init_db():
             next_event_type TEXT,
             mayer_reg TEXT,
             whatsapp_1 TEXT,
-            whatsapp_2 TEXT
+            whatsapp_2 TEXT,
+            is_active BOOLEAN DEFAULT TRUE,
+            deactivation_reason TEXT
         )
     ''')
     
@@ -169,7 +171,7 @@ def init_db():
         'website': 'TEXT', 'buyer_type': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
         'contact_person_2': 'TEXT', 'position_2': 'TEXT', 'phone_2': 'TEXT', 'email_2': 'TEXT',
         'interest_level': 'TEXT', 'next_event_date': 'TEXT', 'next_event_type': 'TEXT', 'mayer_reg': 'TEXT',
-        'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT'
+        'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT', 'is_active': 'BOOLEAN DEFAULT TRUE', 'deactivation_reason': 'TEXT'
     }
     
     for field, f_type in new_fields.items():
@@ -260,6 +262,7 @@ def index():
     interest_filter = request.args.get('interest', '').strip()
     country_filter = request.args.get('country', '').strip()
     finance_month_filter = request.args.get('finance_month', '').strip()
+    status_view = request.args.get('status_view', 'active').strip() # 'active', 'archived', 'all'
     
     conn = get_db_connection()
     
@@ -296,10 +299,10 @@ def index():
     country_cursor.close()
     
     stats_cursor = conn.cursor()
-    stats_cursor.execute("SELECT COUNT(*) FROM clients")
+    stats_cursor.execute("SELECT COUNT(*) FROM clients WHERE is_active IS NOT FALSE")
     total_clients = stats_cursor.fetchone()[0]
     
-    stats_cursor.execute("SELECT interest_level, COUNT(*) FROM clients GROUP BY interest_level")
+    stats_cursor.execute("SELECT interest_level, COUNT(*) FROM clients WHERE is_active IS NOT FALSE GROUP BY interest_level")
     raw_interest = stats_cursor.fetchall()
     
     interest_stats = {'не опрацьовано': 0, 'немає зацікавленості': 0, 'середня зацікавленість': 0, 'зацікавленість': 0}
@@ -308,10 +311,10 @@ def index():
         if status in interest_stats:
             interest_stats[status] = row[1]
             
-    stats_cursor.execute("SELECT country, COUNT(*) FROM clients WHERE country IS NOT NULL AND country != '' GROUP BY country ORDER BY COUNT(*) DESC")
+    stats_cursor.execute("SELECT country, COUNT(*) FROM clients WHERE country IS NOT NULL AND country != '' AND is_active IS NOT FALSE GROUP BY country ORDER BY COUNT(*) DESC")
     country_stats = stats_cursor.fetchall()
 
-    stats_cursor.execute("SELECT buyer_type, COUNT(*) FROM clients WHERE buyer_type IS NOT NULL AND buyer_type != 'не вказано' AND buyer_type != '' GROUP BY buyer_type ORDER BY COUNT(*) DESC")
+    stats_cursor.execute("SELECT buyer_type, COUNT(*) FROM clients WHERE buyer_type IS NOT NULL AND buyer_type != 'не вказано' AND buyer_type != '' AND is_active IS NOT FALSE GROUP BY buyer_type ORDER BY COUNT(*) DESC")
     buyer_type_stats = stats_cursor.fetchall()
     stats_cursor.close()
     
@@ -366,7 +369,7 @@ def index():
     top_demand_raw = dict_cursor.fetchall()
     top_demand = [dict(t) for t in top_demand_raw]
 
-    dict_cursor.execute("SELECT id, name FROM clients ORDER BY name ASC")
+    dict_cursor.execute("SELECT id, name FROM clients WHERE is_active IS NOT FALSE ORDER BY name ASC")
     all_selector_clients = dict_cursor.fetchall()
 
     dict_cursor.execute("SELECT id, text, deadline, author, status FROM tasks ORDER BY id DESC")
@@ -374,7 +377,7 @@ def index():
     tasks = [dict(t) for t in tasks_raw]
 
     cal_cursor = conn.cursor(cursor_factory=DictCursor)
-    cal_cursor.execute("SELECT id, name, country, contact_person, phone, next_event_date, next_event_type FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != ''")
+    cal_cursor.execute("SELECT id, name, country, contact_person, phone, next_event_date, next_event_type FROM clients WHERE next_event_date IS NOT NULL AND next_event_date != '' AND is_active IS NOT FALSE")
     all_raw_cal = cal_cursor.fetchall()
     
     clients_js_data = []
@@ -403,6 +406,12 @@ def index():
     """
     params = []
     
+    # Фільтр активності
+    if status_view == 'active':
+        sql += " AND c.is_active IS NOT FALSE"
+    elif status_view == 'archived':
+        sql += " AND c.is_active IS FALSE"
+
     if search_query:
         sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s) OR LOWER(c.buyer_type) LIKE LOWER(%s))"
         params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
@@ -440,7 +449,9 @@ def index():
             'last_activity_text': row['last_activity_text'] if row['last_activity_text'] else '',
             'next_event_date': str(row['next_event_date']) if row['next_event_date'] else '',
             'next_event_type': str(row['next_event_type']) if row['next_event_type'] else '',
-            'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні'
+            'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні',
+            'is_active': row['is_active'] if row['is_active'] is not None else True,
+            'deactivation_reason': row['deactivation_reason'] if row['deactivation_reason'] else ''
         })
     cursor.close()
     dict_cursor.close()
@@ -458,6 +469,7 @@ def index():
         interest_filter=interest_filter,
         country_filter=country_filter,
         finance_month_filter=finance_month_filter,
+        status_view=status_view,
         total_clients=total_clients,
         interest_stats=interest_stats,
         country_stats=country_stats,
@@ -474,6 +486,30 @@ def index():
         lost_demand_list=lost_demand_list,
         top_demand=top_demand
     )
+
+@app.route('/toggle_client_status/<int:client_id>', methods=['POST'])
+@login_required
+def toggle_client_status(client_id):
+    action = request.form.get('action') # 'deactivate' або 'activate'
+    reason = request.form.get('reason', '').strip()
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+    
+    if action == 'deactivate':
+        cursor.execute("UPDATE clients SET is_active = FALSE, deactivation_reason = %s WHERE id = %s", (reason, client_id))
+        log_text = f"⛔ [ДЕАКТИВАЦІЯ ЛІДА] Клієнта переведено в архів. Причина: {reason or 'Не вказано'}"
+        cursor.execute("INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)", (client_id, current_date, log_text, 'CEO'))
+    else:
+        cursor.execute("UPDATE clients SET is_active = TRUE, deactivation_reason = NULL WHERE id = %s", (client_id,))
+        log_text = "🟢 [АКТИВАЦІЯ ЛІДА] Клієнта відновлено з архіву в активну базу."
+        cursor.execute("INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)", (client_id, current_date, log_text, 'CEO'))
+        
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for('client_detail', client_id=client_id))
 
 @app.route('/add_lost_demand', methods=['POST'])
 @login_required
@@ -684,8 +720,8 @@ def add_client():
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
-                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
              contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2)
         )
@@ -826,13 +862,16 @@ def client_detail(client_id):
     fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
                        'contact_person', 'position', 'phone', 'email', 
                        'contact_person_2', 'position_2', 'phone_2', 'email_2', 
-                       'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp_1', 'whatsapp_2']
+                       'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp_1', 'whatsapp_2',
+                       'is_active', 'deactivation_reason']
     for field in fields_to_check:
         if field not in client or client[field] is None:
             if field == 'interest_level':
                 client[field] = 'не опрацьовано'
             elif field == 'mayer_reg':
                 client[field] = 'Ні'
+            elif field == 'is_active':
+                client[field] = True
             else:
                 client[field] = ''
     
@@ -845,7 +884,7 @@ def client_detail(client_id):
     cursor.execute("""
         SELECT next_event_date, COUNT(*) 
         FROM clients 
-        WHERE next_event_date IS NOT NULL AND next_event_date != '' 
+        WHERE next_event_date IS NOT NULL AND next_event_date != '' AND is_active IS NOT FALSE
         GROUP BY next_event_date
     """)
     events_by_date = dict(cursor.fetchall())
@@ -896,7 +935,9 @@ def export_excel():
                c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
                c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.whatsapp_1 AS "WhatsApp 1", c.email AS "Email 1",
                c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.whatsapp_2 AS "WhatsApp 2", c.email_2 AS "Email 2",
-               c.next_event_date AS "Дата наступної події", c.next_event_type AS "Вид наступної події"
+               c.next_event_date AS "Дата наступної події", c.next_event_type AS "Вид наступної події",
+               CASE WHEN c.is_active IS FALSE THEN 'Деактивовано (Архів)' ELSE 'Активний' END AS "Статус клієнта",
+               c.deactivation_reason AS "Причина деактивації"
         FROM clients c ORDER BY c.name ASC
     """
     df = pd.read_sql(query, conn)
@@ -917,4 +958,3 @@ def export_excel():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-
