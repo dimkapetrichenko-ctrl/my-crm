@@ -1,23 +1,48 @@
 {% extends 'base.html' %}
 {% block content %}
 
+<!-- ЧИСТІ ПРАВИЛЬНІ ПОСИЛАННЯ НА РЕДАКТОР Quill -->
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
 
 <div class="row mb-3">
     <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">◀ Назад до списку</a>
         
-        {% if client.email %}
-        <button class="btn btn-primary btn-sm fw-bold shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#emailFormCollapse" aria-expanded="false" aria-controls="emailFormCollapse">
-            ✉️ Надіслати Email
-        </button>
-        {% else %}
-        <button class="btn btn-secondary btn-sm fw-bold shadow-sm" disabled title="У даного клієнта не заповнено поле Email">
-            ✉️ Надіслати Email (Немає адреси)
-        </button>
-        {% endif %}
+        <div class="d-flex gap-2">
+            {% if client.is_active %}
+            <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm" type="button" data-bs-toggle="modal" data-bs-target="#deactivateModal">
+                ⛔ Деактивувати клієнта
+            </button>
+            {% else %}
+            <form action="{{ url_for('toggle_client_status', client_id=client.id) }}" method="POST" class="m-0" onsubmit="return confirm('Відновити клієнта в активну базу?');">
+                <input type="hidden" name="action" value="activate">
+                <button type="submit" class="btn btn-sm btn-success fw-bold shadow-sm">
+                    🟢 Активувати клієнта з архіву
+                </button>
+            </form>
+            {% endif %}
+
+            {% if client.email %}
+            <button class="btn btn-primary btn-sm fw-bold shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#emailFormCollapse" aria-expanded="false" aria-controls="emailFormCollapse">
+                ✉️ Надіслати Email
+            </button>
+            {% else %}
+            <button class="btn btn-secondary btn-sm fw-bold shadow-sm" disabled title="У даного клієнта не заповнено поле Email">
+                ✉️ Надіслати Email (Немає адреси)
+            </button>
+            {% endif %}
+        </div>
     </div>
 </div>
+
+{% if not client.is_active %}
+<div class="alert alert-danger shadow-sm py-2 px-3 mb-3 d-flex justify-content-between align-items-center">
+    <div>
+        <strong>⛔ ЦЕЙ КЛІЄНТ ДЕАКТИВОВАНИЙ (В АРХІВІ).</strong>
+        <br><small><strong>Причина деактивації:</strong> {{ client.deactivation_reason or 'Не вказана' }}</small>
+    </div>
+</div>
+{% endif %}
 
 <div class="collapse my-3" id="emailFormCollapse">
     <div class="card card-body bg-dark text-white border-secondary shadow-sm">
@@ -338,6 +363,30 @@
     </div>
 </div>
 
+<!-- МОДАЛЬНЕ ВІКНО ДЕАКТИВАЦІЇ КЛІЄНТА -->
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white py-2">
+                <h6 class="modal-title fw-bold">⛔ Деактивація клієнта (Переведення в архів)</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('toggle_client_status', client_id=client.id) }}" method="POST">
+                <input type="hidden" name="action" value="deactivate">
+                <div class="modal-body p-3 bg-light">
+                    <p class="small text-dark mb-2">Клієнт <strong>{{ client.name }}</strong> буде прихований з головного списку та календарів, але збережеться в базі з усією історією розмов.</p>
+                    <label class="form-label mb-1 fw-bold small">Вкажіть причину деактивації:</label>
+                    <textarea name="reason" class="form-control form-control-sm" rows="3" placeholder="Наприклад: Нецільовий лід, закрили бізнес, не продають запчастини..." required></textarea>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-sm btn-danger fw-bold px-3">⛔ Підтвердити деактивацію</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="workloadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-primary">
@@ -445,4 +494,3 @@
     });
 </script>
 {% endblock %}
-
