@@ -43,6 +43,7 @@
     </div>
 </div>
 
+<!-- ВІКНО: СПИСОК КЛІЄНТІВ -->
 <div id="window-all-win" class="crm-window">
     <div class="card shadow-sm mb-3">
         <div class="card-body py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -56,11 +57,6 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary fw-bold" onclick="resetTableFilters()">
                     🔄 Скинути фільтри
                 </button>
-                <form action="/mass_ai_scan" method="POST" class="m-0" onsubmit="this.querySelector('button').innerHTML='🤖 Сканування...';">
-                    <button type="submit" class="btn btn-sm text-white fw-bold shadow-sm" style="background-color: #6f42c1;">
-                        🤖 ШІ-Аудит нових сайтів
-                    </button>
-                </form>
             </div>
         </div>
     </div>
@@ -72,11 +68,11 @@
                     <table class="table table-bordered table-sm table-hover align-middle mb-0" id="mainClientsTable" style="font-size: 0.84rem; width: 100%;">
                         <thead class="table-dark" style="position: sticky; top: 0; z-index: 5; white-space: nowrap;">
                             <tr>
-                                <th style="width: 18%;">Компанії</th>
-                                <th style="width: 11%;">Тип клієнта</th>
-                                <th style="width: 9%;">Країна</th>
-                                <th style="text-align: center; width: 11%;">Зацікавленість</th>
-                                <th style="text-align: center; width: 6%;">MAYER</th>
+                                <th style="width: 20%;">Компанії</th>
+                                <th style="width: 13%;">Тип клієнта</th>
+                                <th style="width: 10%;">Країна</th>
+                                <th style="text-align: center; width: 14%;">Зацікавленість</th>
+                                <th style="text-align: center; width: 8%;">MAYER</th>
                                 <th style="width: 22%;">Опис останньої активності</th>
                                 <th style="width: 15%;">Наступна подія</th>
                                 <th style="text-align: center; width: 8%;">Дія</th>
@@ -202,6 +198,10 @@
                                 <td style="text-align: center;"><a href="/client/{{ client.id }}" class="btn btn-xs btn-outline-primary fw-bold">Картка</a></td>
                             </tr>
                             {% endfor %}
+                            
+                            {% if not clients %}
+                            <tr><td colspan="8" class="text-center text-muted py-4">База клієнтів порожня.</td></tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -210,6 +210,7 @@
     </div>
 </div>
 
+<!-- ВІКНО: УПУЩЕНИЙ ПОПИТ -->
 <div id="window-demand-win" class="crm-window" style="display: none;">
     <div class="row g-3">
         <div class="col-md-4">
@@ -272,6 +273,7 @@
     </div>
 </div>
 
+<!-- ВІКНО: ЗАДАЧНИК -->
 <div id="window-tasks-win" class="crm-window" style="display: none;">
     <div class="row g-3">
         <div class="col-md-7">
@@ -331,6 +333,7 @@
     </div>
 </div>
 
+<!-- ВІКНО: ДІЇ НА СЬОГОДНІ -->
 <div id="window-today-win" class="crm-window" style="display: none;">
     <div class="card shadow-sm border-warning mb-4">
         <div class="card-header bg-warning text-dark fw-bold py-2">🚀 Завдання на сьогодні ({{ today_date }})</div>
@@ -366,6 +369,7 @@
     </div>
 </div>
 
+<!-- ВІКНО: КАЛЕНДАР ДІЙ -->
 <div id="window-calendar-win" class="crm-window" style="display: none;">
     <div class="row">
         <div class="col-md-5 mb-3">
@@ -400,6 +404,7 @@
     </div>
 </div>
 
+<!-- ВІКНО: РІЧНИЙ ПЛАН -->
 <div id="window-finance-win" class="crm-window" style="display: none;">
     <div class="row g-3">
         <div class="col-md-3">
@@ -498,6 +503,7 @@
     </div>
 </div>
 
+<!-- МОДАЛЬНЕ ВІКНО СТВОРЕННЯ НОВОГО КЛІЄНТА -->
 <div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -580,7 +586,7 @@
                         </div>
                         
                         <div class="col-md-6 border-end">
-                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1">👤 Контактна особа №1</h6>
+                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №1</h6>
                             <input type="text" name="contact_person" class="form-control form-control-sm mb-1" placeholder="ПІБ">
                             <input type="text" name="position" class="form-control form-control-sm mb-1" placeholder="Посада">
                             <input type="text" name="phone" class="form-control form-control-sm mb-1" placeholder="Телефон">
@@ -588,7 +594,7 @@
                             <input type="email" name="email" class="form-control form-control-sm" placeholder="Email">
                         </div>
                         <div class="col-md-6">
-                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1">👤 Контактна особа №2</h6>
+                            <h6 class="text-danger fw-bold border-bottom pb-1 mb-1" style="font-size: 0.85rem;">👤 Контактна особа №2</h6>
                             <input type="text" name="contact_person_2" class="form-control form-control-sm mb-1" placeholder="ПІБ">
                             <input type="text" name="position_2" class="form-control form-control-sm mb-1" placeholder="Посада">
                             <input type="text" name="phone_2" class="form-control form-control-sm mb-1" placeholder="Телефон">
