@@ -86,7 +86,7 @@
                     <i class="bi bi-plus-lg"></i> Новий клієнт
                 </button>
                 
-                <!-- ПЕРЕМИКАЧ СТАТУСУ -->
+                <!-- ПЕРЕМИКАЧ СТАТУСУ КЛІЄНТІВ -->
                 <form method="GET" action="/" class="d-flex align-items-center m-0">
                     <input type="hidden" name="search" value="{{ search_query }}">
                     <input type="hidden" name="interest" value="{{ interest_filter }}">
@@ -924,7 +924,7 @@ function showTasksForDate(dateStr) {
         let icon = c.next_event_type === 'call' ? '📞 Дзвінок' : c.next_event_type === 'visit' ? '🚗 Візит' : '✉️ Лист';
         html += `
             <li class="list-group-item d-flex justify-content-between align-items-center p-2.5 border-bottom">
-                <div><a href="/client/${c.id}" class="fw-bold text-decoration-none text-dark fs-6">🏢 {{ client.name }}</a></div>
+                <div><a href="/client/${c.id}" class="fw-bold text-decoration-none text-dark fs-6">🏢 ${c.name}</a></div>
                 <div class="d-flex align-items-center gap-2"><span class="badge badge-soft-primary">${icon}</span><a href="/client/${c.id}" class="btn btn-xs btn-dark fw-bold px-2 py-0.5 shadow-xs">Картка</a></div>
             </li>`;
     });
