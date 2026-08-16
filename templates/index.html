@@ -732,6 +732,51 @@
 </style>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const editButtons = document.querySelectorAll('.btn-edit-finance');
+    const editModalEl = document.getElementById('editFinanceModal');
+    let editModal = null;
+    if (editModalEl) {
+        editModal = new bootstrap.Modal(editModalEl);
+    }
+
+    editButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const planId = this.getAttribute('data-id');
+            const clientName = this.getAttribute('data-client');
+            const planned = this.getAttribute('data-planned');
+            const month = this.getAttribute('data-month');
+            const actual = this.getAttribute('data-actual');
+            const date = this.getAttribute('data-date');
+
+            document.getElementById('edit_finance_client_name').innerText = clientName;
+            document.getElementById('edit_planned_amount').value = planned;
+            document.getElementById('edit_month_name').value = month;
+            document.getElementById('edit_actual_amount').value = actual;
+            document.getElementById('edit_payment_date').value = date;
+
+            const form = document.getElementById('editFinanceForm');
+            form.action = `/edit_finance_plan/${planId}`;
+
+            const deleteBtn = document.getElementById('btn_delete_finance');
+            if (deleteBtn) {
+                deleteBtn.onclick = function() {
+                    if (confirm(`Ви дійсно бажаєте видалити плановий запис для ${clientName}?`)) {
+                        const delForm = document.createElement('form');
+                        delForm.method = 'POST';
+                        delForm.action = `/delete_finance_plan/${planId}`;
+                        document.body.appendChild(delForm);
+                        delForm.submit();
+                    }
+                };
+            }
+
+            if (editModal) {
+                editModal.show();
+            }
+        });
+    });
+});
 const allClients = JSON.parse({{ json_clients | tojson | safe }});
 const busyDates = JSON.parse({{ json_busy_dates | tojson | safe }});
 const allTasksList = JSON.parse({{ json_tasks | tojson | safe }});
