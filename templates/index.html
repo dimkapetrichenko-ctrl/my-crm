@@ -563,6 +563,46 @@
         </div>
     </div>
 </div>
+<!-- МОДАЛЬНЕ ВІКНО РЕДАГУВАННЯ ФІНАНСОВОГО ПЛАНУ -->
+<div class="modal fade" id="editFinanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-2.5">
+                <h6 class="modal-title fw-bold">✏️ Редагувати плановий показник: <span id="edit_finance_client_name" class="text-warning"></span></h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editFinanceForm" method="POST" action="">
+                <div class="modal-body p-3 bg-light-subtle" style="font-size: 0.85rem;">
+                    <div class="mb-2">
+                        <label class="form-label mb-0 small text-muted">Заплановано надходження, EUR:</label>
+                        <input type="number" step="0.01" name="planned_amount" id="edit_planned_amount" class="form-control form-control-sm fw-bold text-primary" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-0 small text-muted">Місяць:</label>
+                        <select name="month_name" id="edit_month_name" class="form-select form-select-sm">
+                            <option value="Січень">Січень</option><option value="Лютий">Лютий</option><option value="Березень">Березень</option>
+                            <option value="Квітень">Квітень</option><option value="Травень">Травень</option><option value="Червень">Червень</option>
+                            <option value="Липень">Липень</option><option value="Серпень">Серпень</option><option value="Вересень">Вересень</option>
+                            <option value="Жовтень">Жовтень</option><option value="Листопад">Листопад</option><option value="Грудень">Грудень</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-0 small text-muted">Фактичне надходження, EUR:</label>
+                        <input type="number" step="0.01" name="actual_amount" id="edit_actual_amount" class="form-control form-control-sm" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-0 small text-muted">Дата надходження:</label>
+                        <input type="date" name="payment_date" id="edit_payment_date" class="form-control form-control-sm">
+                    </div>
+                    <div class="d-flex justify-content-between gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="btn_delete_finance">🗑️ Видалити</button>
+                        <button type="submit" class="btn btn-sm btn-brand fw-bold px-4">Зберегти зміни</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- МОДАЛЬНЕ ВІКНО СТВОРЕННЯ НОВОГО КЛІЄНТА -->
 <div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
