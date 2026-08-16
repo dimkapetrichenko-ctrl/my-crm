@@ -85,12 +85,14 @@
 </div>
 
 <div class="row">
+    <!-- ЛІВА КОЛОНКА (АВТОНОМНИЙ СКРОЛ) -->
     <div class="col-md-5 mb-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white py-2">
-                <h5 class="mb-0">⚙️ Редагувати картку: {{ client.name }}</h5>
+        <div class="card shadow-sm" style="position: sticky; top: 15px; max-height: calc(100vh - 90px); display: flex; flex-direction: column;">
+            <div class="card-header bg-dark text-white py-2" style="flex-shrink: 0;">
+                <h5 class="mb-0 fs-6">⚙️ Редагувати картку: {{ client.name }}</h5>
             </div>
-            <div class="card-body p-3" style="font-size: 0.9rem;">
+            
+            <div class="card-body p-3" style="font-size: 0.9rem; overflow-y: auto; flex-grow: 1;">
                 <form action="{{ url_for('edit_client', client_id=client.id) }}" method="POST">
                     <div class="mb-2">
                         <label class="form-label mb-1"><b>Назва компанії *</b></label>
@@ -220,6 +222,7 @@
         </div>
     </div>
 
+    <!-- ПРАВА КОЛОНКА (АКТИВНОСТІ ТА ДЕФІЦИТ) -->
     <div class="col-md-7">
         <div class="card shadow-sm mb-3 border-danger">
             <div class="card-header bg-danger text-white py-1.5 fw-bold d-flex justify-content-between align-items-center">
@@ -276,7 +279,7 @@
 
         <div class="card shadow-sm mb-3">
             <div class="card-header bg-dark text-white py-2">
-                <h5 class="mb-0">✍️ Додати результат розмови</h5>
+                <h5 class="mb-0 fs-6">✍️ Додати результат розмови</h5>
             </div>
             <div class="card-body p-3">
                 <form method="POST">
@@ -318,7 +321,7 @@
 
         <div class="card shadow-sm">
             <div class="card-header bg-secondary text-white py-2">
-                <h5 class="mb-0">📜 Історія активностей клієнта</h5>
+                <h5 class="mb-0 fs-6">📜 Історія активностей клієнта</h5>
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush" style="max-height: 65vh; overflow-y: auto;">
