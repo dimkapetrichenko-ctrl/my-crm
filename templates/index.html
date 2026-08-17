@@ -123,15 +123,15 @@
                     <table class="table table-sm table-hover align-middle mb-0" id="mainClientsTable" style="font-size: 0.85rem; width: 100%;">
                         <thead>
                             <tr class="header-titles-row">
-                                <th style="width: 14%;">Компанії</th>
-                                <th style="width: 13%;">Тип клієнта</th>
-                                <th style="width: 10%;">Країна</th>
+                                <th style="width: 20%;">Компанії</th>
+                                <th style="width: 12%;">Тип клієнта</th>
+                                <th style="width: 9%;">Країна</th>
                                 <th style="text-align: center; width: 12%;">Зацікавленість</th>
-                                <th style="text-align: center; width: 15%;">Етап угоди</th>
+                                <th style="text-align: center; width: 14%;">Етап угоди</th>
                                 <th style="text-align: center; width: 6%;">MAYER</th>
-                                <th style="width: 19%;">Опис активності</th>
-                                <th style="width: 11%;">Наступна дія</th>
-                                <th style="text-align: center; width: 5%;">Дія</th>
+                                <th style="width: 17%;">Опис активності</th>
+                                <th style="width: 10%;">Наступна дія</th>
+                                <th style="text-align: center; width: 6%;">Дія</th>
                             </tr>
                             <tr id="excel-filter-row">
                                 <th>
@@ -214,78 +214,77 @@
                                 data-next-date="{{ (client.next_event_date or '')|lower }}"
                                 data-next-type="{{ (client.next_event_type or '')|lower }}">
                                 
-                                <td style="padding: 6px 8px; max-width: 150px;">
-                                    <a href="/client/{{ client.id }}" class="fw-bold text-decoration-none text-dark d-block text-truncate" title="{{ client.name }}">
+                                <td style="padding: 8px 10px;">
+                                    <a href="/client/{{ client.id }}" class="fw-bold text-decoration-none text-dark d-flex align-items-center gap-1">
                                         <i class="bi bi-building text-primary"></i> {{ client.name }}
                                     </a>
                                     {% if not client.is_active %}
-                                        <span class="badge badge-soft-danger mt-0.5" style="font-size: 0.65rem;" title="{{ client.deactivation_reason }}">⛔ Архів</span>
+                                        <span class="badge badge-soft-danger mt-1" style="font-size: 0.68rem;" title="{{ client.deactivation_reason }}">⛔ Архів</span>
                                     {% endif %}
                                     {% if client.contact_person %}
-                                        <div class="text-muted text-truncate" style="font-size: 0.72rem;" title="{{ client.contact_person }} {% if client.phone %}({{ client.phone }}){% endif %}">
-                                            <i class="bi bi-person"></i> {{ client.contact_person }}
-                                        </div>
+                                        <div class="text-muted small mt-0.5" style="font-size: 0.76rem;"><i class="bi bi-person"></i> {{ client.contact_person }} {% if client.phone %}({{ client.phone }}){% endif %}</div>
                                     {% endif %}
                                     {% if client.website %}
-                                        <a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-decoration-none text-primary d-block text-truncate" style="font-size: 0.70rem;" title="{{ client.website }}">
-                                            <i class="bi bi-link-45deg"></i>{{ client.website | replace('https://','') | replace('http://','') | replace('www.','') }}
+                                        <a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-decoration-none small text-primary" style="font-size: 0.74rem;">
+                                            <i class="bi bi-link-45deg"></i>{{ client.website | replace('https://','') | replace('www.','') }}
                                         </a>
                                     {% endif %}
                                 </td>
                                 
                                 <td>
-                                    <span class="badge badge-soft-primary px-1.5 py-0.5 text-truncate d-inline-block" style="max-width: 120px;">{{ client.buyer_type }}</span>
+                                    <span class="badge badge-soft-primary px-2 py-1">{{ client.buyer_type }}</span>
                                 </td>
                                 
-                                <td><span class="badge badge-soft-secondary px-1.5 py-0.5 text-truncate d-inline-block" style="max-width: 95px;">📍 {{ client.country or '-' }}</span></td>
+                                <td><span class="badge badge-soft-secondary px-2 py-1">📍 {{ client.country or '-' }}</span></td>
                                 
                                 <td style="text-align: center;">
-                                    {% if client.interest_level == 'зацікавленість' %}<span class="badge badge-soft-success w-100 py-1 fw-bold">😍 Висока</span>
-                                    {% elif client.interest_level == 'середня зацікавленість' %}<span class="badge badge-soft-warning w-100 py-1 fw-bold">🤔 Середня</span>
-                                    {% elif client.interest_level == 'немає зацікавленості' %}<span class="badge badge-soft-primary w-100 py-1 fw-bold">😴 Немає</span>
-                                    {% else %}<span class="badge badge-soft-secondary w-100 py-1 fw-bold">❓ Не опр.</span>{% endif %}
+                                    {% if client.interest_level == 'зацікавленість' %}<span class="badge badge-soft-success w-100 py-1.5 fw-bold">😍 Висока</span>
+                                    {% elif client.interest_level == 'середня зацікавленість' %}<span class="badge badge-soft-warning w-100 py-1.5 fw-bold">🤔 Середня</span>
+                                    {% elif client.interest_level == 'немає зацікавленості' %}<span class="badge badge-soft-primary w-100 py-1.5 fw-bold">😴 Немає</span>
+                                    {% else %}<span class="badge badge-soft-secondary w-100 py-1.5 fw-bold">❓ Не опр.</span>{% endif %}
                                 </td>
 
+                                <!-- ІНДИКАТОР ЕТАПУ УГОДИ -->
                                 <td style="text-align: center;">
                                     {% if client.deal_stage == 'offer_sent' %}
-                                        <span class="badge bg-warning text-dark border border-dark w-100 py-1 shadow-xs fw-bold">📄 Рахунок (КП)</span>
+                                        <span class="badge bg-warning text-dark border border-dark w-100 py-1.5 shadow-xs fw-bold">📄 Рахунок (КП)</span>
                                     {% elif client.deal_stage == 'request' %}
-                                        <span class="badge bg-info-subtle text-info border border-info w-100 py-1 fw-bold">📩 Запит/Підбір</span>
+                                        <span class="badge bg-info-subtle text-info border border-info w-100 py-1.5 fw-bold">📩 Запит/Підбір</span>
                                     {% elif client.deal_stage == 'paid_shipped' %}
-                                        <span class="badge bg-success text-white w-100 py-1 fw-bold">📦 Оплачено</span>
+                                        <span class="badge bg-success text-white w-100 py-1.5 fw-bold">📦 Оплачено</span>
                                     {% elif client.deal_stage == 'regular' %}
-                                        <span class="badge bg-primary text-white w-100 py-1 fw-bold">🤝 Партнер</span>
+                                        <span class="badge bg-primary text-white w-100 py-1.5 fw-bold">🤝 Партнер</span>
                                     {% else %}
-                                        <span class="badge bg-light text-muted border w-100 py-0.5" style="font-size: 0.72rem;">⚪ Без угоди</span>
+                                        <span class="badge bg-light text-muted border w-100 py-1">⚪ Немає угоди</span>
                                     {% endif %}
                                 </td>
                                 
-                                <td style="text-align: center;">{% if client.mayer_reg == 'Так' %}<span class="badge badge-soft-success fw-bold px-1.5 py-0.5">🌐 Так</span>{% else %}<span class="badge badge-soft-secondary px-1 py-0.5" style="font-size: 0.7rem;">🔒 Ні</span>{% endif %}</td>
+                                <td style="text-align: center;">{% if client.mayer_reg == 'Так' %}<span class="badge badge-soft-success fw-bold px-2 py-1">🌐 Так</span>{% else %}<span class="badge badge-soft-secondary px-2 py-0.5">🔒 Ні</span>{% endif %}</td>
                                 
-                                <td style="padding: 6px 8px;">
+                                <td style="padding: 8px 10px; max-width: 200px;">
                                     {% if client.last_activity %}
-                                        <span class="badge bg-light text-dark border font-monospace mb-0.5" style="font-size: 0.65rem;">🕒 {{ client.last_activity | replace('2026-', '') }}</span>
-                                        <div class="text-truncate text-secondary" style="font-size: 0.75rem; max-width: 210px;" title="{{ client.last_activity_text }}">
+                                        <span class="badge bg-light text-dark border font-monospace mb-1" style="font-size: 0.68rem;">🕒 {{ client.last_activity | replace('2026-', '') }}</span>
+                                        <div class="text-truncate text-secondary small" title="{{ client.last_activity_text }}">
                                             {{ client.last_activity_text or 'Запис відсутній' }}
                                         </div>
                                     {% else %}
-                                        <small class="text-muted" style="font-size: 0.72rem;">немає активностей</small>
+                                        <small class="text-muted">немає активностей</small>
                                     {% endif %}
                                 </td>
                                 
                                 <td>
                                     {% if client.next_event_date %}
-                                        <div class="{% if client.next_event_date == today_date %}text-danger fw-bold{% else %}text-dark{% endif %}" style="font-size: 0.75rem;">📅 {{ client.next_event_date | replace('2026-', '') }}</div>
-                                        <span class="badge {% if client.next_event_date == today_date %}bg-danger text-white{% else %}badge-soft-primary{% endif %} px-1 py-0.5" style="font-size: 0.65rem;">
+                                        <div class="{% if client.next_event_date == today_date %}text-danger fw-bold{% else %}text-dark{% endif %}" style="font-size:0.8rem;">📅 {{ client.next_event_date | replace('2026-', '') }}</div>
+                                        <span class="badge {% if client.next_event_date == today_date %}bg-danger text-white{% else %}badge-soft-primary{% endif %} px-1.5 py-0.5" style="font-size: 0.68rem;">
                                             {% if client.next_event_type == 'call' %}📞 Дзв.{% elif client.next_event_type == 'visit' %}🚗 Віз.{% else %}✉️ Лист{% endif %}
                                         </span>
                                     {% else %}
-                                        <small class="text-muted" style="font-size: 0.72rem;">ні</small>
+                                        <small class="text-muted">ні</small>
                                     {% endif %}
                                 </td>
                                 
-                                <td style="text-align: center; padding: 4px;">
-                                    <a href="/client/{{ client.id }}" class="btn btn-xs btn-outline-primary fw-medium px-1.5 py-0.5" style="font-size: 0.72rem;" title="Відкрити картку клієнта">Картка</a>
+                                <td style="text-align: center;">
+                                    <a href="/client/{{ client.id }}" class="btn btn-xs btn-outline-primary fw-medium px-2 py-1">Картка</a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -701,7 +700,7 @@
                             <input type="text" name="contact_person_2" class="form-control form-control-sm mb-1" placeholder="ПІБ">
                             <input type="text" name="position_2" class="form-control form-control-sm mb-1" placeholder="Посада">
                             <input type="text" name="phone_2" class="form-control form-control-sm mb-1" placeholder="Телефон">
-                            <input type="text" name="whatsapp_2" class="form-control form-control-sm mb-1 border-success text-success fw-bold" placeholder="🟢 WhatsApp №2">
+                            <input type="text" name="whatsapp_2" class="form-control form-control-sm border-success text-success fw-bold" placeholder="🟢 WhatsApp №2">
                             <input type="email" name="email_2" class="form-control form-control-sm" placeholder="Email">
                         </div>
                     </div>
@@ -1171,3 +1170,4 @@ window.onload = function() {
 };
 </script>
 {% endblock %}
+
