@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- ЧИСТІ ПРАВИЛЬНІ ПОСИЛАННЯ НА РЕДАКТОР Quill -->
+<!-- ПІДКЛЮЧЕННЯ РЕДАКТОРА Quill -->
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
 
 <div class="row mb-3">
@@ -88,7 +88,7 @@
 </div>
 
 <div class="row">
-    <!-- ЛІВА КОЛОНКА (РЕДАГУВАННЯ + ВБУДОВАНИЙ КАЛЕНДАР НАВАНТАЖЕННЯ) -->
+    <!-- ЛІВА КОЛОНКА (АВТОНОМНИЙ СКРОЛ) -->
     <div class="col-md-5 mb-4">
         <div class="card shadow-sm" style="position: sticky; top: 15px; max-height: calc(100vh - 90px); display: flex; flex-direction: column;">
             <div class="card-header bg-dark text-white py-2" style="flex-shrink: 0;">
@@ -192,57 +192,28 @@
                     <div class="mb-1"><input type="text" name="whatsapp_2" class="form-control form-control-sm border-success text-success fw-bold" value="{{ client.whatsapp_2 or '' }}" placeholder="🟢 WhatsApp №2"></div>
                     <div class="mb-2"><input type="email" name="email_2" class="form-control form-control-sm" value="{{ client.email_2 }}" placeholder="Email"></div>
 
-                    <!-- ВБУДОВАНИЙ КАЛЕНДАР НАВАНТАЖЕННЯ (ЗАМІСТЬ ОКРЕМОГО ПЛАНУВАННЯ) -->
-                    <div class="card border-primary-subtle shadow-xs mt-3 mb-2">
-                        <div class="card-header bg-primary-subtle py-1.5 px-2 d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary small"><i class="bi bi-calendar-event"></i> Календар навантаження</span>
-                            <div class="d-flex align-items-center gap-1">
-                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-1.5 fw-bold" onclick="changeWMonth(-1)">◀</button>
-                                <span id="wMonthTitle" class="fw-bold font-monospace text-dark px-1" style="font-size: 0.78rem;">---</span>
-                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-1.5 fw-bold" onclick="changeWMonth(1)">▶</button>
+                    <!-- ПЛАНУВАННЯ НАСТУПНОЇ ДІЇ З КНОПКОЮ ВИКЛИКУ КАЛЕНДАРЯ НАВАНТАЖЕННЯ -->
+                    <div class="mt-3 pt-2 border-top">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark" style="font-size: 0.85rem;">📅 Наступна дія</span>
+                            <button type="button" class="btn btn-xs btn-outline-primary py-0.5 px-2 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#workloadModal" onclick="renderWorkloadCalendar()">
+                                📊 Календар навантаження
+                            </button>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="date" name="next_event_date" id="next_event_date_input" class="form-control form-control-sm fw-bold text-dark" value="{{ client.next_event_date }}" onchange="checkWorkload(this.value)">
+                            </div>
+                            <div class="col-6">
+                                <select name="next_event_type" id="next_event_type_select" class="form-select form-select-sm fw-semibold">
+                                    <option value="" {% if not client.next_event_type %}selected{% endif %}>-- Оберіть дію --</option>
+                                    <option value="call" {% if client.next_event_type == 'call' %}selected{% endif %}>📞 Дзвінок</option>
+                                    <option value="visit" {% if client.next_event_type == 'visit' %}selected{% endif %}>🚗 Візит</option>
+                                    <option value="email" {% if client.next_event_type == 'email' %}selected{% endif %}>✉️ Лист</option>
+                                </select>
                             </div>
                         </div>
-                        <div class="card-body p-2 bg-light-subtle">
-                            <!-- Приховане поле, яке передається при збереженні форми -->
-                            <input type="hidden" name="next_event_date" id="next_event_date_input" value="{{ client.next_event_date }}">
-
-                            <!-- Таблиця календаря -->
-                            <table class="table table-bordered text-center align-middle bg-white table-sm mb-1 shadow-xs" style="font-size: 0.78rem; table-layout: fixed; width: 100%;">
-                                <thead class="table-light fw-bold text-muted" style="font-size: 0.72rem;">
-                                    <tr>
-                                        <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th class="text-danger">Сб</th><th class="text-danger">Нд</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="wCalendarBody"></tbody>
-                            </table>
-
-                            <!-- Вибір типу дії та статус обраної дати -->
-                            <div class="row g-1 align-items-center mt-2">
-                                <div class="col-7">
-                                    <select name="next_event_type" id="next_event_type_select" class="form-select form-select-sm fw-semibold">
-                                        <option value="" {% if not client.next_event_type %}selected{% endif %}>-- Оберіть дію --</option>
-                                        <option value="call" {% if client.next_event_type == 'call' %}selected{% endif %}>📞 Дзвінок</option>
-                                        <option value="visit" {% if client.next_event_type == 'visit' %}selected{% endif %}>🚗 Візит</option>
-                                        <option value="email" {% if client.next_event_type == 'email' %}selected{% endif %}>✉️ Лист</option>
-                                    </select>
-                                </div>
-                                <div class="col-5 text-end">
-                                    <button type="button" class="btn btn-xs btn-outline-secondary w-100 py-1" onclick="clearNextEventDate()" title="Очистити призначену дату">
-                                        <i class="bi bi-x-circle"></i> Без дій
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Інформаційний бейдж обраної дати та навантаження -->
-                            <div id="workload_badge_box" class="mt-2" style="font-size: 0.76rem;"></div>
-
-                            <!-- Підказка кольорів -->
-                            <div class="d-flex justify-content-between mt-1 pt-1 border-top text-muted" style="font-size: 0.68rem;">
-                                <span>🟢 0-10 (Вільно)</span>
-                                <span>🟡 11-15 (Помірно)</span>
-                                <span>🔴 15+ (Зайнято)</span>
-                            </div>
-                        </div>
+                        <div id="workload_badge_box" class="mt-1.5" style="font-size: 0.76rem;"></div>
                     </div>
 
                     <div class="mt-3">
@@ -404,7 +375,7 @@
 <!-- МОДАЛЬНЕ ВІКНО ДЕАКТИВАЦІЇ КЛІЄНТА -->
 <div class="modal fade" id="deactivateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-danger">
+        <div class="modal-content border-danger shadow">
             <div class="modal-header bg-danger text-white py-2">
                 <h6 class="modal-title fw-bold">⛔ Деактивація клієнта (Переведення в архів)</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -425,57 +396,75 @@
     </div>
 </div>
 
+<!-- МОДАЛЬНЕ ВІКНО КАЛЕНДАРЯ НАВАНТАЖЕННЯ -->
+<div class="modal fade" id="workloadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-2.5">
+                <h6 class="modal-title fw-bold"><i class="bi bi-calendar3 me-1"></i> Календар навантаження (Оберіть дату)</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3 bg-light-subtle">
+                <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                    <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2 fw-bold" onclick="changeWMonth(-1)">◀</button>
+                    <h6 id="wMonthTitle" class="mb-0 fw-bold font-monospace text-dark">---</h6>
+                    <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2 fw-bold" onclick="changeWMonth(1)">▶</button>
+                </div>
+                <table class="table table-bordered text-center align-middle bg-white shadow-xs table-sm mb-2" style="font-size: 0.85rem; table-layout: fixed; width: 100%;">
+                    <thead class="table-light fw-bold text-muted">
+                        <tr>
+                            <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th class="text-danger">Сб</th><th class="text-danger">Нд</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wCalendarBody"></tbody>
+                </table>
+                <div class="d-flex justify-content-around small text-muted pt-1 border-top" style="font-size:0.75rem;">
+                    <span>🟢 0-10 (Вільно)</span>
+                    <span>🟡 11-15 (Помірно)</span>
+                    <span>🔴 15+ (Зайнято)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .workload-day-cell {
-        height: 38px;
+        height: 44px;
         position: relative;
         cursor: pointer;
         padding: 2px !important;
         transition: all 0.12s ease;
     }
     .workload-day-cell:hover {
-        transform: scale(1.04);
+        transform: scale(1.05);
         z-index: 5;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-    }
-    .workload-selected-cell {
-        outline: 2.5px solid #0d6efd !important;
-        outline-offset: -2px;
-        box-shadow: 0 0 8px rgba(13, 110, 253, 0.4);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
     }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script>
     const eventsByDate = JSON.parse({{ json_events_by_date | tojson | safe }});
-    let selectedDate = "{{ client.next_event_date or '' }}";
-    
     let wYear = new Date().getFullYear();
     let wMonth = new Date().getMonth();
-
-    // Якщо у клієнта вже збережена дата, відкриваємо її місяць
-    if (selectedDate && selectedDate.includes('-')) {
-        const parts = selectedDate.split('-');
-        wYear = parseInt(parts[0]);
-        wMonth = parseInt(parts[1]) - 1;
-    }
-
     const wMonthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-    function updateWorkloadBadge() {
+    function checkWorkload(dateStr) {
         const badgeBox = document.getElementById('workload_badge_box');
-        if (!selectedDate) {
-            badgeBox.innerHTML = `<span class="badge bg-light text-muted border w-100 py-1.5"><i class="bi bi-calendar-x"></i> Наступну дію не заплановано</span>`;
-            return;
+        if (!badgeBox) return;
+        if (!dateStr) { 
+            badgeBox.innerHTML = ''; 
+            return; 
         }
-        const count = eventsByDate[selectedDate] || 0;
+        const count = eventsByDate[dateStr] || 0;
         let badgeHtml = '';
-        if (count <= 10) {
-            badgeHtml = `<span class="badge bg-success-subtle text-success border border-success w-100 py-1.5 font-monospace fw-bold">🟢 На ${selectedDate} призначено: ${count} подій (Вільно)</span>`;
-        } else if (count <= 15) {
-            badgeHtml = `<span class="badge bg-warning-subtle text-dark border border-warning w-100 py-1.5 font-monospace fw-bold">🟡 На ${selectedDate} призначено: ${count} подій (Помірно)</span>`;
-        } else {
-            badgeHtml = `<span class="badge bg-danger-subtle text-danger border border-danger w-100 py-1.5 font-monospace fw-bold">🔴 На ${selectedDate} призначено: ${count} подій (Високе навантаження!)</span>`;
+        if (count <= 10) { 
+            badgeHtml = `<span class="badge bg-success-subtle text-success border border-success w-100 py-1.5 font-monospace fw-bold">🟢 На ${dateStr} призначено: ${count} подій (Вільно)</span>`; 
+        } else if (count <= 15) { 
+            badgeHtml = `<span class="badge bg-warning-subtle text-dark border border-warning w-100 py-1.5 font-monospace fw-bold">🟡 На ${dateStr} призначено: ${count} подій (Помірно)</span>`; 
+        } else { 
+            badgeHtml = `<span class="badge bg-danger-subtle text-danger border border-danger w-100 py-1.5 font-monospace fw-bold">🔴 На ${dateStr} призначено: ${count} подій (Високе завантаження!)</span>`; 
         }
         badgeBox.innerHTML = badgeHtml;
     }
@@ -504,30 +493,28 @@
             let badgeClass = "badge bg-secondary-subtle text-muted";
             
             if (count > 0 && count <= 10) { 
-                bgClass = "bg-success-subtle text-success"; 
+                bgClass = "bg-success-subtle text-success border-success"; 
                 badgeClass = "badge bg-success text-white"; 
             } else if (count >= 11 && count <= 15) { 
-                bgClass = "bg-warning-subtle text-dark"; 
+                bgClass = "bg-warning-subtle text-dark border-warning"; 
                 badgeClass = "badge bg-warning text-dark"; 
             } else if (count > 15) { 
-                bgClass = "bg-danger-subtle text-danger"; 
+                bgClass = "bg-danger-subtle text-danger border-danger"; 
                 badgeClass = "badge bg-danger text-white"; 
             }
 
-            let isSelected = (selectedDate === dateKey) ? "workload-selected-cell" : "";
-
             gridHtml += `
-                <td class="workload-day-cell ${bgClass} ${isSelected}" onclick="selectWorkloadDate('${dateKey}')">
-                    <strong class="d-block" style="font-size:0.75rem; line-height:1.1;">${day}</strong>
-                    <span class="${badgeClass}" style="font-size:0.6rem; padding: 1px 3px;">${count}</span>
+                <td class="workload-day-cell ${bgClass}" onclick="selectWorkloadDate('${dateKey}')">
+                    <strong class="d-block" style="font-size:0.8rem; line-height:1.2;">${day}</strong>
+                    <span class="${badgeClass}" style="font-size:0.65rem; padding: 1px 4px;">${count}</span>
                 </td>`;
             currentDayCount++;
         }
         while (currentDayCount < 7 && currentDayCount > 0) { gridHtml += "<td class='bg-light-subtle'></td>"; currentDayCount++; }
         gridHtml += "</tr>";
         
-        document.getElementById('wCalendarBody').innerHTML = gridHtml;
-        updateWorkloadBadge();
+        const bodyEl = document.getElementById('wCalendarBody');
+        if (bodyEl) bodyEl.innerHTML = gridHtml;
     }
 
     function changeWMonth(dir) { 
@@ -538,23 +525,24 @@
     }
 
     function selectWorkloadDate(dateStr) { 
-        selectedDate = dateStr;
-        document.getElementById('next_event_date_input').value = dateStr; 
+        const input = document.getElementById('next_event_date_input');
+        if (input) {
+            input.value = dateStr; 
+            checkWorkload(dateStr);
+        }
         
-        // Якщо тип дії ще не обраний, автоматично пропонуємо "📞 Дзвінок"
+        // Автоматично пропонуємо дію "📞 Дзвінок", якщо ще не вибрано
         const typeSelect = document.getElementById('next_event_type_select');
-        if (!typeSelect.value) {
+        if (typeSelect && !typeSelect.value) {
             typeSelect.value = 'call';
         }
 
-        renderWorkloadCalendar(); 
-    }
-
-    function clearNextEventDate() {
-        selectedDate = '';
-        document.getElementById('next_event_date_input').value = '';
-        document.getElementById('next_event_type_select').value = '';
-        renderWorkloadCalendar();
+        // Закриваємо модальне вікно
+        const modalEl = document.getElementById('workloadModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
     }
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -565,7 +553,10 @@
             document.getElementById('role_sales').checked = true; 
         }
 
-        renderWorkloadCalendar();
+        const initDate = document.getElementById('next_event_date_input')?.value;
+        if (initDate) { 
+            checkWorkload(initDate); 
+        }
 
         if (document.getElementById('editor-container')) {
             try {
