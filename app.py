@@ -3,7 +3,7 @@ import json
 import psycopg2
 from psycopg2.extras import DictCursor
 from flask import Flask, render_template, request, redirect, url_for, session, send_file, jsonify
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import io
 import smtplib
@@ -23,7 +23,7 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # Конфігурація бізнес-пошти Хостинг Україна з Render
 MAIL_SERVER = os.environ.get('MAIL_SERVER', 'mail.adm.tools')
-MAIL_PORT = 465  # Безпечний SSL порт
+MAIL_PORT = 465
 MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
 MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 
@@ -40,7 +40,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# БЕЗПЕЧНИЙ ДЕКОДЕР ТІЛА ЛИСТА ДЛЯ IMAP РОБОТА
 def decode_email_body(msg):
     body = ""
     if msg.is_multipart():
@@ -65,7 +64,6 @@ def decode_email_body(msg):
             
     return body.strip()
 
-# ВНУТРІШНЯ ФУНКЦІЯ ВІДПРАВКИ HTML-ПОШТИ
 def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
@@ -160,7 +158,8 @@ def init_db():
             whatsapp_1 TEXT,
             whatsapp_2 TEXT,
             is_active BOOLEAN DEFAULT TRUE,
-            deactivation_reason TEXT
+            deactivation_reason TEXT,
+            deal_stage TEXT DEFAULT 'none'
         )
     ''')
     
@@ -171,7 +170,8 @@ def init_db():
         'website': 'TEXT', 'buyer_type': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
         'contact_person_2': 'TEXT', 'position_2': 'TEXT', 'phone_2': 'TEXT', 'email_2': 'TEXT',
         'interest_level': 'TEXT', 'next_event_date': 'TEXT', 'next_event_type': 'TEXT', 'mayer_reg': 'TEXT',
-        'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT', 'is_active': 'BOOLEAN DEFAULT TRUE', 'deactivation_reason': 'TEXT'
+        'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT', 'is_active': 'BOOLEAN DEFAULT TRUE', 'deactivation_reason': 'TEXT',
+        'deal_stage': "TEXT DEFAULT 'none'"
     }
     
     for field, f_type in new_fields.items():
@@ -262,7 +262,7 @@ def index():
     interest_filter = request.args.get('interest', '').strip()
     country_filter = request.args.get('country', '').strip()
     finance_month_filter = request.args.get('finance_month', '').strip()
-    status_view = request.args.get('status_view', 'active').strip() # 'active', 'archived', 'all'
+    status_view = request.args.get('status_view', 'active').strip()
     
     conn = get_db_connection()
     
@@ -406,7 +406,6 @@ def index():
     """
     params = []
     
-    # Фільтр активності
     if status_view == 'active':
         sql += " AND c.is_active IS NOT FALSE"
     elif status_view == 'archived':
@@ -445,6 +444,7 @@ def index():
             'buyer_type': row['buyer_type'] if row['buyer_type'] else 'не вказано',
             'brands': row['brands'] if row['brands'] else '-',
             'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано',
+            'deal_stage': row['deal_stage'] if row['deal_stage'] else 'none',
             'last_activity': row['last_activity'] if row['last_activity'] else '',
             'last_activity_text': row['last_activity_text'] if row['last_activity_text'] else '',
             'next_event_date': str(row['next_event_date']) if row['next_event_date'] else '',
@@ -490,7 +490,7 @@ def index():
 @app.route('/toggle_client_status/<int:client_id>', methods=['POST'])
 @login_required
 def toggle_client_status(client_id):
-    action = request.form.get('action') # 'deactivate' або 'activate'
+    action = request.form.get('action')
     reason = request.form.get('reason', '').strip()
     
     conn = get_db_connection()
@@ -509,6 +509,67 @@ def toggle_client_status(client_id):
     conn.commit()
     cursor.close()
     conn.close()
+    return redirect(url_for('client_detail', client_id=client_id))
+
+@app.route('/add_quick_sale/<int:client_id>', methods=['POST'])
+@login_required
+def add_quick_sale(client_id):
+    amount = request.form.get('amount', 0)
+    invoice_no = request.form.get('invoice_no', '').strip()
+    payment_date = request.form.get('payment_date', '').strip()
+    month_name = request.form.get('month_name', '').strip()
+    next_action_days = int(request.form.get('next_action_days', 7))
+    
+    if not payment_date:
+        payment_date = datetime.now().strftime("%Y-%m-%d")
+        
+    if not month_name:
+        ukr_months = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"]
+        month_idx = datetime.now().month - 1
+        month_name = ukr_months[month_idx]
+        
+    try:
+        amt_val = float(amount)
+    except Exception:
+        amt_val = 0.0
+        
+    if amt_val > 0:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 1. Запис у річний план / надходження
+        cursor.execute(
+            "INSERT INTO sales_plans (client_id, planned_amount, month_name, actual_amount, payment_date) VALUES (%s, %s, %s, %s, %s)",
+            (client_id, amt_val, month_name, amt_val, payment_date)
+        )
+        
+        # 2. Розрахунок дати контролю отримання
+        try:
+            p_date_obj = datetime.strptime(payment_date, "%Y-%m-%d")
+            next_date = (p_date_obj + timedelta(days=next_action_days)).strftime("%Y-%m-%d")
+        except Exception:
+            next_date = (datetime.now() + timedelta(days=next_action_days)).strftime("%Y-%m-%d")
+            
+        # 3. Оновлення статусу клієнта та наступної дії
+        cursor.execute(
+            "UPDATE clients SET deal_stage = 'paid_shipped', next_event_date = %s, next_event_type = 'call' WHERE id = %s",
+            (next_date, client_id)
+        )
+        
+        # 4. Лог в історію розмов
+        inv_text = f" Рахунок/ТТН: {invoice_no}." if invoice_no else ""
+        current_dt = datetime.now().strftime("%Y-%m-%d %H:%M")
+        log_text = f"💰 [УСПІШНИЙ ПРОДАЖ] Отримано оплату на суму {amt_val:,.2f} EUR.{inv_text} Автоматично призначено контроль отримання на {next_date}."
+        
+        cursor.execute(
+            "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+            (client_id, current_dt, log_text, 'Продажі')
+        )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
     return redirect(url_for('client_detail', client_id=client_id))
 
 @app.route('/add_lost_demand', methods=['POST'])
@@ -695,6 +756,7 @@ def add_client():
     address = request.form.get('address', '')
     buyer_type = request.form.get('buyer_type', '')
     interest_level = request.form.get('interest_level', 'не опрацьовано')
+    deal_stage = request.form.get('deal_stage', 'none')
     website = request.form.get('website', '')
     next_event_date = request.form.get('next_event_date', '')
     next_event_type = request.form.get('next_event_type', '')
@@ -720,10 +782,10 @@ def add_client():
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
-                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)""",
+                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s)""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage)
         )
         conn.commit()
         cursor.close()
@@ -738,6 +800,7 @@ def edit_client(client_id):
     address = request.form.get('address', '')
     buyer_type = request.form.get('buyer_type', '')
     interest_level = request.form.get('interest_level', 'не опрацьовано')
+    deal_stage = request.form.get('deal_stage', 'none')
     website = request.form.get('website', '')
     next_event_date = request.form.get('next_event_date', '')
     next_event_type = request.form.get('next_event_type', '')
@@ -764,9 +827,9 @@ def edit_client(client_id):
         cursor.execute(
             """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
                                   website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
-                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s WHERE id=%s""",
+                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s, deal_stage=%s WHERE id=%s""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, client_id)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, client_id)
         )
         conn.commit()
         cursor.close()
@@ -863,11 +926,13 @@ def client_detail(client_id):
                        'contact_person', 'position', 'phone', 'email', 
                        'contact_person_2', 'position_2', 'phone_2', 'email_2', 
                        'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp_1', 'whatsapp_2',
-                       'is_active', 'deactivation_reason']
+                       'is_active', 'deactivation_reason', 'deal_stage']
     for field in fields_to_check:
         if field not in client or client[field] is None:
             if field == 'interest_level':
                 client[field] = 'не опрацьовано'
+            elif field == 'deal_stage':
+                client[field] = 'none'
             elif field == 'mayer_reg':
                 client[field] = 'Ні'
             elif field == 'is_active':
@@ -875,6 +940,12 @@ def client_detail(client_id):
             else:
                 client[field] = ''
     
+    # Розрахунок статистики угод клієнта
+    cursor.execute("SELECT COUNT(*), COALESCE(SUM(actual_amount), 0) FROM sales_plans WHERE client_id = %s AND actual_amount > 0", (client_id,))
+    deal_stats_row = cursor.fetchone()
+    deal_count = deal_stats_row[0] if deal_stats_row else 0
+    deal_total_sum = float(deal_stats_row[1]) if deal_stats_row else 0.0
+
     cursor.execute("SELECT * FROM negotiations WHERE client_id = %s ORDER BY id DESC", (client_id,))
     history = cursor.fetchall()
 
@@ -892,7 +963,15 @@ def client_detail(client_id):
 
     cursor.close()
     conn.close()
-    return render_template('client.html', client=client, history=history, client_lost_demand=client_lost_demand, json_events_by_date=json_events_by_date)
+    return render_template(
+        'client.html', 
+        client=client, 
+        history=history, 
+        client_lost_demand=client_lost_demand, 
+        json_events_by_date=json_events_by_date,
+        deal_count=deal_count,
+        deal_total_sum=deal_total_sum
+    )
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
 @login_required
@@ -931,7 +1010,15 @@ def delete_negotiation(neg_id):
 def export_excel():
     conn = get_db_connection()
     query = """
-        SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
+        SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", 
+               CASE 
+                   WHEN c.deal_stage = 'request' THEN '1. Запит / Підбір'
+                   WHEN c.deal_stage = 'offer_sent' THEN '2. Рахунок (КП) надіслано'
+                   WHEN c.deal_stage = 'paid_shipped' THEN '3. Оплачено / Відвантажено'
+                   WHEN c.deal_stage = 'regular' THEN '4. Постійний партнер'
+                   ELSE 'Немає активної угоди'
+               END AS "Етап угоди",
+               c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
                c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
                c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.whatsapp_1 AS "WhatsApp 1", c.email AS "Email 1",
                c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.whatsapp_2 AS "WhatsApp 2", c.email_2 AS "Email 2",
