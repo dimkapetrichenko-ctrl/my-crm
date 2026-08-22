@@ -586,6 +586,9 @@ def add_quick_sale(client_id):
         
     return redirect(url_for('client_detail', client_id=client_id))
 
+from bs4 import BeautifulSoup
+import re
+
 @app.route('/detect_brands_ai/<int:client_id>', methods=['POST'])
 @login_required
 def detect_brands_ai(client_id):
@@ -594,7 +597,7 @@ def detect_brands_ai(client_id):
         
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
-    cursor.execute("SELECT id, name, website, country, brands FROM clients WHERE id = %s", (client_id,))
+    cursor.execute("SELECT id, name, website, brands FROM clients WHERE id = %s", (client_id,))
     client = cursor.fetchone()
     
     if not client or not client['website']:
@@ -603,47 +606,66 @@ def detect_brands_ai(client_id):
         return jsonify({'success': False, 'message': 'У клієнта відсутній веб-сайт для аналізу!'})
         
     client_name = client['name']
-    client_site = client['website']
-    
-    prompt = f"""
-    Ти суворий аудитор інтернет-магазинів сільгоспзапчастин. Проаналізуй виключно асортимент сайту '{client_site}' компанії '{client_name}'.
-    З'ясуй, чи є на цьому сайті в продажу спеціалізовані деталі та робочі органи до кожного з цих брендів:
-    - Vaderstad
-    - Gaspardo
-    - Horsch
-    - Kverneland
-    - Pottinger
+    site_url = client['website'].strip()
+    if not site_url.startswith('http'):
+        site_url = f"https://{site_url}"
 
-    ВАЖЛИВО: Не плутай згадки в загальних статтях, маслах чи мастилах. Бренд має бути присутній як товарна позиція чи профільний каталог запчастин.
-    Поверни ВИКЛЮЧНО валідний JSON-масив рядків із реального списку вище (наприклад: ["Vaderstad", "Horsch"] або []).
-    Без жодного додаткового тексту чи лапок markdown.
-    """ 
+    # 1. Завантажуємо реальний текст із головної сторінки сайту
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    extracted_text = ""
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
+        page_res = requests.get(site_url, headers=headers, timeout=12, verify=False)
+        if page_res.status_code == 200:
+            soup = BeautifulSoup(page_res.text, 'html.parser')
+            # Прибираємо скрипти та стилі
+            for element in soup(["script", "style", "nav", "footer"]):
+                element.extract()
+            extracted_text = soup.get_text(separator=' ', strip=True)[:15000] # Беремо перші 15к символів
+    except Exception as e:
+        print(f"Помилка завантаження HTML: {e}")
+
+    # 2. Передаємо реальний вміст сторінки в Gemini
+    prompt = f"""
+    Проаналізуй наведений нижче реальний текст із веб-сайту компанії '{client_name}' ({site_url}):
+
+    --- ТЕКСТ САЙТУ ---
+    {extracted_text if extracted_text else "Текст сайту недоступний, використовуй точні знання про асортимент компанії " + client_name}
+    --- КІНЕЦЬ ТЕКСТУ ---
+
+    Завдання: Визнач, чи продає цей магазин запчастини або робочі органи до наступних 5 брендів техніки:
+    1. Vaderstad
+    2. Gaspardo
+    3. Horsch
+    4. Kverneland
+    5. Pottinger
+
+    ПРАВИЛО: Додавай бренд у список ТІЛЬКИ якщо в тексті є пряма згадка про наявність деталей, машин або розділу каталогу до нього. Якщо бренд відсутній — не додавай його.
+    Поверни ВИКЛЮЧНО валідний JSON-масив рядків. Наприклад: ["Vaderstad"] або []. Без markdown і без пояснень.
+    """
+    
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
         payload = {
-            "contents": [{
-                "parts": [{"text": prompt}]
-            }],
-            "generationConfig": {
-                "temperature": 0.1
-            }
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.0}
         }
         
-        res = requests.post(url, json=payload, timeout=30)
+        res = requests.post(url, json=payload, timeout=25)
         res_data = res.json()
         
         if 'error' in res_data:
             cursor.close()
             conn.close()
-            return jsonify({'success': False, 'message': f"Помилка API: {res_data['error'].get('message', 'Невідома помилка')}"})
+            return jsonify({'success': False, 'message': f"Помилка API: {res_data['error'].get('message')}"})
             
         raw_text = res_data['candidates'][0]['content']['parts'][0]['text']
         raw_text = raw_text.replace('```json', '').replace('```', '').strip()
         detected_brands = json.loads(raw_text)
         
-        current_brands = [b.strip() for b in (client['brands'] or '').split(',') if b.strip() and b.strip() != '-']
-        final_brands_set = set(current_brands + detected_brands)
-        final_brands_str = ", ".join(sorted(final_brands_set)) if final_brands_set else "-"
+        # Перезаписуємо список точними знайденими брендами
+        final_brands_str = ", ".join(sorted(detected_brands)) if detected_brands else "-"
         
         cursor.execute("UPDATE clients SET brands = %s WHERE id = %s", (final_brands_str, client_id))
         conn.commit()
@@ -652,41 +674,15 @@ def detect_brands_ai(client_id):
         
         return jsonify({
             'success': True,
-            'brands': list(final_brands_set),
+            'brands': detected_brands,
             'detected': detected_brands,
-            'message': f"ШІ виявив бренди: {', '.join(detected_brands) if detected_brands else 'збігів не знайдено'}"
+            'message': f"ШІ виявив бренди: {', '.join(detected_brands) if detected_brands else 'жодного зі списку не знайдено'}"
         })
         
     except Exception as e:
         cursor.close()
         conn.close()
-        return jsonify({'success': False, 'message': f"Помилка обробки: {str(e)}"})
-        
-@app.route('/add_lost_demand', methods=['POST'])
-@login_required
-def add_lost_demand():
-    client_id = request.form.get('client_id')
-    article = request.form.get('article', '').strip()
-    title = request.form.get('title', '').strip()
-    quantity = request.form.get('quantity', 1)
-    status = request.form.get('status', 'lost')
-    note = request.form.get('note', '').strip()
-    created_at = datetime.now().strftime("%Y-%m-%d %H:%M")
-    
-    if article:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO lost_demand (client_id, article, title, quantity, status, note, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (client_id if client_id else None, article, title, quantity, status, note, created_at)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-    if client_id:
-        return redirect(url_for('client_detail', client_id=client_id))
-    return redirect(url_for('index', tab='demand'))
+        return jsonify({'success': False, 'message': f"Помилка аналізу: {str(e)}"})
 
 @app.route('/delete_lost_demand/<int:demand_id>', methods=['POST'])
 @login_required
