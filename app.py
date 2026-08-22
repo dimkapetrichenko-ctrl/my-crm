@@ -523,8 +523,8 @@ def add_quick_sale(client_id):
     if not payment_date:
         payment_date = datetime.now().strftime("%Y-%m-%d")
         
+    ukr_months = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"]
     if not month_name:
-        ukr_months = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"]
         month_idx = datetime.now().month - 1
         month_name = ukr_months[month_idx]
         
@@ -537,29 +537,46 @@ def add_quick_sale(client_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # 1. Запис у річний план / надходження
+        # 1. Перевіряємо, чи є вже плановий запис по цьому клієнту
         cursor.execute(
-            "INSERT INTO sales_plans (client_id, planned_amount, month_name, actual_amount, payment_date) VALUES (%s, %s, %s, %s, %s)",
-            (client_id, amt_val, month_name, amt_val, payment_date)
+            "SELECT id, actual_amount, planned_amount FROM sales_plans WHERE client_id = %s ORDER BY id DESC LIMIT 1",
+            (client_id,)
         )
+        existing_plan = cursor.fetchone()
         
-        # 2. Розрахунок дати контролю отримання
+        if existing_plan:
+            plan_id = existing_plan[0]
+            current_actual = float(existing_plan[1] or 0)
+            new_actual = current_actual + amt_val
+            # Оновлюємо існуючий рядок - накопичуємо суму
+            cursor.execute(
+                "UPDATE sales_plans SET actual_amount = %s, payment_date = %s WHERE id = %s",
+                (new_actual, payment_date, plan_id)
+            )
+        else:
+            # Створюємо позаплановий запис: План 0, Факт = сума продажу
+            cursor.execute(
+                "INSERT INTO sales_plans (client_id, planned_amount, month_name, actual_amount, payment_date) VALUES (%s, %s, %s, %s, %s)",
+                (client_id, 0.0, month_name, amt_val, payment_date)
+            )
+        
+        # 2. Розрахунок наступного контакту
         try:
             p_date_obj = datetime.strptime(payment_date, "%Y-%m-%d")
             next_date = (p_date_obj + timedelta(days=next_action_days)).strftime("%Y-%m-%d")
         except Exception:
             next_date = (datetime.now() + timedelta(days=next_action_days)).strftime("%Y-%m-%d")
             
-        # 3. Оновлення статусу клієнта та наступної дії
+        # 3. Оновлення статусу ліда
         cursor.execute(
             "UPDATE clients SET deal_stage = 'paid_shipped', next_event_date = %s, next_event_type = 'call' WHERE id = %s",
             (next_date, client_id)
         )
         
-        # 4. Лог в історію розмов
+        # 4. Запис у перемовини
         inv_text = f" Рахунок/ТТН: {invoice_no}." if invoice_no else ""
         current_dt = datetime.now().strftime("%Y-%m-%d %H:%M")
-        log_text = f"💰 [УСПІШНИЙ ПРОДАЖ] Отримано оплату на суму {amt_val:,.2f} EUR.{inv_text} Автоматично призначено контроль отримання на {next_date}."
+        log_text = f"💰 [ОПЛАТА] Надійшло {amt_val:,.2f} EUR.{inv_text} Автоматично призначено контроль отримання товару на {next_date}."
         
         cursor.execute(
             "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
@@ -764,6 +781,9 @@ def add_client():
     whatsapp_1 = request.form.get('whatsapp_1', '')
     whatsapp_2 = request.form.get('whatsapp_2', '')
     
+    if interest_level != 'зацікавленість':
+        deal_stage = 'none'
+
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
     
@@ -808,6 +828,9 @@ def edit_client(client_id):
     whatsapp_1 = request.form.get('whatsapp_1', '')
     whatsapp_2 = request.form.get('whatsapp_2', '')
     
+    if interest_level != 'зацікавленість':
+        deal_stage = 'none'
+        
     selected_brands = request.form.getlist('brands')
     brands = ", ".join(selected_brands) if selected_brands else ""
     
@@ -855,10 +878,41 @@ def add_finance_plan():
     month_name = request.form.get('month_name', '')
     actual_amount = request.form.get('actual_amount', 0)
     payment_date = request.form.get('payment_date', '')
+    
+    try:
+        p_amt = float(planned_amount) if planned_amount else 0.0
+    except Exception:
+        p_amt = 0.0
+
+    try:
+        a_amt = float(actual_amount) if actual_amount else 0.0
+    except Exception:
+        a_amt = 0.0
+
     if client_id:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO sales_plans (client_id, planned_amount, month_name, actual_amount, payment_date) VALUES (%s, %s, %s, %s, %s)", (client_id, planned_amount if planned_amount else 0, month_name, actual_amount if actual_amount else 0, payment_date))
+        
+        cursor.execute(
+            "SELECT id, planned_amount, actual_amount FROM sales_plans WHERE client_id = %s ORDER BY id DESC LIMIT 1",
+            (client_id,)
+        )
+        existing = cursor.fetchone()
+        
+        if existing:
+            plan_id = existing[0]
+            cur_fact = float(existing[2] or 0)
+            new_fact = cur_fact + a_amt if a_amt > 0 else cur_fact
+            cursor.execute(
+                "UPDATE sales_plans SET planned_amount = %s, month_name = %s, actual_amount = %s, payment_date = COALESCE(NULLIF(%s, ''), payment_date) WHERE id = %s",
+                (p_amt, month_name, new_fact, payment_date, plan_id)
+            )
+        else:
+            cursor.execute(
+                "INSERT INTO sales_plans (client_id, planned_amount, month_name, actual_amount, payment_date) VALUES (%s, %s, %s, %s, %s)",
+                (client_id, p_amt, month_name, a_amt, payment_date if payment_date else None)
+            )
+            
         conn.commit()
         cursor.close()
         conn.close()
@@ -940,7 +994,6 @@ def client_detail(client_id):
             else:
                 client[field] = ''
     
-    # Розрахунок статистики угод клієнта
     cursor.execute("SELECT COUNT(*), COALESCE(SUM(actual_amount), 0) FROM sales_plans WHERE client_id = %s AND actual_amount > 0", (client_id,))
     deal_stats_row = cursor.fetchone()
     deal_count = deal_stats_row[0] if deal_stats_row else 0
