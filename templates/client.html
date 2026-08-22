@@ -149,8 +149,16 @@
                         </select>
                     </div>
 
+                    <!-- ПРІОРИТЕТНІ БРЕНДИ + КНОПКА ШІ-СКАНУВАННЯ -->
                     <div class="mb-2">
-                        <label class="form-label mb-1"><b>Пріоритетні бренди</b></label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label mb-0"><b>Пріоритетні бренди</b></label>
+                            {% if client.website %}
+                            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 fw-semibold" id="btnAiBrands" onclick="runAiBrandDetection({{ client.id }})" title="Gemini перевірить сайт та оновить бренди">
+                                ✨ ШІ-Аналіз брендів
+                            </button>
+                            {% endif %}
+                        </div>
                         <div class="p-2 border rounded bg-light d-flex flex-wrap gap-3" style="font-size: 0.85rem;">
                             {% set cb = client.brands or '' %}
                             <div class="form-check">
@@ -182,7 +190,7 @@
 
                     <div class="mb-2">
                         <label class="form-label mb-1">Веб-сайт</label>
-                        <input type="text" name="website" class="form-control form-control-sm" value="{{ client.website or '' }}" placeholder="www.example.com">
+                        <input type="text" name="website" id="client_website_input" class="form-control form-control-sm" value="{{ client.website or '' }}" placeholder="www.example.com">
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1">Країна</label>
@@ -485,7 +493,6 @@
     let wMonth = new Date().getMonth();
     const wMonthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-    // Керування доступністю воронки продажів та блоку швидкої оплати
     function toggleDealStageVisibility() {
         const interestSelect = document.getElementById('client_interest_level');
         const dealContainer = document.getElementById('deal_stage_container');
@@ -566,13 +573,56 @@
         }
     }
 
+    // Запуск ШІ-аналізу Gemini
+    function runAiBrandDetection(clientId) {
+        const btn = document.getElementById('btnAiBrands');
+        if (!btn) return;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Аналізую через Gemini...';
+
+        fetch(`/detect_brands_ai/${clientId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            alert(data.message);
+            
+            if (data.success && data.brands) {
+                const brandsLower = data.brands.map(b => b.toLowerCase());
+                
+                const bVaderstad = document.getElementById('b_vaderstad');
+                if (bVaderstad) bVaderstad.checked = brandsLower.some(b => b.includes('vaderstad'));
+                
+                const bGaspardo = document.getElementById('b_gaspardo');
+                if (bGaspardo) bGaspardo.checked = brandsLower.some(b => b.includes('gaspardo'));
+                
+                const bHorsch = document.getElementById('b_horsch');
+                if (bHorsch) bHorsch.checked = brandsLower.some(b => b.includes('horsch'));
+                
+                const bKverneland = document.getElementById('b_kverneland');
+                if (bKverneland) bKverneland.checked = brandsLower.some(b => b.includes('kverneland'));
+                
+                const bPottinger = document.getElementById('b_pottinger');
+                if (bPottinger) bPottinger.checked = brandsLower.some(b => b.includes('pottinger'));
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            alert('Помилка виконання запиту до ШІ-агента.');
+        });
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         const savedRole = localStorage.getItem('crm_role');
         if (savedRole === 'CEO') { document.getElementById('role_ceo').checked = true; } else { document.getElementById('role_sales').checked = true; }
         const initDate = document.getElementById('next_event_date_input')?.value;
         if (initDate) { checkWorkload(initDate); }
 
-        // Ініціалізація видимості воронки при завантаженні
         toggleDealStageVisibility();
 
         if (document.getElementById('editor-container')) {
