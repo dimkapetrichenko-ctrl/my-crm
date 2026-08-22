@@ -629,6 +629,12 @@ def detect_brands_ai(client_id):
         res = requests.post(url, json=payload, timeout=25)
         res_data = res.json()
         
+        # Якщо версія 2.5 недоступна, пробуємо 1.5-flash
+        if 'candidates' not in res_data:
+            fallback_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+            res = requests.post(fallback_url, json=payload, timeout=25)
+            res_data = res.json()
+            
         if 'candidates' not in res_data:
             cursor.close()
             conn.close()
@@ -658,7 +664,6 @@ def detect_brands_ai(client_id):
         cursor.close()
         conn.close()
         return jsonify({'success': False, 'message': f"Помилка аналізу Gemini: {str(e)}"})
-
 @app.route('/add_lost_demand', methods=['POST'])
 @login_required
 def add_lost_demand():
