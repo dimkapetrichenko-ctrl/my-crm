@@ -619,12 +619,8 @@ def detect_brands_ai(client_id):
         page_res = requests.get(site_url, headers=headers, timeout=15, verify=False)
         if page_res.status_code == 200:
             soup = BeautifulSoup(page_res.text, 'html.parser')
-            
-            # Видаляємо лише скрипти, стилі та SVG (залишаємо всі меню, категорії, посилання)
             for element in soup(["script", "style", "svg", "noscript"]):
                 element.extract()
-                
-            # Збираємо текст меню, категорій, посилань та контенту
             extracted_text = soup.get_text(separator=' ', strip=True)[:30000]
     except Exception as e:
         print(f"Помилка завантаження HTML: {e}")
@@ -644,7 +640,7 @@ def detect_brands_ai(client_id):
     5. Pottinger (Pöttinger)
 
     Поверни ВИКЛЮЧНО валідний JSON-масив знайдених брендів (наприклад: ["Gaspardo", "Horsch", "Kverneland"] або []).
-    Без markdown (```), без лапок і без пояснень.
+    Без markdown, без лапок ``` і без пояснень.
     """
     
     try:
@@ -684,6 +680,7 @@ def detect_brands_ai(client_id):
         cursor.close()
         conn.close()
         return jsonify({'success': False, 'message': f"Помилка аналізу: {str(e)}"})
+        
 @app.route('/delete_lost_demand/<int:demand_id>', methods=['POST'])
 @login_required
 def delete_lost_demand(demand_id):
