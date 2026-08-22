@@ -608,51 +608,53 @@ def detect_brands_ai(client_id):
     client_name = client['name']
     site_url = client['website'].strip()
     if not site_url.startswith('http'):
-        site_url = f"https://{site_url}"
+        site_url = f"http://{site_url}"
 
-    # 1. Завантажуємо реальний текст із головної сторінки сайту
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
     }
     extracted_text = ""
+    
     try:
-        page_res = requests.get(site_url, headers=headers, timeout=12, verify=False)
+        page_res = requests.get(site_url, headers=headers, timeout=15, verify=False)
         if page_res.status_code == 200:
             soup = BeautifulSoup(page_res.text, 'html.parser')
-            # Прибираємо скрипти та стилі
-            for element in soup(["script", "style", "nav", "footer"]):
+            
+            # Видаляємо лише скрипти, стилі та SVG (залишаємо всі меню, категорії, посилання)
+            for element in soup(["script", "style", "svg", "noscript"]):
                 element.extract()
-            extracted_text = soup.get_text(separator=' ', strip=True)[:15000] # Беремо перші 15к символів
+                
+            # Збираємо текст меню, категорій, посилань та контенту
+            extracted_text = soup.get_text(separator=' ', strip=True)[:30000]
     except Exception as e:
         print(f"Помилка завантаження HTML: {e}")
 
-    # 2. Передаємо реальний вміст сторінки в Gemini
     prompt = f"""
-    Проаналізуй наведений нижче реальний текст із веб-сайту компанії '{client_name}' ({site_url}):
+    Проаналізуй вміст веб-сторінки та категорій інтернет-магазину/каталогу '{client_name}' ({site_url}):
 
-    --- ТЕКСТ САЙТУ ---
+    --- ТЕКСТ СТОРІНКИ, МЕНЮ ТА КАТЕГОРІЙ ---
     {extracted_text if extracted_text else "Текст сайту недоступний, використовуй точні знання про асортимент компанії " + client_name}
     --- КІНЕЦЬ ТЕКСТУ ---
 
-    Завдання: Визнач, чи продає цей магазин запчастини або робочі органи до наступних 5 брендів техніки:
-    1. Vaderstad
-    2. Gaspardo
+    Завдання: Перевір, чи є в асортименті, категоріях, списках виробників або каталогах запчастини / техніка до наступних 5 брендів:
+    1. Vaderstad (Väderstad)
+    2. Gaspardo (Maschio Gaspardo)
     3. Horsch
     4. Kverneland
-    5. Pottinger
+    5. Pottinger (Pöttinger)
 
-    ПРАВИЛО: Додавай бренд у список ТІЛЬКИ якщо в тексті є пряма згадка про наявність деталей, машин або розділу каталогу до нього. Якщо бренд відсутній — не додавай його.
-    Поверни ВИКЛЮЧНО валідний JSON-масив рядків. Наприклад: ["Vaderstad"] або []. Без markdown і без пояснень.
+    Поверни ВИКЛЮЧНО валідний JSON-масив знайдених брендів (наприклад: ["Gaspardo", "Horsch", "Kverneland"] або []).
+    Без markdown (```), без лапок і без пояснень.
     """
     
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=){GEMINI_API_KEY}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.0}
         }
         
-        res = requests.post(url, json=payload, timeout=25)
+        res = requests.post(url, json=payload, timeout=30)
         res_data = res.json()
         
         if 'error' in res_data:
@@ -664,7 +666,6 @@ def detect_brands_ai(client_id):
         raw_text = raw_text.replace('```json', '').replace('```', '').strip()
         detected_brands = json.loads(raw_text)
         
-        # Перезаписуємо список точними знайденими брендами
         final_brands_str = ", ".join(sorted(detected_brands)) if detected_brands else "-"
         
         cursor.execute("UPDATE clients SET brands = %s WHERE id = %s", (final_brands_str, client_id))
@@ -683,7 +684,6 @@ def detect_brands_ai(client_id):
         cursor.close()
         conn.close()
         return jsonify({'success': False, 'message': f"Помилка аналізу: {str(e)}"})
-
 @app.route('/delete_lost_demand/<int:demand_id>', methods=['POST'])
 @login_required
 def delete_lost_demand(demand_id):
