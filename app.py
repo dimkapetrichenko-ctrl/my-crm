@@ -616,12 +616,13 @@ def detect_brands_ai(client_id):
     extracted_text = ""
     
     try:
-        page_res = requests.get(site_url, headers=headers, timeout=15, verify=False)
+        page_res = requests.get(site_url, headers=headers, timeout=20, verify=False)
         if page_res.status_code == 200:
             soup = BeautifulSoup(page_res.text, 'html.parser')
             for element in soup(["script", "style", "svg", "noscript"]):
                 element.extract()
-            extracted_text = soup.get_text(separator=' ', strip=True)[:30000]
+            # Збільшено до 100 000 символів для глибшого охоплення категорій і товарів
+            extracted_text = soup.get_text(separator=' ', strip=True)[:100000]
     except Exception as e:
         print(f"Помилка завантаження HTML: {e}")
 
@@ -644,13 +645,13 @@ def detect_brands_ai(client_id):
     """
     
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=){GEMINI_API_KEY}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.0}
         }
         
-        res = requests.post(url, json=payload, timeout=30)
+        res = requests.post(url, json=payload, timeout=35)
         res_data = res.json()
         
         if 'error' in res_data:
