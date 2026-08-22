@@ -608,7 +608,7 @@ def detect_brands_ai(client_id):
     client_name = client['name']
     site_url = client['website'].strip()
     if not site_url.startswith('http'):
-        site_url = f"http://{site_url}"
+        site_url = "http://" + site_url
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
@@ -621,6 +621,7 @@ def detect_brands_ai(client_id):
             soup = BeautifulSoup(page_res.text, 'html.parser')
             for element in soup(["script", "style", "svg", "noscript"]):
                 element.extract()
+            # Збільшено ліміт до 100 000 символів
             extracted_text = soup.get_text(separator=' ', strip=True)[:100000]
     except Exception as e:
         print(f"Помилка завантаження HTML: {e}")
@@ -644,8 +645,9 @@ def detect_brands_ai(client_id):
     """
     
     try:
-        api_base = "[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent)"
-        url = f"{api_base}?key={GEMINI_API_KEY}"
+        host = "generativelanguage.googleapis.com"
+        model_path = "v1beta/models/gemini-3.6-flash:generateContent"
+        url = "https://" + host + "/" + model_path + "?key=" + str(GEMINI_API_KEY).strip()
         
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
