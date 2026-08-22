@@ -756,6 +756,43 @@
     </div>
 </div>
 
+<!-- МОДАЛЬНЕ ВІКНО РЕДАГУВАННЯ ЗАВДАННЯ -->
+<div class="modal fade" id="editTaskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-2.5">
+                <h6 class="modal-title fw-bold">✏️ Редагувати завдання</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editTaskForm" method="POST" action="">
+                <div class="modal-body p-3" style="font-size: 0.85rem;">
+                    <div class="mb-2">
+                        <label class="form-label mb-0 fw-bold">Зміст завдання:</label>
+                        <textarea name="text" id="edit_task_text" class="form-control form-control-sm" rows="3" required></textarea>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label mb-0 small text-muted">Термін виконання:</label>
+                            <input type="date" name="deadline" id="edit_task_deadline" class="form-control form-control-sm fw-bold text-danger" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label mb-0 small text-muted">Відповідальна особа:</label>
+                            <select name="author" id="edit_task_author" class="form-select form-select-sm fw-bold">
+                                <option value="Продажі">💼 Продажі</option>
+                                <option value="CEO">📁 CEO</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-sm btn-brand fw-bold px-4">Зберегти зміни</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <style>
     #mainClientsTable {
         border-collapse: separate !important;
@@ -816,7 +853,6 @@ let tasksYear = new Date().getFullYear();
 let tasksMonth = new Date().getMonth();
 const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-// ОНОВЛЕННЯ ЛІЧИЛЬНИКІВ НА РОБОЧОМУ СТОЛІ
 function updateTasksDesktopBadges() {
     const today = new Date().toISOString().split('T')[0];
     let activeCount = 0;
@@ -1093,6 +1129,7 @@ function selectTasksDate(dateStr) {
                                 ${isDone ? '🔄 Повернути' : '✅ Закрити'}
                             </button>
                         </form>
+                        <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" style="font-size:0.7rem;" onclick="openEditTaskModal(${t.id}, '${escapeQuotes(t.text)}', '${t.deadline || ''}', '${t.author || 'Продажі'}')">✏️</button>
                         <form action="/delete_task/${t.id}" method="POST" class="mb-0" onsubmit="return confirm('Видалити завдання?');">
                             <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:0.7rem;">🗑️</button>
                         </form>
@@ -1102,6 +1139,20 @@ function selectTasksDate(dateStr) {
     });
     html += `</div>`;
     box.innerHTML = html;
+}
+
+function escapeQuotes(str) {
+    if (!str) return '';
+    return str.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+}
+
+function openEditTaskModal(id, text, deadline, author) {
+    document.getElementById('editTaskForm').action = `/edit_task/${id}`;
+    document.getElementById('edit_task_text').value = text;
+    document.getElementById('edit_task_deadline').value = deadline;
+    document.getElementById('edit_task_author').value = author;
+    const modal = new bootstrap.Modal(document.getElementById('editTaskModal'));
+    modal.show();
 }
 
 function syncClientId() {
