@@ -606,21 +606,22 @@ def detect_brands_ai(client_id):
     client_site = client['website']
     
     prompt = f"""
-    Ти експерт аналізу бізнесу. Проаналізуй компанію '{client_name}' та її сайт '{client_site}'.
-    З'ясуй, чи займається компанія продажем техніки або запчастин до таких брендів:
-    - Vaderstad
-    - Gaspardo
-    - Horsch
-    - Kverneland
-    - Pottinger
+    Ти експерт аналізу бізнесу с/г запчастин. Проаналізуй компанію '{client_name}' та її веб-сайт '{client_site}'.
+    З'ясуй, чи продає або обслуговує компанія запчастини до таких брендів:
+    1. Vaderstad (Väderstad)
+    2. Gaspardo (Maschio Gaspardo)
+    3. Horsch
+    4. Kverneland
+    5. Pottinger (Pöttinger)
 
-    Поверни ВИКЛЮЧНО валідний JSON-масив назв брендів із цього переліку, які є на сайті.
-    Наприклад: ["Vaderstad", "Horsch"] або [] якщо збігів немає.
-    Без жодного додаткового тексту чи лапок markdown.
+    Поверни ВИКЛЮЧНО валідний JSON-масив рядків.
+    Дозволені значення лише такі: ["Vaderstad", "Gaspardo", "Horsch", "Kverneland", "Pottinger"].
+    Якщо жодного бренду не знайдено, поверни: [].
+    Не додавай жодних пояснень чи форматування markdown, лише чистий JSON.
     """
     
     try:
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
         payload = {
             "contents": [{
                 "parts": [{"text": prompt}]
@@ -662,6 +663,7 @@ def detect_brands_ai(client_id):
         cursor.close()
         conn.close()
         return jsonify({'success': False, 'message': f"Помилка обробки: {str(e)}"})
+        
 @app.route('/add_lost_demand', methods=['POST'])
 @login_required
 def add_lost_demand():
