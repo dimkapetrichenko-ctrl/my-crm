@@ -11,10 +11,7 @@ import imaplib
 import email
 from email.mime.text import MIMEText
 from email.header import Header, decode_header
-
-# Імпорт офіційного SDK Gemini
-from google import genai
-from google.genai import types
+import requests
 
 app = Flask(__name__)
 
@@ -542,7 +539,7 @@ def add_quick_sale(client_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # 1. Накопичення суми або створення позапланового рядка
+        # Накопичення суми в плані
         cursor.execute(
             "SELECT id, actual_amount, planned_amount FROM sales_plans WHERE client_id = %s ORDER BY id DESC LIMIT 1",
             (client_id,)
@@ -563,20 +560,17 @@ def add_quick_sale(client_id):
                 (client_id, 0.0, month_name, amt_val, payment_date)
             )
         
-        # 2. Розрахунок наступного контакту
         try:
             p_date_obj = datetime.strptime(payment_date, "%Y-%m-%d")
             next_date = (p_date_obj + timedelta(days=next_action_days)).strftime("%Y-%m-%d")
         except Exception:
             next_date = (datetime.now() + timedelta(days=next_action_days)).strftime("%Y-%m-%d")
             
-        # 3. Оновлення статусу ліда
         cursor.execute(
             "UPDATE clients SET deal_stage = 'paid_shipped', next_event_date = %s, next_event_type = 'call' WHERE id = %s",
             (next_date, client_id)
         )
         
-        # 4. Запис у перемовини
         inv_text = f" Рахунок/ТТН: {invoice_no}." if invoice_no else ""
         current_dt = datetime.now().strftime("%Y-%m-%d %H:%M")
         log_text = f"💰 [ОПЛАТА] Надійшло {amt_val:,.2f} EUR.{inv_text} Автоматично призначено контроль отримання товару на {next_date}."
@@ -620,24 +614,28 @@ def detect_brands_ai(client_id):
     4. Kverneland
     5. Pottinger (Pöttinger)
 
-    Поверни відповідь ВИКЛЮЧНО у форматі валідного JSON-масиву рядків із переліку вище.
-    Дозволені значення в масиві лише такі точні назви: ["Vaderstad", "Gaspardo", "Horsch", "Kverneland", "Pottinger"].
-    Якщо жодного немає, поверни: [].
-    Не пиши жодного вступного тексту чи пояснень, лише чистий JSON.
+    Поверни відповідь ВИКЛЮЧНО у форматі валідного JSON-масиву рядків.
+    Дозволені значення лише такі: ["Vaderstad", "Gaspardo", "Horsch", "Kverneland", "Pottinger"].
+    Якщо жодного бренду не знайдено, поверни: [].
+    Не пиши жодного тексту, окрім чистого JSON.
     """
     
     try:
-        client_ai = genai.Client(api_key=GEMINI_API_KEY)
-        response = client_ai.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                tools=[{"googleSearch": {}}],
-                temperature=0.1
-            )
-        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.1}
+        }
+        res = requests.post(url, json=payload, timeout=25)
+        res_data = res.json()
         
-        raw_text = response.text.replace('```json', '').replace('```', '').strip()
+        if 'candidates' not in res_data:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'message': f"Відповідь від API: {res_data.get('error', {}).get('message', 'Невідома помилка')}"})
+            
+        raw_text = res_data['candidates'][0]['content']['parts'][0]['text']
+        raw_text = raw_text.replace('```json', '').replace('```', '').strip()
         detected_brands = json.loads(raw_text)
         
         current_brands = [b.strip() for b in (client['brands'] or '').split(',') if b.strip() and b.strip() != '-']
