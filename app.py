@@ -12,6 +12,10 @@ import email
 from email.mime.text import MIMEText
 from email.header import Header, decode_header
 
+# Імпорт офіційного SDK Gemini
+from google import genai
+from google.genai import types
+
 app = Flask(__name__)
 
 app.secret_key = os.environ.get('SECRET_KEY', 'super-secret-key-change-me')
@@ -20,6 +24,7 @@ CRM_USERNAME = os.environ.get('CRM_USERNAME', 'admin')
 CRM_PASSWORD = os.environ.get('CRM_PASSWORD', 'Mayer2026') 
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 
 # Конфігурація бізнес-пошти Хостинг Україна з Render
 MAIL_SERVER = os.environ.get('MAIL_SERVER', 'mail.adm.tools')
@@ -537,7 +542,7 @@ def add_quick_sale(client_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # 1. Перевіряємо, чи є вже плановий запис по цьому клієнту
+        # 1. Накопичення суми або створення позапланового рядка
         cursor.execute(
             "SELECT id, actual_amount, planned_amount FROM sales_plans WHERE client_id = %s ORDER BY id DESC LIMIT 1",
             (client_id,)
@@ -586,6 +591,75 @@ def add_quick_sale(client_id):
         conn.close()
         
     return redirect(url_for('client_detail', client_id=client_id))
+
+@app.route('/detect_brands_ai/<int:client_id>', methods=['POST'])
+@login_required
+def detect_brands_ai(client_id):
+    if not GEMINI_API_KEY:
+        return jsonify({'success': False, 'message': 'Змінна GEMINI_API_KEY не налаштована в Render!'})
+        
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    cursor.execute("SELECT id, name, website, country, brands FROM clients WHERE id = %s", (client_id,))
+    client = cursor.fetchone()
+    
+    if not client or not client['website']:
+        cursor.close()
+        conn.close()
+        return jsonify({'success': False, 'message': 'У клієнта відсутній веб-сайт для аналізу!'})
+        
+    client_name = client['name']
+    client_site = client['website']
+    
+    prompt = f"""
+    Проаналізуй компанію '{client_name}' та її веб-сайт '{client_site}'.
+    З'ясуй, чи продає, обслуговує або пропонує запчастини ця компанія для наступних брендів сільгосптехніки:
+    1. Vaderstad (Väderstad)
+    2. Gaspardo (Maschio Gaspardo)
+    3. Horsch
+    4. Kverneland
+    5. Pottinger (Pöttinger)
+
+    Поверни відповідь ВИКЛЮЧНО у форматі валідного JSON-масиву рядків із переліку вище.
+    Дозволені значення в масиві лише такі точні назви: ["Vaderstad", "Gaspardo", "Horsch", "Kverneland", "Pottinger"].
+    Якщо жодного немає, поверни: [].
+    Не пиши жодного вступного тексту чи пояснень, лише чистий JSON.
+    """
+    
+    try:
+        client_ai = genai.Client(api_key=GEMINI_API_KEY)
+        response = client_ai.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                tools=[{"googleSearch": {}}],
+                temperature=0.1
+            )
+        )
+        
+        raw_text = response.text.replace('```json', '').replace('```', '').strip()
+        detected_brands = json.loads(raw_text)
+        
+        current_brands = [b.strip() for b in (client['brands'] or '').split(',') if b.strip() and b.strip() != '-']
+        final_brands_set = set(current_brands + detected_brands)
+        final_brands_str = ", ".join(sorted(final_brands_set)) if final_brands_set else "-"
+        
+        cursor.execute("UPDATE clients SET brands = %s WHERE id = %s", (final_brands_str, client_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'brands': list(final_brands_set),
+            'detected': detected_brands,
+            'message': f"ШІ виявив бренди: {', '.join(detected_brands) if detected_brands else 'збігів не знайдено'}"
+        })
+        
+    except Exception as e:
+        cursor.close()
+        conn.close()
+        return jsonify({'success': False, 'message': f"Помилка аналізу Gemini: {str(e)}"})
 
 @app.route('/add_lost_demand', methods=['POST'])
 @login_required
@@ -1007,7 +1081,6 @@ def client_detail(client_id):
             else:
                 client[field] = ''
     
-    # Розрахунок статистики угод клієнта
     cursor.execute("SELECT COUNT(*), COALESCE(SUM(actual_amount), 0) FROM sales_plans WHERE client_id = %s AND actual_amount > 0", (client_id,))
     deal_stats_row = cursor.fetchone()
     deal_count = deal_stats_row[0] if deal_stats_row else 0
