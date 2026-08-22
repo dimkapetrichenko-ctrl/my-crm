@@ -548,13 +548,11 @@ def add_quick_sale(client_id):
             plan_id = existing_plan[0]
             current_actual = float(existing_plan[1] or 0)
             new_actual = current_actual + amt_val
-            # Оновлюємо існуючий рядок - накопичуємо суму
             cursor.execute(
                 "UPDATE sales_plans SET actual_amount = %s, payment_date = %s WHERE id = %s",
                 (new_actual, payment_date, plan_id)
             )
         else:
-            # Створюємо позаплановий запис: План 0, Факт = сума продажу
             cursor.execute(
                 "INSERT INTO sales_plans (client_id, planned_amount, month_name, actual_amount, payment_date) VALUES (%s, %s, %s, %s, %s)",
                 (client_id, 0.0, month_name, amt_val, payment_date)
@@ -736,6 +734,21 @@ def add_task():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("INSERT INTO tasks (text, deadline, author, status) VALUES (%s, %s, %s, 'in_progress')", (text, deadline, author))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    return redirect(url_for('index', tab='tasks'))
+
+@app.route('/edit_task/<int:task_id>', methods=['POST'])
+@login_required
+def edit_task(task_id):
+    text = request.form.get('text', '').strip()
+    deadline = request.form.get('deadline', '').strip()
+    author = request.form.get('author', 'Продажі')
+    if text and deadline:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE tasks SET text=%s, deadline=%s, author=%s WHERE id=%s", (text, deadline, author, task_id))
         conn.commit()
         cursor.close()
         conn.close()
@@ -994,6 +1007,7 @@ def client_detail(client_id):
             else:
                 client[field] = ''
     
+    # Розрахунок статистики угод клієнта
     cursor.execute("SELECT COUNT(*), COALESCE(SUM(actual_amount), 0) FROM sales_plans WHERE client_id = %s AND actual_amount > 0", (client_id,))
     deal_stats_row = cursor.fetchone()
     deal_count = deal_stats_row[0] if deal_stats_row else 0
