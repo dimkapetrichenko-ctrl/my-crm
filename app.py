@@ -606,39 +606,37 @@ def detect_brands_ai(client_id):
     client_site = client['website']
     
     prompt = f"""
-    Проаналізуй компанію '{client_name}' та її веб-сайт '{client_site}'.
-    З'ясуй, чи продає, обслуговує або пропонує запчастини ця компанія для наступних брендів сільгосптехніки:
-    1. Vaderstad (Väderstad)
-    2. Gaspardo (Maschio Gaspardo)
-    3. Horsch
-    4. Kverneland
-    5. Pottinger (Pöttinger)
+    Ти експерт аналізу бізнесу. Проаналізуй компанію '{client_name}' та її сайт '{client_site}'.
+    З'ясуй, чи займається компанія продажем техніки або запчастин до таких брендів:
+    - Vaderstad
+    - Gaspardo
+    - Horsch
+    - Kverneland
+    - Pottinger
 
-    Поверни відповідь ВИКЛЮЧНО у форматі валідного JSON-масиву рядків.
-    Дозволені значення лише такі: ["Vaderstad", "Gaspardo", "Horsch", "Kverneland", "Pottinger"].
-    Якщо жодного бренду не знайдено, поверни: [].
-    Не пиши жодного тексту, окрім чистого JSON.
+    Поверни ВИКЛЮЧНО валідний JSON-масив назв брендів із цього переліку, які є на сайті.
+    Наприклад: ["Vaderstad", "Horsch"] або [] якщо збігів немає.
+    Без жодного додаткового тексту чи лапок markdown.
     """
     
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
         payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.1}
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }],
+            "generationConfig": {
+                "temperature": 0.1
+            }
         }
-        res = requests.post(url, json=payload, timeout=25)
+        
+        res = requests.post(url, json=payload, timeout=30)
         res_data = res.json()
         
-        # Якщо версія 2.5 недоступна, пробуємо 1.5-flash
-        if 'candidates' not in res_data:
-            fallback_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-            res = requests.post(fallback_url, json=payload, timeout=25)
-            res_data = res.json()
-            
-        if 'candidates' not in res_data:
+        if 'error' in res_data:
             cursor.close()
             conn.close()
-            return jsonify({'success': False, 'message': f"Відповідь від API: {res_data.get('error', {}).get('message', 'Невідома помилка')}"})
+            return jsonify({'success': False, 'message': f"Помилка API: {res_data['error'].get('message', 'Невідома помилка')}"})
             
         raw_text = res_data['candidates'][0]['content']['parts'][0]['text']
         raw_text = raw_text.replace('```json', '').replace('```', '').strip()
@@ -663,7 +661,7 @@ def detect_brands_ai(client_id):
     except Exception as e:
         cursor.close()
         conn.close()
-        return jsonify({'success': False, 'message': f"Помилка аналізу Gemini: {str(e)}"})
+        return jsonify({'success': False, 'message': f"Помилка обробки: {str(e)}"})
 @app.route('/add_lost_demand', methods=['POST'])
 @login_required
 def add_lost_demand():
