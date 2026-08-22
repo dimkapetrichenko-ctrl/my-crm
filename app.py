@@ -621,7 +621,6 @@ def detect_brands_ai(client_id):
             soup = BeautifulSoup(page_res.text, 'html.parser')
             for element in soup(["script", "style", "svg", "noscript"]):
                 element.extract()
-            # Збільшено до 100 000 символів для глибшого охоплення категорій і товарів
             extracted_text = soup.get_text(separator=' ', strip=True)[:100000]
     except Exception as e:
         print(f"Помилка завантаження HTML: {e}")
@@ -645,7 +644,9 @@ def detect_brands_ai(client_id):
     """
     
     try:
-        url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=){GEMINI_API_KEY}"
+        api_base = "[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent)"
+        url = f"{api_base}?key={GEMINI_API_KEY}"
+        
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.0}
