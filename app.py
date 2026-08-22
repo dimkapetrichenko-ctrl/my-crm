@@ -606,20 +606,18 @@ def detect_brands_ai(client_id):
     client_site = client['website']
     
     prompt = f"""
-    Ти експерт аналізу бізнесу с/г запчастин. Проаналізуй компанію '{client_name}' та її веб-сайт '{client_site}'.
-    З'ясуй, чи продає або обслуговує компанія запчастини до таких брендів:
-    1. Vaderstad (Väderstad)
-    2. Gaspardo (Maschio Gaspardo)
-    3. Horsch
-    4. Kverneland
-    5. Pottinger (Pöttinger)
+    Ти суворий аудитор інтернет-магазинів сільгоспзапчастин. Проаналізуй виключно асортимент сайту '{client_site}' компанії '{client_name}'.
+    З'ясуй, чи є на цьому сайті в продажу спеціалізовані деталі та робочі органи до кожного з цих брендів:
+    - Vaderstad
+    - Gaspardo
+    - Horsch
+    - Kverneland
+    - Pottinger
 
-    Поверни ВИКЛЮЧНО валідний JSON-масив рядків.
-    Дозволені значення лише такі: ["Vaderstad", "Gaspardo", "Horsch", "Kverneland", "Pottinger"].
-    Якщо жодного бренду не знайдено, поверни: [].
-    Не додавай жодних пояснень чи форматування markdown, лише чистий JSON.
-    """
-    
+    ВАЖЛИВО: Не плутай згадки в загальних статтях, маслах чи мастилах. Бренд має бути присутній як товарна позиція чи профільний каталог запчастин.
+    Поверни ВИКЛЮЧНО валідний JSON-масив рядків із реального списку вище (наприклад: ["Vaderstad", "Horsch"] або []).
+    Без жодного додаткового тексту чи лапок markdown.
+    """ 
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
         payload = {
