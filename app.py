@@ -12,6 +12,10 @@ import email
 from email.mime.text import MIMEText
 from email.header import Header, decode_header
 import requests
+from bs4 import BeautifulSoup
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
 
@@ -161,14 +165,15 @@ def init_db():
             whatsapp_2 TEXT,
             is_active BOOLEAN DEFAULT TRUE,
             deactivation_reason TEXT,
-            deal_stage TEXT DEFAULT 'none'
+            deal_stage TEXT DEFAULT 'none',
+            aftermarket_companies TEXT
         )
     ''')
     
     cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='clients'")
     existing_columns = [row[0] for row in cursor.fetchall()]
     
- new_fields = {
+    new_fields = {
         'website': 'TEXT', 'buyer_type': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
         'contact_person_2': 'TEXT', 'position_2': 'TEXT', 'phone_2': 'TEXT', 'email_2': 'TEXT',
         'interest_level': 'TEXT', 'next_event_date': 'TEXT', 'next_event_type': 'TEXT', 'mayer_reg': 'TEXT',
@@ -176,8 +181,7 @@ def init_db():
         'deal_stage': "TEXT DEFAULT 'none'",
         'aftermarket_companies': 'TEXT'
     }
-
-   
+    
     for field, f_type in new_fields.items():
         if field not in existing_columns:
             cursor.execute(f"ALTER TABLE clients ADD COLUMN {field} {f_type};")
@@ -416,8 +420,8 @@ def index():
         sql += " AND c.is_active IS FALSE"
 
     if search_query:
-        sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s) OR LOWER(c.buyer_type) LIKE LOWER(%s))"
-        params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
+        sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s) OR LOWER(c.buyer_type) LIKE LOWER(%s) OR LOWER(c.aftermarket_companies) LIKE LOWER(%s))"
+        params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
         
     if interest_filter:
         sql += " AND c.interest_level = %s"
@@ -447,6 +451,7 @@ def index():
             'website': row['website'] if row['website'] else '',
             'buyer_type': row['buyer_type'] if row['buyer_type'] else 'не вказано',
             'brands': row['brands'] if row['brands'] else '-',
+            'aftermarket_companies': row['aftermarket_companies'] if row['aftermarket_companies'] else '',
             'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано',
             'deal_stage': row['deal_stage'] if row['deal_stage'] else 'none',
             'last_activity': row['last_activity'] if row['last_activity'] else '',
@@ -541,7 +546,6 @@ def add_quick_sale(client_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Накопичення суми в плані
         cursor.execute(
             "SELECT id, actual_amount, planned_amount FROM sales_plans WHERE client_id = %s ORDER BY id DESC LIMIT 1",
             (client_id,)
@@ -588,12 +592,6 @@ def add_quick_sale(client_id):
         
     return redirect(url_for('client_detail', client_id=client_id))
 
-from bs4 import BeautifulSoup
-import re
-
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 @app.route('/detect_brands_ai/<int:client_id>', methods=['POST'])
 @login_required
 def detect_brands_ai(client_id):
@@ -620,6 +618,7 @@ def detect_brands_ai(client_id):
     }
     extracted_text = ""
     
+    # 1. Швидке завантаження сторінки (таймаут 7 секунд)
     try:
         page_res = requests.get(site_url, headers=headers, timeout=7, verify=False)
         if page_res.status_code == 200:
@@ -631,21 +630,21 @@ def detect_brands_ai(client_id):
         print(f"Помилка завантаження HTML {site_url}: {e}")
 
     prompt = f"""
-    Проаналізуй вміст веб-сторінки інтернет-магазину/каталогу '{client_name}' ({site_url}):
+    Проаналізуй вміст веб-сторінки та категорій каталогу/магазину '{client_name}' ({site_url}):
 
-    --- ТЕКСТ СТОРІНКИ ТА КАТЕГОРІЙ ---
+    --- ТЕКСТ СТОРІНКИ, МЕНЮ ТА КАТЕГОРІЙ ---
     {extracted_text if extracted_text else "Текст сайту недоступний, використовуй точні знання про асортимент компанії " + client_name}
     --- КІНЕЦЬ ТЕКСТУ ---
 
     Завдання:
-    1. Перевір, чи є в асортименті запчастини до брендів техніки:
-       - Vaderstad
-       - Gaspardo
+    1. Перевір, чи є в асортименті або каталогах сайту запчастини чи техніка до таких 5 брендів:
+       - Vaderstad (Väderstad)
+       - Gaspardo (Maschio Gaspardo)
        - Horsch
        - Kverneland
-       - Pottinger
+       - Pottinger (Pöttinger)
 
-    2. Перевір, чи є згадки або товари відомих aftermarket/замінників та дистриб'юторів:
+    2. Перевір, чи продає цей магазин аналоги/замінники та чи співпрацює з відомими aftermarket операторами:
        - Granit Parts
        - Kramp
        - Industriehof
@@ -656,14 +655,15 @@ def detect_brands_ai(client_id):
        - Waryński
        - Premium Parts
 
-    Поверни ВИКЛЮЧНО валідний JSON-об'єкт наступного формату:
+    Поверни ВИКЛЮЧНО валідний JSON-об'єкт строго за такою схемою:
     {{
         "brands": ["Vaderstad", "Horsch"],
         "aftermarket": ["Granit Parts", "Bellota"]
     }}
-    Без markdown (без ```), без лапок на початку/кінці і без додаткових пояснень.
+    Без markdown (без ```), без лапок на початку/кінці і без жодних пояснень.
     """
     
+    # 2. Швидкий запит до Gemini
     try:
         host = "generativelanguage.googleapis.com"
         model_path = "v1beta/models/gemini-3.6-flash:generateContent"
@@ -691,7 +691,7 @@ def detect_brands_ai(client_id):
         
         final_brands_str = ", ".join(sorted(detected_brands)) if detected_brands else "-"
         
-        # Об'єднуємо поточні афтермаркет оператори з виявленими
+        # Об'єднуємо наявні aftermarket оператори з виявленими
         current_aftermarket = [a.strip() for a in (client['aftermarket_companies'] or '').split(',') if a.strip() and a.strip() != '-']
         final_aftermarket_set = set(current_aftermarket + detected_aftermarket)
         final_aftermarket_str = ", ".join(sorted(final_aftermarket_set)) if final_aftermarket_set else "-"
@@ -713,7 +713,7 @@ def detect_brands_ai(client_id):
             'brands': detected_brands,
             'aftermarket': list(final_aftermarket_set),
             'detected_aftermarket': detected_aftermarket,
-            'message': f"ШІ оновив дані: {'; '.join(msg_parts) if msg_parts else 'збігів не знайдено'}"
+            'message': f"ШІ оновив дані: {'; '.join(msg_parts) if msg_parts else 'жодного зі списку не знайдено'}"
         })
         
     except Exception as e:
@@ -924,10 +924,10 @@ def add_client():
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
-                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s)""",
+                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage, aftermarket_companies) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s)""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies)
         )
         conn.commit()
         cursor.close()
@@ -950,7 +950,7 @@ def edit_client(client_id):
     whatsapp_1 = request.form.get('whatsapp_1', '')
     whatsapp_2 = request.form.get('whatsapp_2', '')
     aftermarket_companies = request.form.get('aftermarket_companies', '').strip()
-
+    
     if interest_level != 'зацікавленість':
         deal_stage = 'none'
         
@@ -973,9 +973,9 @@ def edit_client(client_id):
         cursor.execute(
             """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
                                   website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
-                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s, deal_stage=%s WHERE id=%s""",
+                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s, deal_stage=%s, aftermarket_companies=%s WHERE id=%s""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, client_id)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, client_id)
         )
         conn.commit()
         cursor.close()
@@ -1103,7 +1103,7 @@ def client_detail(client_id):
                        'contact_person', 'position', 'phone', 'email', 
                        'contact_person_2', 'position_2', 'phone_2', 'email_2', 
                        'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp_1', 'whatsapp_2',
-                       'is_active', 'deactivation_reason', 'deal_stage']
+                       'is_active', 'deactivation_reason', 'deal_stage', 'aftermarket_companies']
     for field in fields_to_check:
         if field not in client or client[field] is None:
             if field == 'interest_level':
@@ -1195,6 +1195,7 @@ def export_excel():
                    ELSE 'Немає активної угоди'
                END AS "Етап угоди",
                c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
+               c.aftermarket_companies AS "Aftermarket оператори",
                c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
                c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.whatsapp_1 AS "WhatsApp 1", c.email AS "Email 1",
                c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.whatsapp_2 AS "WhatsApp 2", c.email_2 AS "Email 2",
