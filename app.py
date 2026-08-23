@@ -589,6 +589,9 @@ def add_quick_sale(client_id):
 from bs4 import BeautifulSoup
 import re
 
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 @app.route('/detect_brands_ai/<int:client_id>', methods=['POST'])
 @login_required
 def detect_brands_ai(client_id):
@@ -615,35 +618,37 @@ def detect_brands_ai(client_id):
     }
     extracted_text = ""
     
+    # 1. Швидке завантаження сторінки (таймаут 7 секунд)
     try:
-        page_res = requests.get(site_url, headers=headers, timeout=20, verify=False)
+        page_res = requests.get(site_url, headers=headers, timeout=7, verify=False)
         if page_res.status_code == 200:
             soup = BeautifulSoup(page_res.text, 'html.parser')
             for element in soup(["script", "style", "svg", "noscript"]):
                 element.extract()
-            # Збільшено ліміт до 100 000 символів
-            extracted_text = soup.get_text(separator=' ', strip=True)[:100000]
+            # 20 000 символів - оптимальний баланс швидкості та повноти даних
+            extracted_text = soup.get_text(separator=' ', strip=True)[:20000]
     except Exception as e:
-        print(f"Помилка завантаження HTML: {e}")
+        print(f"Помилка завантаження HTML {site_url}: {e}")
 
     prompt = f"""
-    Проаналізуй вміст веб-сторінки та категорій інтернет-магазину/каталогу '{client_name}' ({site_url}):
+    Проаналізуй вміст веб-сторінки та категорій каталогу/магазину '{client_name}' ({site_url}):
 
     --- ТЕКСТ СТОРІНКИ, МЕНЮ ТА КАТЕГОРІЙ ---
     {extracted_text if extracted_text else "Текст сайту недоступний, використовуй точні знання про асортимент компанії " + client_name}
     --- КІНЕЦЬ ТЕКСТУ ---
 
-    Завдання: Перевір, чи є в асортименті, категоріях, списках виробників або каталогах запчастини / техніка до наступних 5 брендів:
+    Завдання: Перевір, чи є в асортименті або каталогах сайту запчастини чи техніка до таких 5 брендів:
     1. Vaderstad (Väderstad)
     2. Gaspardo (Maschio Gaspardo)
     3. Horsch
     4. Kverneland
     5. Pottinger (Pöttinger)
 
-    Поверни ВИКЛЮЧНО валідний JSON-масив знайдених брендів (наприклад: ["Gaspardo", "Horsch", "Kverneland"] або []).
+    Поверни ВИКЛЮЧНО валідний JSON-масив знайдених брендів (наприклад: ["Gaspardo", "Horsch"] або []).
     Без markdown, без лапок ``` і без пояснень.
     """
     
+    # 2. Швидкий запит до Gemini (таймаут 15 секунд)
     try:
         host = "generativelanguage.googleapis.com"
         model_path = "v1beta/models/gemini-3.6-flash:generateContent"
@@ -654,7 +659,7 @@ def detect_brands_ai(client_id):
             "generationConfig": {"temperature": 0.0}
         }
         
-        res = requests.post(url, json=payload, timeout=35)
+        res = requests.post(url, json=payload, timeout=15)
         res_data = res.json()
         
         if 'error' in res_data:
