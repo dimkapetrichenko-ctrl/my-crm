@@ -638,46 +638,39 @@ def detect_brands_ai(client_id):
         print(f"Помилка завантаження HTML {site_url}: {e}")
 
     prompt = f"""
-    Проаналізуй вміст веб-сторінки та категорій каталогу/магазину '{client_name}' ({site_url}):
-
-    --- ТЕКСТ СТОРІНКИ, МЕНЮ ТА КАТЕГОРІЙ ---
-    {extracted_text if extracted_text else "Текст сайту недоступний, використовуй точні знання про асортимент компанії " + client_name}
-    --- КІНЕЦЬ ТЕКСТУ ---
-
-prompt = f"""
     Проаналізуй наведений нижче контент сайту/магазину запчастин '{client_name}' ({site_url}):
 
     --- КОНТЕНТ САЙТУ ТА КАТАЛОГУ ---
     {extracted_text if extracted_text else "Текст сайту недоступний, використовуй точні знання про асортимент компанії " + client_name}
     --- КІНЕЦЬ КОНТЕНТУ ---
 
-    Завдання 1: Визнач наявність запчастин/техніки до таких брендів:
-    - Vaderstad (враховуй: Vaderstad, Väderstad, Rapid, Carrier)
+    Завдання 1: Визнач наявність запчастин або техніки до наступних брендів (враховуй різні форми написання та популярні агрегати):
+    - Vaderstad (враховуй: Vaderstad, Väderstad, Rapid, Carrier, TopDown, Tempo)
     - Gaspardo (враховуй: Gaspardo, Maschio Gaspardo)
-    - Horsch (враховуй: Horsch, Pronto, Joker, Terrano)
-    - Kverneland (враховуй: Kverneland, Accord, Rau)
-    - Pottinger (враховуй: Pottinger, Pöttinger, Terradisc)
+    - Horsch (враховуй: Horsch, Pronto, Joker, Terrano, Tiger, Maestro)
+    - Kverneland (враховуй: Kverneland, Accord, Rau, Qualidisc, Exacta)
+    - Pottinger (враховуй: Pottinger, Pöttinger, Terradisc, Synkro, Lion, Aerosem)
 
-    Завдання 2: Визнач співпрацю з aftermarket постачальниками/брендами аналогів:
-    - Granit Parts (або Granit)
+    Завдання 2: Визнач співпрацю з відомими aftermarket операторами / виробниками замінників:
+    - Granit Parts (враховуй: Granit, Granit Parts, Granit-Parts)
     - Kramp
-    - Industriehof
+    - Industriehof (враховуй: Industriehof Scherenbostel)
     - Bepco
     - Bellota
-    - Frank Walz
+    - Frank Walz (враховуй: Frank Walz, Frank Original)
     - Molbro
-    - Waryński
+    - Waryński (враховуй: Waryński, Warynski)
     - Premium Parts
 
-    Вимоги до відповіді:
-    Поверни ВИКЛЮЧНО JSON-об'єкт із нормалізованими назвами:
+    Вимоги до результату:
+    Поверни ВИКЛЮЧНО JSON-об'єкт строго у такому форматі:
     {{
         "brands": ["Vaderstad", "Gaspardo", "Kverneland"],
         "aftermarket": ["Granit Parts", "Kramp", "Waryński"]
     }}
     Дозволені значення для brands: "Vaderstad", "Gaspardo", "Horsch", "Kverneland", "Pottinger".
     Дозволені значення для aftermarket: "Granit Parts", "Kramp", "Industriehof", "Bepco", "Bellota", "Frank Walz", "Molbro", "Waryński", "Premium Parts".
-    Без markdown, без лапок ``` і без пояснень.
+    Без markdown (без ```), без лапок на початку/кінці і без жодних додаткових пояснень.
     """
     
     # 2. Швидкий запит до Gemini
