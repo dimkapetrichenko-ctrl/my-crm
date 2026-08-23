@@ -618,14 +618,22 @@ def detect_brands_ai(client_id):
     }
     extracted_text = ""
     
-    # 1. Швидке завантаження сторінки (таймаут 7 секунд)
+    # 1. Завантаження сторінки з витягуванням alt/title партнерів та тексту до 40 000 символів
     try:
-        page_res = requests.get(site_url, headers=headers, timeout=7, verify=False)
+        page_res = requests.get(site_url, headers=headers, timeout=8, verify=False)
         if page_res.status_code == 200:
             soup = BeautifulSoup(page_res.text, 'html.parser')
+            
+            # Збираємо підписи зображень та назви посилань (логотипи брендів у каталогах)
+            alts = [img.get('alt', '') for img in soup.find_all('img') if img.get('alt')]
+            titles = [a.get('title', '') for a in soup.find_all('a') if a.get('title')]
+            meta_brand_text = " ".join(alts + titles)
+
             for element in soup(["script", "style", "svg", "noscript"]):
                 element.extract()
-            extracted_text = soup.get_text(separator=' ', strip=True)[:20000]
+                
+            raw_page_text = soup.get_text(separator=' ', strip=True)
+            extracted_text = f"{meta_brand_text} {raw_page_text}"[:40000]
     except Exception as e:
         print(f"Помилка завантаження HTML {site_url}: {e}")
 
@@ -645,7 +653,7 @@ def detect_brands_ai(client_id):
        - Pottinger (Pöttinger)
 
     2. Перевір, чи продає цей магазин аналоги/замінники та чи співпрацює з відомими aftermarket операторами:
-       - Granit Parts
+       - Granit Parts (або Granit)
        - Kramp
        - Industriehof
        - Bepco
