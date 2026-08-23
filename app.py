@@ -644,31 +644,40 @@ def detect_brands_ai(client_id):
     {extracted_text if extracted_text else "Текст сайту недоступний, використовуй точні знання про асортимент компанії " + client_name}
     --- КІНЕЦЬ ТЕКСТУ ---
 
-    Завдання:
-    1. Перевір, чи є в асортименті або каталогах сайту запчастини чи техніка до таких 5 брендів:
-       - Vaderstad (Väderstad)
-       - Gaspardo (Maschio Gaspardo)
-       - Horsch
-       - Kverneland
-       - Pottinger (Pöttinger)
+prompt = f"""
+    Проаналізуй наведений нижче контент сайту/магазину запчастин '{client_name}' ({site_url}):
 
-    2. Перевір, чи продає цей магазин аналоги/замінники та чи співпрацює з відомими aftermarket операторами:
-       - Granit Parts (або Granit)
-       - Kramp
-       - Industriehof
-       - Bepco
-       - Bellota
-       - Frank Walz
-       - Molbro
-       - Waryński
-       - Premium Parts
+    --- КОНТЕНТ САЙТУ ТА КАТАЛОГУ ---
+    {extracted_text if extracted_text else "Текст сайту недоступний, використовуй точні знання про асортимент компанії " + client_name}
+    --- КІНЕЦЬ КОНТЕНТУ ---
 
-    Поверни ВИКЛЮЧНО валідний JSON-об'єкт строго за такою схемою:
+    Завдання 1: Визнач наявність запчастин/техніки до таких брендів:
+    - Vaderstad (враховуй: Vaderstad, Väderstad, Rapid, Carrier)
+    - Gaspardo (враховуй: Gaspardo, Maschio Gaspardo)
+    - Horsch (враховуй: Horsch, Pronto, Joker, Terrano)
+    - Kverneland (враховуй: Kverneland, Accord, Rau)
+    - Pottinger (враховуй: Pottinger, Pöttinger, Terradisc)
+
+    Завдання 2: Визнач співпрацю з aftermarket постачальниками/брендами аналогів:
+    - Granit Parts (або Granit)
+    - Kramp
+    - Industriehof
+    - Bepco
+    - Bellota
+    - Frank Walz
+    - Molbro
+    - Waryński
+    - Premium Parts
+
+    Вимоги до відповіді:
+    Поверни ВИКЛЮЧНО JSON-об'єкт із нормалізованими назвами:
     {{
-        "brands": ["Vaderstad", "Horsch"],
-        "aftermarket": ["Granit Parts", "Bellota"]
+        "brands": ["Vaderstad", "Gaspardo", "Kverneland"],
+        "aftermarket": ["Granit Parts", "Kramp", "Waryński"]
     }}
-    Без markdown (без ```), без лапок на початку/кінці і без жодних пояснень.
+    Дозволені значення для brands: "Vaderstad", "Gaspardo", "Horsch", "Kverneland", "Pottinger".
+    Дозволені значення для aftermarket: "Granit Parts", "Kramp", "Industriehof", "Bepco", "Bellota", "Frank Walz", "Molbro", "Waryński", "Premium Parts".
+    Без markdown, без лапок ``` і без пояснень.
     """
     
     # 2. Швидкий запит до Gemini
