@@ -168,14 +168,16 @@ def init_db():
     cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='clients'")
     existing_columns = [row[0] for row in cursor.fetchall()]
     
-    new_fields = {
+ new_fields = {
         'website': 'TEXT', 'buyer_type': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
         'contact_person_2': 'TEXT', 'position_2': 'TEXT', 'phone_2': 'TEXT', 'email_2': 'TEXT',
         'interest_level': 'TEXT', 'next_event_date': 'TEXT', 'next_event_type': 'TEXT', 'mayer_reg': 'TEXT',
         'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT', 'is_active': 'BOOLEAN DEFAULT TRUE', 'deactivation_reason': 'TEXT',
-        'deal_stage': "TEXT DEFAULT 'none'"
+        'deal_stage': "TEXT DEFAULT 'none'",
+        'aftermarket_companies': 'TEXT'
     }
-    
+
+   
     for field, f_type in new_fields.items():
         if field not in existing_columns:
             cursor.execute(f"ALTER TABLE clients ADD COLUMN {field} {f_type};")
@@ -600,7 +602,7 @@ def detect_brands_ai(client_id):
         
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
-    cursor.execute("SELECT id, name, website, brands FROM clients WHERE id = %s", (client_id,))
+    cursor.execute("SELECT id, name, website, brands, aftermarket_companies FROM clients WHERE id = %s", (client_id,))
     client = cursor.fetchone()
     
     if not client or not client['website']:
@@ -618,37 +620,50 @@ def detect_brands_ai(client_id):
     }
     extracted_text = ""
     
-    # 1. Швидке завантаження сторінки (таймаут 7 секунд)
     try:
         page_res = requests.get(site_url, headers=headers, timeout=7, verify=False)
         if page_res.status_code == 200:
             soup = BeautifulSoup(page_res.text, 'html.parser')
             for element in soup(["script", "style", "svg", "noscript"]):
                 element.extract()
-            # 20 000 символів - оптимальний баланс швидкості та повноти даних
             extracted_text = soup.get_text(separator=' ', strip=True)[:20000]
     except Exception as e:
         print(f"Помилка завантаження HTML {site_url}: {e}")
 
     prompt = f"""
-    Проаналізуй вміст веб-сторінки та категорій каталогу/магазину '{client_name}' ({site_url}):
+    Проаналізуй вміст веб-сторінки інтернет-магазину/каталогу '{client_name}' ({site_url}):
 
-    --- ТЕКСТ СТОРІНКИ, МЕНЮ ТА КАТЕГОРІЙ ---
+    --- ТЕКСТ СТОРІНКИ ТА КАТЕГОРІЙ ---
     {extracted_text if extracted_text else "Текст сайту недоступний, використовуй точні знання про асортимент компанії " + client_name}
     --- КІНЕЦЬ ТЕКСТУ ---
 
-    Завдання: Перевір, чи є в асортименті або каталогах сайту запчастини чи техніка до таких 5 брендів:
-    1. Vaderstad (Väderstad)
-    2. Gaspardo (Maschio Gaspardo)
-    3. Horsch
-    4. Kverneland
-    5. Pottinger (Pöttinger)
+    Завдання:
+    1. Перевір, чи є в асортименті запчастини до брендів техніки:
+       - Vaderstad
+       - Gaspardo
+       - Horsch
+       - Kverneland
+       - Pottinger
 
-    Поверни ВИКЛЮЧНО валідний JSON-масив знайдених брендів (наприклад: ["Gaspardo", "Horsch"] або []).
-    Без markdown, без лапок ``` і без пояснень.
+    2. Перевір, чи є згадки або товари відомих aftermarket/замінників та дистриб'юторів:
+       - Granit Parts
+       - Kramp
+       - Industriehof
+       - Bepco
+       - Bellota
+       - Frank Walz
+       - Molbro
+       - Waryński
+       - Premium Parts
+
+    Поверни ВИКЛЮЧНО валідний JSON-об'єкт наступного формату:
+    {{
+        "brands": ["Vaderstad", "Horsch"],
+        "aftermarket": ["Granit Parts", "Bellota"]
+    }}
+    Без markdown (без ```), без лапок на початку/кінці і без додаткових пояснень.
     """
     
-    # 2. Швидкий запит до Gemini (таймаут 15 секунд)
     try:
         host = "generativelanguage.googleapis.com"
         model_path = "v1beta/models/gemini-3.6-flash:generateContent"
@@ -669,20 +684,36 @@ def detect_brands_ai(client_id):
             
         raw_text = res_data['candidates'][0]['content']['parts'][0]['text']
         raw_text = raw_text.replace('```json', '').replace('```', '').strip()
-        detected_brands = json.loads(raw_text)
+        result_data = json.loads(raw_text)
+        
+        detected_brands = result_data.get('brands', [])
+        detected_aftermarket = result_data.get('aftermarket', [])
         
         final_brands_str = ", ".join(sorted(detected_brands)) if detected_brands else "-"
         
-        cursor.execute("UPDATE clients SET brands = %s WHERE id = %s", (final_brands_str, client_id))
+        # Об'єднуємо поточні афтермаркет оператори з виявленими
+        current_aftermarket = [a.strip() for a in (client['aftermarket_companies'] or '').split(',') if a.strip() and a.strip() != '-']
+        final_aftermarket_set = set(current_aftermarket + detected_aftermarket)
+        final_aftermarket_str = ", ".join(sorted(final_aftermarket_set)) if final_aftermarket_set else "-"
+        
+        cursor.execute("UPDATE clients SET brands = %s, aftermarket_companies = %s WHERE id = %s", 
+                       (final_brands_str, final_aftermarket_str, client_id))
         conn.commit()
         cursor.close()
         conn.close()
         
+        msg_parts = []
+        if detected_brands:
+            msg_parts.append(f"Бренди: {', '.join(detected_brands)}")
+        if detected_aftermarket:
+            msg_parts.append(f"Aftermarket: {', '.join(detected_aftermarket)}")
+            
         return jsonify({
             'success': True,
             'brands': detected_brands,
-            'detected': detected_brands,
-            'message': f"ШІ виявив бренди: {', '.join(detected_brands) if detected_brands else 'жодного зі списку не знайдено'}"
+            'aftermarket': list(final_aftermarket_set),
+            'detected_aftermarket': detected_aftermarket,
+            'message': f"ШІ оновив дані: {'; '.join(msg_parts) if msg_parts else 'збігів не знайдено'}"
         })
         
     except Exception as e:
@@ -870,6 +901,7 @@ def add_client():
     mayer_reg = request.form.get('mayer_reg', 'Ні')
     whatsapp_1 = request.form.get('whatsapp_1', '')
     whatsapp_2 = request.form.get('whatsapp_2', '')
+    aftermarket_companies = request.form.get('aftermarket_companies', '').strip()
     
     if interest_level != 'зацікавленість':
         deal_stage = 'none'
@@ -917,7 +949,8 @@ def edit_client(client_id):
     mayer_reg = request.form.get('mayer_reg', 'Ні')
     whatsapp_1 = request.form.get('whatsapp_1', '')
     whatsapp_2 = request.form.get('whatsapp_2', '')
-    
+    aftermarket_companies = request.form.get('aftermarket_companies', '').strip()
+
     if interest_level != 'зацікавленість':
         deal_stage = 'none'
         
