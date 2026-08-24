@@ -1,14 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- ЧИСТІ ПРАВИЛЬНІ ПОСИЛАННЯ НА РЕДАКТОР Quill -->
-<link href="[https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css](https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css)" rel="stylesheet" />
+<!-- СТИЛІ ТА СКРИПТ РЕДАКТОРА QUILL -->
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
 
 <div class="row mb-3">
     <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
             <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">◀ Назад до списку</a>
-            <!-- Лічильник успішних угод -->
             <span class="badge bg-success-subtle text-success border border-success px-3 py-1.5 font-monospace fw-bold" style="font-size: 0.85rem;">
                 🏆 Угод: <strong>{{ deal_count or 0 }}</strong> | Оплачено: <strong>{{ "{:,.2f}".format(deal_total_sum or 0) }} €</strong>
             </span>
@@ -77,7 +76,7 @@
                 <label class="form-label mb-0.5 small text-white bg-dark w-100 p-1 rounded-top m-0">Текст повідомлення:</label>
                 <input type="hidden" name="body" id="emailBodyHidden">
                 
-                <div id="editor-container" style="height: 220px; font-size: 15px; background-color: #ffffff;">
+                <div id="editor-container" style="min-height: 200px; font-size: 15px; background-color: #ffffff; cursor: text;">
                     <p>Доброго дня!</p>
                 </div>
             </div>
@@ -91,7 +90,7 @@
 </div>
 
 <div class="row">
-    <!-- ЛІВА КОЛОНКА (АВТОНОМНИЙ СКРОЛ) -->
+    <!-- ЛІВА КОЛОНКА -->
     <div class="col-md-5 mb-4">
         <div class="card shadow-sm" style="position: sticky; top: 15px; max-height: calc(100vh - 90px); display: flex; flex-direction: column;">
             <div class="card-header bg-dark text-white py-2" style="flex-shrink: 0;">
@@ -115,7 +114,6 @@
                         </select>
                     </div>
 
-                    <!-- ВИБІР ЕТАПУ УГОДИ (ДОСТУПНИЙ ТІЛЬКИ ПРИ ВИСОКІЙ ЗАЦІКАВЛЕНОСТІ) -->
                     <div id="deal_stage_container" class="mb-2 p-2 bg-success-subtle border border-success rounded-3" style="display: none;">
                         <label class="form-label mb-1 fw-bold text-success-emphasis small">🎯 Етап угоди (Воронка продажу):</label>
                         <select name="deal_stage" id="client_deal_stage" class="form-select form-select-sm fw-bold">
@@ -149,7 +147,7 @@
                         </select>
                     </div>
 
-                    <!-- ПРІОРИТЕТНІ БРЕНДИ + КНОПКА ШІ-СКАНУВАННЯ -->
+                    <!-- ПРІОРИТЕТНІ БРЕНДИ -->
                     <div class="mb-2">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <label class="form-label mb-0"><b>Пріоритетні бренди</b></label>
@@ -188,14 +186,13 @@
                         </div>
                     </div>
 
-                    <!-- СПІВПРАЦЯ З AFTERMARKET ОПЕРАТОРАМИ -->
+                    <!-- AFTERMARKET ОПЕРАТОРИ -->
                     <div class="mb-2">
                         <label class="form-label mb-1 fw-bold text-dark d-flex justify-content-between align-items-center">
                             <span>⚙️ Співпраця з Aftermarket</span>
                             <small class="text-muted fw-normal" style="font-size: 0.75rem;">клікніть тег для додавання</small>
                         </label>
                         
-                        <!-- Швидкі теги операторів -->
                         <div class="mb-1.5 d-flex flex-wrap gap-1">
                             <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.78rem;" onclick="addAftermarketTag('Granit Parts')">+ Granit</button>
                             <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.78rem;" onclick="addAftermarketTag('Kramp')">+ Kramp</button>
@@ -208,7 +205,6 @@
                             <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.78rem;" onclick="addAftermarketTag('Тільки оригінал (OEM)')">+ OEM</button>
                         </div>
 
-                        <!-- Поле для збереження списку операторів -->
                         <input type="text" id="aftermarket_companies" name="aftermarket_companies" 
                                value="{{ client.aftermarket_companies if client.aftermarket_companies and client.aftermarket_companies != '-' else '' }}" 
                                class="form-control form-control-sm" 
@@ -217,7 +213,7 @@
 
                     <div class="mb-2">
                         <label class="form-label mb-1">Веб-сайт</label>
-                        <input type="text" name="website" id="client_website_input" class="form-control form-control-sm" value="{{ client.website or '' }}" placeholder="[www.example.com](https://www.example.com)">
+                        <input type="text" name="website" id="client_website_input" class="form-control form-control-sm" value="{{ client.website or '' }}" placeholder="www.example.com">
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1">Країна</label>
@@ -275,9 +271,8 @@
         </div>
     </div>
 
-    <!-- ПРАВА КОЛОНКА (ШВИДКИЙ ПРОДАЖ, ДЕФІЦИТ, РОЗМОВИ) -->
+    <!-- ПРАВА КОЛОНКА -->
     <div class="col-md-7">
-        <!-- БЛОК ШВИДКОЇ ФІКСАЦІЇ ПРОДАЖУ (ДОСТУПНИЙ ПРИ ВИСОКІЙ ЗАЦІКАВЛЕНОСТІ) -->
         <div id="quick_sale_card" class="card shadow-sm mb-3 border-success" style="display: none;">
             <div class="card-header bg-success text-white py-1.5 fw-bold d-flex justify-content-between align-items-center">
                 <span>💰 Швидка фіксація продажу / оплати</span>
@@ -457,7 +452,7 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНЕ ВІКНО ДЕАКТИВАЦІЇ КЛІЄНТА -->
+<!-- МОДАЛЬНІ ВІКНА -->
 <div class="modal fade" id="deactivateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-danger">
@@ -481,7 +476,6 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНЕ ВІКНО КАЛЕНДАРЯ НАВАНТАЖЕННЯ -->
 <div class="modal fade" id="workloadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-primary">
@@ -513,12 +507,31 @@
     </div>
 </div>
 
-<script src="[https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js](https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js)"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script>
     const eventsByDate = JSON.parse({{ json_events_by_date | tojson | safe }});
     let wYear = new Date().getFullYear();
     let wMonth = new Date().getMonth();
     const wMonthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+
+    let quillInstance = null;
+
+    function initQuillEditor() {
+        if (!quillInstance && document.getElementById('editor-container')) {
+            quillInstance = new Quill('#editor-container', {
+                theme: 'snow',
+                modules: { 
+                    toolbar: [ 
+                        ['bold', 'italic', 'underline', 'strike'], 
+                        [{ 'color': [] }, { 'background': [] }], 
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
+                        ['clean'] 
+                    ] 
+                }
+            });
+            quillInstance.enable(true);
+        }
+    }
 
     function toggleDealStageVisibility() {
         const interestSelect = document.getElementById('client_interest_level');
@@ -600,7 +613,6 @@
         }
     }
 
-    // Додавання тегу афтермаркет оператора в текстове поле
     function addAftermarketTag(tagName) {
         const input = document.getElementById('aftermarket_companies');
         if (!input) return;
@@ -612,7 +624,6 @@
         }
     }
 
-    // Запуск ШІ-аналізу Gemini (Бренди + Aftermarket)
     function runAiBrandDetection(clientId) {
         const btn = document.getElementById('btnAiBrands');
         if (!btn) return;
@@ -630,7 +641,6 @@
             btn.innerHTML = originalText;
             
             if (data.success) {
-                // 1. Оновлюємо чекбокси брендів
                 if (data.brands) {
                     const brandsLower = data.brands.map(b => b.toLowerCase());
                     
@@ -650,7 +660,6 @@
                     if (bPottinger) bPottinger.checked = brandsLower.some(b => b.includes('pottinger'));
                 }
 
-                // 2. Оновлюємо поле афтермаркет операторів
                 if (data.aftermarket && data.aftermarket.length > 0) {
                     const aftermarketInput = document.getElementById('aftermarket_companies');
                     if (aftermarketInput) {
@@ -678,23 +687,27 @@
 
         toggleDealStageVisibility();
 
-        if (document.getElementById('editor-container')) {
-            try {
-                const quill = new Quill('#editor-container', {
-                    theme: 'snow',
-                    modules: { toolbar: [ ['bold', 'italic', 'underline', 'strike'], [{ 'color': [] }, { 'background': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean'] ] }
-                });
-                const emailForm = document.getElementById('crmEmailForm');
-                if (emailForm) { 
-                    emailForm.onsubmit = function() { 
-                        const emailBodyHidden = document.getElementById('emailBodyHidden'); 
-                        emailBodyHidden.value = quill.getSemanticHTML(); 
-                        return true; 
-                    }; 
+        // Ініціалізація Quill при відкритті блоку відправки листа
+        const emailCollapseEl = document.getElementById('emailFormCollapse');
+        if (emailCollapseEl) {
+            emailCollapseEl.addEventListener('shown.bs.collapse', function () {
+                initQuillEditor();
+                if (quillInstance) {
+                    quillInstance.focus();
                 }
-            } catch (e) {
-                console.log('Quill editor init bypass:', e);
-            }
+            });
+        }
+
+        // Синхронізація тексту з прихованою формою перед відправкою
+        const emailForm = document.getElementById('crmEmailForm');
+        if (emailForm) { 
+            emailForm.onsubmit = function() { 
+                const emailBodyHidden = document.getElementById('emailBodyHidden'); 
+                if (quillInstance) {
+                    emailBodyHidden.value = quillInstance.getSemanticHTML(); 
+                }
+                return true; 
+            }; 
         }
     });
 </script>
