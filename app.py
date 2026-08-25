@@ -730,7 +730,39 @@ def detect_brands_ai(client_id):
         cursor.close()
         conn.close()
         return jsonify({'success': False, 'message': f"Помилка аналізу: {str(e)}"})
+@app.route('/add_lost_demand', methods=['POST'])
+@login_required
+def add_lost_demand():
+    client_id = request.form.get('client_id')
+    article = request.form.get('article', '').strip()
+    title = request.form.get('title', '').strip()
+    quantity = request.form.get('quantity', 1)
+    status = request.form.get('status', 'lost')
+    note = request.form.get('note', '').strip()
+    
+    try:
+        qty_val = int(quantity)
+    except Exception:
+        qty_val = 1
+
+    if article:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        created_at = datetime.now().strftime("%Y-%m-%d %H:%M")
         
+        cursor.execute(
+            """INSERT INTO lost_demand (client_id, article, title, quantity, status, note, created_at)
+               VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+            (client_id if client_id else None, article, title, qty_val, status, note, created_at)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+    if client_id:
+        return redirect(url_for('client_detail', client_id=client_id))
+    return redirect(url_for('index', tab='demand'))        
+
 @app.route('/delete_lost_demand/<int:demand_id>', methods=['POST'])
 @login_required
 def delete_lost_demand(demand_id):
