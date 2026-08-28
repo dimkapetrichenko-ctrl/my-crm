@@ -2,9 +2,9 @@
 {% block content %}
 
 <!-- ПІДКЛЮЧЕННЯ РУКОПИСНИХ ШРИФТІВ ДЛЯ БЛОКНОТА -->
-<link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
-<link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
-<link href="[https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Marck+Script&family=Neucha&display=swap](https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Marck+Script&family=Neucha&display=swap)" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Marck+Script&family=Neucha&display=swap" rel="stylesheet">
 
 <!-- КОМПАКТНІ ВЕРХНІ ФІНАНСОВІ ВІДЖЕТИ -->
 <div class="row g-2 mb-1">
@@ -78,7 +78,7 @@
                     <i class="bi bi-box-seam me-1"></i> Упущений попит
                 </button>
 
-                <!-- НОВА КНОПКА: БЛОКНОТ -->
+                <!-- Вкладка: БЛОКНОТ -->
                 <button onclick="switchWindow('notepad-win')" id="btn-notepad-win" class="btn btn-sm btn-outline-secondary fw-semibold px-3">
                     <i class="bi bi-journal-bookmark text-warning me-1"></i> Блокнот
                 </button>
@@ -310,60 +310,59 @@
     </div>
 </div>
 
-<!-- НОВЕ ВІКНО: БЛОКНОТ (СТИЛІЗАЦІЯ ПІД СПРАВЖНІЙ ПАПІР) -->
+<!-- ВІКНО: БЛОКНОТ -->
 <div id="window-notepad-win" class="crm-window" style="display: none;">
     <div class="row g-3">
-       <!-- ЛІВА ЧАСТИНА: СТВОРЕННЯ НОВОЇ СТОРІНКИ -->
-<div class="col-md-5">
-    <div class="notebook-sheet shadow">
-        <form action="/add_note" method="POST">
-            <div class="notebook-sheet-header mb-2 d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="text-muted small"><strong>📅 Дата:</strong> {{ today_date }}</span>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <select name="tag" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;">
-                        <option value="📌 Примітка" selected>📌 Примітка</option>
-                        <option value="💡 Ідея">💡 Ідея</option>
-                        <option value="📞 Перемовини">📞 Перемовини</option>
-                        <option value="⚙️ Запчастини">⚙️ Запчастини</option>
-                        <option value="🔥 Важливо">🔥 Важливо</option>
-                    </select>
-                    <select name="ink_color" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;" onchange="updateInkColor(this, 'new-note-content')">
-                        <option value="#1e3a8a" selected>🖊️ Синє чорнило</option>
-                        <option value="#111827">🖋️ Чорна ручка</option>
-                        <option value="#991b1b">✒️ Червона паста</option>
-                        <option value="#15803d">🟢 Зелена паста</option>
-                    </select>
-                </div>
+        <!-- ЛІВА ЧАСТИНА: СТВОРЕННЯ НОВОЇ СТОРІНКИ -->
+        <div class="col-md-5">
+            <div class="notebook-sheet shadow">
+                <form action="/add_note" method="POST">
+                    <div class="notebook-sheet-header mb-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small"><strong>📅 Дата:</strong> {{ today_date }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <select name="tag" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;">
+                                <option value="📌 Примітка" selected>📌 Примітка</option>
+                                <option value="💡 Ідея">💡 Ідея</option>
+                                <option value="📞 Перемовини">📞 Перемовини</option>
+                                <option value="⚙️ Запчастини">⚙️ Запчастини</option>
+                                <option value="🔥 Важливо">🔥 Важливо</option>
+                            </select>
+                            <select name="ink_color" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;" onchange="updateInkColor(this, 'new-note-content')">
+                                <option value="#1e3a8a" selected>🖊️ Синє чорнило</option>
+                                <option value="#111827">🖋️ Чорна ручка</option>
+                                <option value="#991b1b">✒️ Червона паста</option>
+                                <option value="#15803d">🟢 Зелена паста</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <input type="text" name="title" class="notebook-title-input mb-2" placeholder="" required>
+
+                    <textarea name="content" id="new-note-content" class="notebook-textarea" rows="12" placeholder="" required></textarea>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                        <span class="text-muted small font-monospace">Стор. Нова</span>
+                        <button type="submit" class="btn btn-sm btn-dark fw-bold px-4 shadow-sm">
+                            💾 Записати в блокнот
+                        </button>
+                    </div>
+                </form>
             </div>
+        </div>
 
-            <!-- Прибрано плейсхолдер заголовка -->
-            <input type="text" name="title" class="notebook-title-input mb-2" placeholder="" required>
-
-            <!-- Прибрано плейсхолдер тексту -->
-            <textarea name="content" id="new-note-content" class="notebook-textarea" rows="12" placeholder="" required></textarea>
-
-            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                <span class="text-muted small font-monospace">Стор. Нова</span>
-                <button type="submit" class="btn btn-sm btn-dark fw-bold px-4 shadow-sm">
-                    💾 Записати в блокнот
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
         <!-- ПРАВА ЧАСТИНА: АРХІВ СТОРІНОК БЛОКНОТА -->
         <div class="col-md-7">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="fw-bold text-dark"><i class="bi bi-journal-text me-1"></i> Збережені сторінки блокнота ({{ notes_list|length }})</span>
-                <span class="text-muted small">Перегортайте збережені записи</span>
+                <span class="text-muted small">Клікніть "✏️ Редагувати", щоб внести виправлення</span>
             </div>
 
             <div class="row g-3" style="max-height: 78vh; overflow-y: auto;">
                 {% for note in notes_list %}
                 <div class="col-md-6">
-                    <div class="notebook-sheet notebook-saved-sheet shadow-xs h-100 d-flex flex-direction-column justify-content-between position-relative">
+                    <div class="notebook-sheet notebook-saved-sheet shadow-xs h-100 d-flex flex-column justify-content-between position-relative">
                         <div>
                             <div class="notebook-sheet-header mb-1.5 d-flex justify-content-between align-items-center">
                                 <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.7rem;">🕒 {{ note.created_at }}</span>
@@ -378,8 +377,12 @@
                         <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
                             <span class="text-muted font-monospace" style="font-size: 0.68rem;">Стор. #{{ note.id }}</span>
                             <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 fw-bold" 
+                                        onclick="openEditNoteModal({{ note.id }}, '{{ note.title|e }}', `{{ note.content|replace('`', '\\`') }}`, '{{ note.tag }}', '{{ note.ink_color or '#1e3a8a' }}')">
+                                    ✏️ Редагувати
+                                </button>
                                 <form action="/delete_note/{{ note.id }}" method="POST" class="m-0" onsubmit="return confirm('Вирвати цю сторінку з блокнота?');">
-                                    <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1.5" title="Видалити сторінку">🗑️ Видалити</button>
+                                    <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1.5" title="Видалити сторінку">🗑️</button>
                                 </form>
                             </div>
                         </div>
@@ -753,7 +756,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label mb-0">Веб-сайт</label>
-                            <input type="text" name="website" class="form-control form-control-sm" placeholder="[www.example.com](https://www.example.com)">
+                            <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
                         </div>
                         <div class="col-12">
                             <label class="form-label mb-0">Адреса</label>
@@ -888,6 +891,49 @@
     </div>
 </div>
 
+<!-- МОДАЛЬНЕ ВІКНО РЕДАГУВАННЯ СТОРІНКИ БЛОКНОТА -->
+<div class="modal fade" id="editNoteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-2.5">
+                <h6 class="modal-title fw-bold">✏️ Редагувати сторінку блокнота</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editNoteForm" method="POST" action="">
+                <div class="modal-body p-3 bg-light-subtle">
+                    <div class="notebook-sheet shadow-none border">
+                        <div class="notebook-sheet-header mb-2 d-flex justify-content-between align-items-center">
+                            <span class="text-muted small fw-bold">Виправлення запису</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <select name="tag" id="edit_note_tag" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;">
+                                    <option value="📌 Примітка">📌 Примітка</option>
+                                    <option value="💡 Ідея">💡 Ідея</option>
+                                    <option value="📞 Перемовини">📞 Перемовини</option>
+                                    <option value="⚙️ Запчастини">⚙️ Запчастини</option>
+                                    <option value="🔥 Важливо">🔥 Важливо</option>
+                                </select>
+                                <select name="ink_color" id="edit_note_ink_color" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;" onchange="updateInkColor(this, 'edit_note_content')">
+                                    <option value="#1e3a8a">🖊️ Синє чорнило</option>
+                                    <option value="#111827">🖋️ Чорна ручка</option>
+                                    <option value="#991b1b">✒️ Червона паста</option>
+                                    <option value="#15803d">🟢 Зелена паста</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <input type="text" name="title" id="edit_note_title" class="notebook-title-input mb-2" required>
+                        <textarea name="content" id="edit_note_content" class="notebook-textarea" rows="10" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-sm btn-dark fw-bold px-4">💾 Зберегти зміни</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <style>
     #mainClientsTable { border-collapse: separate !important; border-spacing: 0 !important; }
     #mainClientsTable thead { position: sticky; top: 0; z-index: 10; }
@@ -981,6 +1027,22 @@ function updateInkColor(selectEl, textareaId) {
     if (area) {
         area.style.color = selectEl.value;
     }
+}
+
+function openEditNoteModal(id, title, content, tag, inkColor) {
+    const form = document.getElementById('editNoteForm');
+    form.action = `/edit_note/${id}`;
+    
+    document.getElementById('edit_note_title').value = title;
+    const contentArea = document.getElementById('edit_note_content');
+    contentArea.value = content;
+    contentArea.style.color = inkColor;
+    
+    document.getElementById('edit_note_tag').value = tag;
+    document.getElementById('edit_note_ink_color').value = inkColor;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editNoteModal'));
+    modal.show();
 }
 
 function updateTasksDesktopBadges() {
