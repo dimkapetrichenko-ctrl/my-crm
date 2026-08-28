@@ -369,8 +369,7 @@
                                 <span class="badge bg-warning-subtle text-dark border border-warning" style="font-size: 0.72rem;">{{ note.tag }}</span>
                             </div>
                             <h6 class="fw-bold text-dark border-bottom pb-1 mb-2 font-monospace">{{ note.title }}</h6>
-                            <div class="notebook-saved-text" style="color: {{ note.ink_color or '#1e3a8a' }};">
-                                {{ note.content }}
+                            <div class="notebook-saved-text" style="color: {{ note.ink_color or '#1e3a8a' }};">{{ note.content.strip() }}
                             </div>
                         </div>
 
