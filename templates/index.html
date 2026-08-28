@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 {% block content %}
 
+<!-- ПІДКЛЮЧЕННЯ РУКОПИСНИХ ШРИФТІВ ДЛЯ БЛОКНОТА -->
+<link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
+<link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
+<link href="[https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Marck+Script&family=Neucha&display=swap](https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Marck+Script&family=Neucha&display=swap)" rel="stylesheet">
+
 <!-- КОМПАКТНІ ВЕРХНІ ФІНАНСОВІ ВІДЖЕТИ -->
 <div class="row g-2 mb-1">
     <div class="col-md-4">
@@ -72,6 +77,11 @@
                 <button onclick="switchWindow('demand-win')" id="btn-demand-win" class="btn btn-sm btn-outline-secondary fw-semibold px-3">
                     <i class="bi bi-box-seam me-1"></i> Упущений попит
                 </button>
+
+                <!-- НОВА КНОПКА: БЛОКНОТ -->
+                <button onclick="switchWindow('notepad-win')" id="btn-notepad-win" class="btn btn-sm btn-outline-secondary fw-semibold px-3">
+                    <i class="bi bi-journal-bookmark text-warning me-1"></i> Блокнот
+                </button>
             </div>
         </div>
     </div>
@@ -86,7 +96,6 @@
                     <i class="bi bi-plus-lg"></i> Новий клієнт
                 </button>
                 
-                <!-- ПЕРЕМИКАЧ СТАТУСУ КЛІЄНТІВ -->
                 <form method="GET" action="/" class="d-flex align-items-center m-0">
                     <input type="hidden" name="search" value="{{ search_query }}">
                     <input type="hidden" name="interest" value="{{ interest_filter }}">
@@ -296,6 +305,93 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- НОВЕ ВІКНО: БЛОКНОТ (СТИЛІЗАЦІЯ ПІД СПРАВЖНІЙ ПАПІР) -->
+<div id="window-notepad-win" class="crm-window" style="display: none;">
+    <div class="row g-3">
+        <!-- ЛІВА ЧАСТИНА: СТВОРЕННЯ НОВОЇ СТОРІНКИ -->
+        <div class="col-md-5">
+            <div class="notebook-sheet shadow">
+                <form action="/add_note" method="POST">
+                    <div class="notebook-sheet-header mb-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small"><strong>📅 Дата:</strong> {{ today_date }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <select name="tag" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;">
+                                <option value="📌 Примітка" selected>📌 Примітка</option>
+                                <option value="💡 Ідея">💡 Ідея</option>
+                                <option value="📞 Перемовини">📞 Перемовини</option>
+                                <option value="⚙️ Запчастини">⚙️ Запчастини</option>
+                                <option value="🔥 Важливо">🔥 Важливо</option>
+                            </select>
+                            <select name="ink_color" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;" onchange="updateInkColor(this, 'new-note-content')">
+                                <option value="#1e3a8a" selected>🖊️ Синє чорнило</option>
+                                <option value="#111827">🖋️ Чорна ручка</option>
+                                <option value="#991b1b">✒️ Червона паста</option>
+                                <option value="#15803d">🟢 Зелена паста</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <input type="text" name="title" class="notebook-title-input mb-2" placeholder="Заголовок сторінки..." required>
+
+                    <textarea name="content" id="new-note-content" class="notebook-textarea" rows="12" placeholder="Почніть писати тут від руки..." required></textarea>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                        <span class="text-muted small font-monospace">Стор. Нова</span>
+                        <button type="submit" class="btn btn-sm btn-dark fw-bold px-4 shadow-sm">
+                            💾 Записати в блокнот
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ПРАВА ЧАСТИНА: АРХІВ СТОРІНОК БЛОКНОТА -->
+        <div class="col-md-7">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-dark"><i class="bi bi-journal-text me-1"></i> Збережені сторінки блокнота ({{ notes_list|length }})</span>
+                <span class="text-muted small">Перегортайте збережені записи</span>
+            </div>
+
+            <div class="row g-3" style="max-height: 78vh; overflow-y: auto;">
+                {% for note in notes_list %}
+                <div class="col-md-6">
+                    <div class="notebook-sheet notebook-saved-sheet shadow-xs h-100 d-flex flex-direction-column justify-content-between position-relative">
+                        <div>
+                            <div class="notebook-sheet-header mb-1.5 d-flex justify-content-between align-items-center">
+                                <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.7rem;">🕒 {{ note.created_at }}</span>
+                                <span class="badge bg-warning-subtle text-dark border border-warning" style="font-size: 0.72rem;">{{ note.tag }}</span>
+                            </div>
+                            <h6 class="fw-bold text-dark border-bottom pb-1 mb-2 font-monospace">{{ note.title }}</h6>
+                            <div class="notebook-saved-text" style="color: {{ note.ink_color or '#1e3a8a' }};">
+                                {{ note.content }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                            <span class="text-muted font-monospace" style="font-size: 0.68rem;">Стор. #{{ note.id }}</span>
+                            <div class="d-flex gap-1">
+                                <form action="/delete_note/{{ note.id }}" method="POST" class="m-0" onsubmit="return confirm('Вирвати цю сторінку з блокнота?');">
+                                    <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1.5" title="Видалити сторінку">🗑️ Видалити</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if not notes_list %}
+                <div class="col-12 text-center text-muted py-5">
+                    <i class="bi bi-journal-x fs-1 text-secondary d-block mb-2"></i>
+                    Блокнот порожній. Запишіть першу примітку на сторінці зліва!
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -596,7 +692,7 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНЕ ВІКНО СТВОРЕННЯ НОВОГО КЛІЄНТА -->
+<!-- МОДАЛЬНІ ВІКНА СТВОРЕННЯ/РЕДАГУВАННЯ -->
 <div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
@@ -656,7 +752,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label mb-0">Веб-сайт</label>
-                            <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
+                            <input type="text" name="website" class="form-control form-control-sm" placeholder="[www.example.com](https://www.example.com)">
                         </div>
                         <div class="col-12">
                             <label class="form-label mb-0">Адреса</label>
@@ -715,7 +811,6 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНЕ ВІКНО РЕДАГУВАННЯ ФІНАНСОВОГО ПЛАНУ -->
 <div class="modal fade" id="editFinanceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -756,7 +851,6 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНЕ ВІКНО РЕДАГУВАННЯ ЗАВДАННЯ -->
 <div class="modal fade" id="editTaskModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -794,53 +888,81 @@
 </div>
 
 <style>
-    #mainClientsTable {
-        border-collapse: separate !important;
-        border-spacing: 0 !important;
-    }
-
-    #mainClientsTable thead {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-
-    #mainClientsTable thead tr.header-titles-row th {
-        position: sticky;
-        top: 0;
-        height: 38px;
-        line-height: 1.2;
-        background-color: #f1f5f9 !important;
-        border-bottom: 1px solid #cbd5e1;
-        z-index: 12;
-    }
-
-    #mainClientsTable thead tr#excel-filter-row th {
-        position: sticky;
-        top: 38px;
-        background-color: #f8fafc !important;
-        border-bottom: 2px solid #94a3b8;
-        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
-        z-index: 11;
-        padding-top: 4px;
-        padding-bottom: 6px;
-    }
+    #mainClientsTable { border-collapse: separate !important; border-spacing: 0 !important; }
+    #mainClientsTable thead { position: sticky; top: 0; z-index: 10; }
+    #mainClientsTable thead tr.header-titles-row th { position: sticky; top: 0; height: 38px; line-height: 1.2; background-color: #f1f5f9 !important; border-bottom: 1px solid #cbd5e1; z-index: 12; }
+    #mainClientsTable thead tr#excel-filter-row th { position: sticky; top: 38px; background-color: #f8fafc !important; border-bottom: 2px solid #94a3b8; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05); z-index: 11; padding-top: 4px; padding-bottom: 6px; }
 
     .tasks-grid td { height: 54px; position: relative; cursor: pointer; font-weight: 500; vertical-align: top; padding-top: 5px; }
     .tasks-grid td:hover { background-color: #f1f5f9 !important; }
-    .tasks-dot-badge { 
-        position: absolute; 
-        bottom: 3px; 
-        right: 3px; 
-        font-size: 0.65rem; 
-        padding: 2px 5px; 
-        border-radius: 6px; 
-        display: flex; 
-        gap: 3px; 
-        align-items: center; 
-        font-weight: bold; 
-    }
+    .tasks-dot-badge { position: absolute; bottom: 3px; right: 3px; font-size: 0.65rem; padding: 2px 5px; border-radius: 6px; display: flex; gap: 3px; align-items: center; font-weight: bold; }
     .calendar-today-highlight { outline: 2px solid #0f172a !important; outline-offset: -2px; }
+
+    /* СТИЛІ РЕАЛІСТИЧНОГО ПАПЕРОВОГО БЛОКНОТА */
+    .notebook-sheet {
+        position: relative;
+        background-color: #fffdf9;
+        background-image: repeating-linear-gradient(transparent, transparent 31px, #e2e8f0 31px, #e2e8f0 32px);
+        line-height: 32px;
+        padding: 20px 25px 25px 45px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), -4px 0 0 #f1f5f9;
+    }
+    .notebook-sheet::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 35px;
+        width: 2px;
+        background-color: #f87171;
+        opacity: 0.6;
+    }
+    .notebook-sheet-header {
+        border-bottom: 1.5px solid #cbd5e1;
+        padding-bottom: 4px;
+        font-family: 'Neucha', cursive, sans-serif;
+    }
+    .notebook-title-input {
+        width: 100%;
+        background: transparent;
+        border: none;
+        border-bottom: 1px dashed #cbd5e1;
+        outline: none;
+        font-family: 'Neucha', cursive;
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #0f172a;
+        padding: 2px 0;
+    }
+    .notebook-textarea {
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        resize: none;
+        font-family: 'Caveat', cursive;
+        font-size: 1.45rem;
+        font-weight: 600;
+        line-height: 32px;
+        color: #1e3a8a;
+        padding-top: 4px;
+    }
+    .notebook-saved-sheet {
+        padding: 15px 15px 15px 35px;
+        min-height: 220px;
+    }
+    .notebook-saved-sheet::before {
+        left: 25px;
+    }
+    .notebook-saved-text {
+        font-family: 'Caveat', cursive;
+        font-size: 1.35rem;
+        font-weight: 600;
+        line-height: 32px;
+        white-space: pre-wrap;
+    }
 </style>
 
 <script>
@@ -852,6 +974,13 @@ let currentMonth = new Date().getMonth();
 let tasksYear = new Date().getFullYear();
 let tasksMonth = new Date().getMonth();
 const monthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+
+function updateInkColor(selectEl, textareaId) {
+    const area = document.getElementById(textareaId);
+    if (area) {
+        area.style.color = selectEl.value;
+    }
+}
 
 function updateTasksDesktopBadges() {
     const today = new Date().toISOString().split('T')[0];
@@ -949,7 +1078,7 @@ function resetTableFilters() {
 function switchWindow(targetWinId) {
     document.querySelectorAll('.crm-window').forEach(win => win.style.display = 'none');
     document.getElementById('window-' + targetWinId).style.display = 'block';
-    ['today-win', 'calendar-win', 'all-win', 'finance-win', 'tasks-win', 'demand-win'].forEach(id => {
+    ['today-win', 'calendar-win', 'all-win', 'finance-win', 'tasks-win', 'demand-win', 'notepad-win'].forEach(id => {
         let btn = document.getElementById('btn-' + id);
         if (btn) btn.className = "btn btn-sm btn-outline-secondary fw-semibold px-3";
     });
@@ -961,6 +1090,7 @@ function switchWindow(targetWinId) {
         else if(targetWinId === 'finance-win') activeBtn.className = "btn btn-sm btn-primary fw-bold px-3 shadow-sm";
         else if(targetWinId === 'tasks-win') activeBtn.className = "btn btn-sm btn-dark text-white fw-bold px-3 shadow-sm";
         else if(targetWinId === 'demand-win') activeBtn.className = "btn btn-sm btn-danger fw-bold px-3 shadow-sm";
+        else if(targetWinId === 'notepad-win') activeBtn.className = "btn btn-sm btn-warning text-dark fw-bold px-3 shadow-sm border border-dark";
     }
 }
 
@@ -1024,7 +1154,7 @@ function showTasksForDate(dateStr) {
     box.innerHTML = html;
 }
 
-// ВДОСКОНАЛЕНИЙ КАЛЕНДАР ЗАДАЧНИКА
+// КАЛЕНДАР ЗАДАЧНИКА
 function renderTasksCalendar() {
     const labelEl = document.getElementById('tasks-calendar-title');
     if (!labelEl) return;
@@ -1218,8 +1348,8 @@ window.onload = function() {
     if(urlParams.get('tab') === 'tasks') { switchWindow('tasks-win'); } 
     else if(urlParams.get('tab') === 'finance' || urlParams.get('finance_month') !== null) { switchWindow('finance-win'); } 
     else if(urlParams.get('tab') === 'demand') { switchWindow('demand-win'); } 
+    else if(urlParams.get('tab') === 'notepad') { switchWindow('notepad-win'); } 
     else { switchWindow('all-win'); }
 };
 </script>
 {% endblock %}
-
