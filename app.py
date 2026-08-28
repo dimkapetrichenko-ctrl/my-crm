@@ -237,6 +237,18 @@ def init_db():
             FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
         )
     ''')
+
+    # ТАБЛИЦЯ ДЛЯ БЛОКНОТА (НОТАТКИ)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notes (
+            id SERIAL PRIMARY KEY,
+            title TEXT,
+            content TEXT NOT NULL,
+            tag TEXT DEFAULT 'Нотатка',
+            ink_color TEXT DEFAULT '#1e3a8a',
+            created_at TEXT
+        )
+    ''')
     
     conn.commit()
     cursor.close()
@@ -377,6 +389,11 @@ def index():
     top_demand_raw = dict_cursor.fetchall()
     top_demand = [dict(t) for t in top_demand_raw]
 
+    # Завантаження нотаток для Блокнота
+    dict_cursor.execute("SELECT * FROM notes ORDER BY id DESC")
+    notes_raw = dict_cursor.fetchall()
+    notes_list = [dict(n) for n in notes_raw]
+
     dict_cursor.execute("SELECT id, name FROM clients WHERE is_active IS NOT FALSE ORDER BY name ASC")
     all_selector_clients = dict_cursor.fetchall()
 
@@ -493,8 +510,62 @@ def index():
         tasks=tasks,
         json_tasks=json.dumps(tasks, ensure_ascii=False),
         lost_demand_list=lost_demand_list,
-        top_demand=top_demand
+        top_demand=top_demand,
+        notes_list=notes_list
     )
+
+# --- МАРШРУТИ ДЛЯ БЛОКНОТА ---
+@app.route('/add_note', methods=['POST'])
+@login_required
+def add_note():
+    title = request.form.get('title', '').strip()
+    content = request.form.get('content', '').strip()
+    tag = request.form.get('tag', 'Нотатка').strip()
+    ink_color = request.form.get('ink_color', '#1e3a8a').strip()
+    
+    if content:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        created_at = datetime.now().strftime("%Y-%m-%d %H:%M")
+        cursor.execute(
+            "INSERT INTO notes (title, content, tag, ink_color, created_at) VALUES (%s, %s, %s, %s, %s)",
+            (title if title else 'Без назви', content, tag, ink_color, created_at)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+    return redirect(url_for('index', tab='notepad'))
+
+@app.route('/edit_note/<int:note_id>', methods=['POST'])
+@login_required
+def edit_note(note_id):
+    title = request.form.get('title', '').strip()
+    content = request.form.get('content', '').strip()
+    tag = request.form.get('tag', 'Нотатка').strip()
+    ink_color = request.form.get('ink_color', '#1e3a8a').strip()
+    
+    if content:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE notes SET title = %s, content = %s, tag = %s, ink_color = %s WHERE id = %s",
+            (title if title else 'Без назви', content, tag, ink_color, note_id)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+    return redirect(url_for('index', tab='notepad'))
+
+@app.route('/delete_note/<int:note_id>', methods=['POST'])
+@login_required
+def delete_note(note_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM notes WHERE id = %s", (note_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for('index', tab='notepad'))
 
 @app.route('/toggle_client_status/<int:client_id>', methods=['POST'])
 @login_required
@@ -624,7 +695,6 @@ def detect_brands_ai(client_id):
         if page_res.status_code == 200:
             soup = BeautifulSoup(page_res.text, 'html.parser')
             
-            # Збираємо підписи зображень та назви посилань (логотипи брендів у каталогах)
             alts = [img.get('alt', '') for img in soup.find_all('img') if img.get('alt')]
             titles = [a.get('title', '') for a in soup.find_all('a') if a.get('title')]
             meta_brand_text = " ".join(alts + titles)
@@ -701,7 +771,6 @@ def detect_brands_ai(client_id):
         
         final_brands_str = ", ".join(sorted(detected_brands)) if detected_brands else "-"
         
-        # Об'єднуємо наявні aftermarket оператори з виявленими
         current_aftermarket = [a.strip() for a in (client['aftermarket_companies'] or '').split(',') if a.strip() and a.strip() != '-']
         final_aftermarket_set = set(current_aftermarket + detected_aftermarket)
         final_aftermarket_str = ", ".join(sorted(final_aftermarket_set)) if final_aftermarket_set else "-"
@@ -730,6 +799,7 @@ def detect_brands_ai(client_id):
         cursor.close()
         conn.close()
         return jsonify({'success': False, 'message': f"Помилка аналізу: {str(e)}"})
+
 @app.route('/add_lost_demand', methods=['POST'])
 @login_required
 def add_lost_demand():
