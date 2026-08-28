@@ -313,45 +313,46 @@
 <!-- НОВЕ ВІКНО: БЛОКНОТ (СТИЛІЗАЦІЯ ПІД СПРАВЖНІЙ ПАПІР) -->
 <div id="window-notepad-win" class="crm-window" style="display: none;">
     <div class="row g-3">
-        <!-- ЛІВА ЧАСТИНА: СТВОРЕННЯ НОВОЇ СТОРІНКИ -->
-        <div class="col-md-5">
-            <div class="notebook-sheet shadow">
-                <form action="/add_note" method="POST">
-                    <div class="notebook-sheet-header mb-2 d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="text-muted small"><strong>📅 Дата:</strong> {{ today_date }}</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <select name="tag" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;">
-                                <option value="📌 Примітка" selected>📌 Примітка</option>
-                                <option value="💡 Ідея">💡 Ідея</option>
-                                <option value="📞 Перемовини">📞 Перемовини</option>
-                                <option value="⚙️ Запчастини">⚙️ Запчастини</option>
-                                <option value="🔥 Важливо">🔥 Важливо</option>
-                            </select>
-                            <select name="ink_color" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;" onchange="updateInkColor(this, 'new-note-content')">
-                                <option value="#1e3a8a" selected>🖊️ Синє чорнило</option>
-                                <option value="#111827">🖋️ Чорна ручка</option>
-                                <option value="#991b1b">✒️ Червона паста</option>
-                                <option value="#15803d">🟢 Зелена паста</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <input type="text" name="title" class="notebook-title-input mb-2" placeholder="Заголовок сторінки..." required>
-
-                    <textarea name="content" id="new-note-content" class="notebook-textarea" rows="12" placeholder="Почніть писати тут від руки..." required></textarea>
-
-                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                        <span class="text-muted small font-monospace">Стор. Нова</span>
-                        <button type="submit" class="btn btn-sm btn-dark fw-bold px-4 shadow-sm">
-                            💾 Записати в блокнот
-                        </button>
-                    </div>
-                </form>
+       <!-- ЛІВА ЧАСТИНА: СТВОРЕННЯ НОВОЇ СТОРІНКИ -->
+<div class="col-md-5">
+    <div class="notebook-sheet shadow">
+        <form action="/add_note" method="POST">
+            <div class="notebook-sheet-header mb-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small"><strong>📅 Дата:</strong> {{ today_date }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <select name="tag" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;">
+                        <option value="📌 Примітка" selected>📌 Примітка</option>
+                        <option value="💡 Ідея">💡 Ідея</option>
+                        <option value="📞 Перемовини">📞 Перемовини</option>
+                        <option value="⚙️ Запчастини">⚙️ Запчастини</option>
+                        <option value="🔥 Важливо">🔥 Важливо</option>
+                    </select>
+                    <select name="ink_color" class="form-select form-select-sm py-0 px-2 fw-bold" style="font-size: 0.75rem; width: auto;" onchange="updateInkColor(this, 'new-note-content')">
+                        <option value="#1e3a8a" selected>🖊️ Синє чорнило</option>
+                        <option value="#111827">🖋️ Чорна ручка</option>
+                        <option value="#991b1b">✒️ Червона паста</option>
+                        <option value="#15803d">🟢 Зелена паста</option>
+                    </select>
+                </div>
             </div>
-        </div>
 
+            <!-- Прибрано плейсхолдер заголовка -->
+            <input type="text" name="title" class="notebook-title-input mb-2" placeholder="" required>
+
+            <!-- Прибрано плейсхолдер тексту -->
+            <textarea name="content" id="new-note-content" class="notebook-textarea" rows="12" placeholder="" required></textarea>
+
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                <span class="text-muted small font-monospace">Стор. Нова</span>
+                <button type="submit" class="btn btn-sm btn-dark fw-bold px-4 shadow-sm">
+                    💾 Записати в блокнот
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
         <!-- ПРАВА ЧАСТИНА: АРХІВ СТОРІНОК БЛОКНОТА -->
         <div class="col-md-7">
             <div class="d-flex justify-content-between align-items-center mb-2">
