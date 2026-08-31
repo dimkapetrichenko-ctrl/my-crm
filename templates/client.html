@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- СТИЛІ ТА СКРИПТ РЕДАКТОРА QUILL -->
-<link href="[https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css](https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css)" rel="stylesheet" />
-
 <div class="row mb-3">
     <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
@@ -49,6 +46,7 @@
 </div>
 {% endif %}
 
+<!-- БЛОК НАДСИЛАННЯ EMAIL (ПОВНІСТЮ РОБОЧЕ ТА АКТИВНЕ ПОЛЕ) -->
 <div class="collapse my-3" id="emailFormCollapse">
     <div class="card card-body bg-dark text-white border-secondary shadow-sm">
         <h5 class="card-title text-warning mb-3">📬 Нове повідомлення для: {{ client.name }}</h5>
@@ -72,13 +70,9 @@
                 </label>
             </div>
 
-            <div class="mb-3 text-dark bg-light rounded">
-                <label class="form-label mb-0.5 small text-white bg-dark w-100 p-1 rounded-top m-0">Текст повідомлення:</label>
-                <input type="hidden" name="body" id="emailBodyHidden">
-                
-                <div id="editor-container" style="min-height: 200px; font-size: 15px; background-color: #ffffff; cursor: text;">
-                    <p>Доброго дня!</p>
-                </div>
+            <div class="mb-3">
+                <label class="form-label mb-1 small text-white fw-bold">Текст повідомлення:</label>
+                <textarea class="form-control bg-white text-dark" id="emailBodyTextarea" name="body" rows="8" style="font-size: 15px; line-height: 1.5;" placeholder="Доброго дня!..." required>Доброго дня!</textarea>
             </div>
             
             <div class="d-flex justify-content-end gap-2">
@@ -213,7 +207,7 @@
 
                     <div class="mb-2">
                         <label class="form-label mb-1">Веб-сайт</label>
-                        <input type="text" name="website" id="client_website_input" class="form-control form-control-sm" value="{{ client.website or '' }}" placeholder="[www.example.com](https://www.example.com)">
+                        <input type="text" name="website" id="client_website_input" class="form-control form-control-sm" value="{{ client.website or '' }}" placeholder="www.example.com">
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1">Країна</label>
@@ -523,36 +517,16 @@
     </div>
 </div>
 
-<script src="[https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js](https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js)"></script>
 <script>
     const eventsByDate = JSON.parse({{ json_events_by_date | tojson | safe }});
     let wYear = new Date().getFullYear();
     let wMonth = new Date().getMonth();
     const wMonthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-    let quillInstance = null;
-
     function setRole(role) {
         localStorage.setItem('crm_role', role);
         const quickAuthor = document.getElementById('quick_unanswered_author');
         if (quickAuthor) quickAuthor.value = role;
-    }
-
-    function initQuillEditor() {
-        if (!quillInstance && document.getElementById('editor-container')) {
-            quillInstance = new Quill('#editor-container', {
-                theme: 'snow',
-                modules: { 
-                    toolbar: [ 
-                        ['bold', 'italic', 'underline', 'strike'], 
-                        [{ 'color': [] }, { 'background': [] }], 
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }], 
-                        ['clean'] 
-                    ] 
-                }
-            });
-            quillInstance.enable(true);
-        }
     }
 
     function toggleDealStageVisibility() {
@@ -710,27 +684,6 @@
         if (initDate) { checkWorkload(initDate); }
 
         toggleDealStageVisibility();
-
-        const emailCollapseEl = document.getElementById('emailFormCollapse');
-        if (emailCollapseEl) {
-            emailCollapseEl.addEventListener('shown.bs.collapse', function () {
-                initQuillEditor();
-                if (quillInstance) {
-                    quillInstance.focus();
-                }
-            });
-        }
-
-        const emailForm = document.getElementById('crmEmailForm');
-        if (emailForm) { 
-            emailForm.onsubmit = function() { 
-                const emailBodyHidden = document.getElementById('emailBodyHidden'); 
-                if (quillInstance) {
-                    emailBodyHidden.value = quillInstance.getSemanticHTML(); 
-                }
-                return true; 
-            }; 
-        }
 
         const typeUnanswered = document.getElementById('type_unanswered');
         const resText = document.getElementById('negotiation_result_text');
