@@ -238,7 +238,6 @@ def init_db():
         )
     ''')
 
-    # ТАБЛИЦЯ ДЛЯ БЛОКНОТА (НОТАТКИ)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS notes (
             id SERIAL PRIMARY KEY,
@@ -389,7 +388,6 @@ def index():
     top_demand_raw = dict_cursor.fetchall()
     top_demand = [dict(t) for t in top_demand_raw]
 
-    # Завантаження нотаток для Блокнота
     dict_cursor.execute("SELECT * FROM notes ORDER BY id DESC")
     notes_raw = dict_cursor.fetchall()
     notes_list = [dict(n) for n in notes_raw]
@@ -514,7 +512,6 @@ def index():
         notes_list=notes_list
     )
 
-# --- МАРШРУТИ ДЛЯ БЛОКНОТА ---
 @app.route('/add_note', methods=['POST'])
 @login_required
 def add_note():
@@ -689,7 +686,6 @@ def detect_brands_ai(client_id):
     }
     extracted_text = ""
     
-    # 1. Завантаження сторінки з витягуванням alt/title партнерів та тексту до 40 000 символів
     try:
         page_res = requests.get(site_url, headers=headers, timeout=8, verify=False)
         if page_res.status_code == 200:
@@ -743,7 +739,6 @@ def detect_brands_ai(client_id):
     Без markdown (без ```), без лапок на початку/кінці і без жодних додаткових пояснень.
     """
     
-    # 2. Швидкий запит до Gemini
     try:
         host = "generativelanguage.googleapis.com"
         model_path = "v1beta/models/gemini-3.6-flash:generateContent"
@@ -1192,6 +1187,7 @@ def client_detail(client_id):
         
         type_tags = {
             'call': '[📞 Дзвінок] ',
+            'unanswered': '[📵 Недодзвон] ',
             'visit': '[🚗 Візит] ',
             'email': '[✉️ Лист] '
         }
