@@ -75,7 +75,12 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        html_body = body_text
+        # Автоматичне перетворення розривів рядків у HTML <br> для збереження абзаців
+        if "<p>" not in body_text and "<br" not in body_text:
+            html_body = body_text.replace("\r\n", "\n").replace("\n", "<br>")
+        else:
+            html_body = body_text
+
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
@@ -89,9 +94,9 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
 
         html_content = f"""
         <html>
-        <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
+        <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.6;">
             {banner_html}
-            <div style="font-size: 15px; margin-bottom: 30px;">
+            <div style="font-size: 15px; margin-bottom: 30px; white-space: normal;">
                 {html_body}
             </div>
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
