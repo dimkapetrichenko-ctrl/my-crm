@@ -27,7 +27,6 @@ CRM_PASSWORD = os.environ.get('CRM_PASSWORD', 'Mayer2026')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 
-# Конфігурація бізнес-пошти Хостинг Україна з Render
 MAIL_SERVER = os.environ.get('MAIL_SERVER', 'mail.adm.tools')
 MAIL_PORT = 465
 MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
@@ -75,12 +74,7 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        # Автоматичне перетворення розривів рядків у HTML <br> для збереження абзаців
-        if "<p>" not in body_text and "<br" not in body_text:
-            html_body = body_text.replace("\r\n", "\n").replace("\n", "<br>")
-        else:
-            html_body = body_text
-
+        html_body = body_text
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
@@ -94,9 +88,9 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
 
         html_content = f"""
         <html>
-        <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.6;">
+        <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
             {banner_html}
-            <div style="font-size: 15px; margin-bottom: 30px; white-space: normal;">
+            <div style="font-size: 15px; margin-bottom: 30px;">
                 {html_body}
             </div>
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
@@ -1297,6 +1291,8 @@ def delete_negotiation(neg_id):
 @app.route('/export_excel')
 @login_required
 def export_excel():
+    interest_filter = request.args.get('interest', '').strip()
+    
     conn = get_db_connection()
     query = """
         SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", 
@@ -1314,22 +1310,33 @@ def export_excel():
                c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.whatsapp_2 AS "WhatsApp 2", c.email_2 AS "Email 2",
                c.next_event_date AS "Дата наступної події", c.next_event_type AS "Вид наступної події",
                CASE WHEN c.is_active IS FALSE THEN 'Деактивовано (Архів)' ELSE 'Активний' END AS "Статус клієнта",
-               c.deactivation_reason AS "Причина деактивації"
-        FROM clients c ORDER BY c.name ASC
+               c.deactivation_reason AS "Причина деактивації",
+               COALESCE(string_agg(n.date || ' [' || n.author || ']: ' || n.result, E'\n'), 'Історія розмов порожня') AS "Опис розмов та активностей"
+        FROM clients c 
+        LEFT JOIN negotiations n ON c.id = n.client_id
+        WHERE 1=1
     """
-    df = pd.read_sql(query, conn)
+    params = []
+    if interest_filter:
+        query += " AND c.interest_level = %s"
+        params.append(interest_filter)
+        
+    query += " GROUP BY c.id ORDER BY c.name ASC"
+    
+    df = pd.read_sql(query, conn, params=params if params else None)
     conn.close()
     
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Клієнти Mayer CRM')
+        df.to_excel(writer, index=False, sheet_name='Клієнти та розмови')
     output.seek(0)
     
+    filename_part = f"_{interest_filter}" if interest_filter else "_all"
     return send_file(
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name=f'Mayer_CRM_Clients_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
+        download_name=f'Mayer_CRM_Export{filename_part}_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
     )
 
 if __name__ == '__main__':
