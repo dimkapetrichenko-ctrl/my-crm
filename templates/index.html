@@ -395,7 +395,7 @@
                                         onclick="openEditNoteModal({{ note.id }}, '{{ note.title|e }}', `{{ note.content|replace('`', '\\`') }}`, '{{ note.tag }}', '{{ note.ink_color or '#1e3a8a' }}')">
                                     ✏️ Редагувати
                                 </button>
-                                <form action="/delete_note/{{ note.id }}" method="POST" class="m-0" onsubmit="return confirm('Вирвати цю сторінку з блокнота?');">
+                                <form action="/delete_task/{{ task.id }}" method="POST" class="mb-0" onsubmit="return confirm('Видалити завдання?');">
                                     <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1.5" title="Видалити сторінку">🗑️</button>
                                 </form>
                             </div>
