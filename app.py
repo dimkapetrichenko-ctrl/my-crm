@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import psycopg2
 from psycopg2.extras import DictCursor
@@ -27,7 +28,6 @@ CRM_PASSWORD = os.environ.get('CRM_PASSWORD', 'Mayer2026')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 
-# Конфігурація бізнес-пошти Хостинг Україна з Render
 MAIL_SERVER = os.environ.get('MAIL_SERVER', 'mail.adm.tools')
 MAIL_PORT = 465
 MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
@@ -70,14 +70,46 @@ def decode_email_body(msg):
             
     return body.strip()
 
+def make_links_clickable(text):
+    """Автоматично перетворює посилання у тексті на активні клікабельні HTML-теги <a>"""
+    url_pattern = re.compile(r'(https?://[^\s<]+|www\.[^\s<]+)')
+    
+    def replace_url(match):
+        url = match.group(0)
+        # Прибираємо розділові знаки в кінці URL (крапки, коми), якщо вони потрапили
+        trailing = ""
+        while url and url[-1] in '.,!?;:)':
+            trailing = url[-1] + trailing
+            url = url[:-1]
+            
+        href = url if url.startswith('http') else 'http://' + url
+        return f'<a href="{href}" target="_blank" style="color: #0d6efd; text-decoration: underline; font-weight: 500;">{url}</a>{trailing}'
+    
+    return url_pattern.sub(replace_url, text)
+
+def format_text_to_html(raw_text):
+    """Розбиває текст на чіткі абзаци та перетворює посилання на активні"""
+    raw_text = raw_text.strip().replace("\r\n", "\n").replace("\r", "\n")
+    # Перетворюємо посилання на клікабельні
+    text_with_links = make_links_clickable(raw_text)
+    
+    # Розбиваємо подвійні переноси на окремі теги абзаців <p>, а одинарні на <br>
+    paragraphs = text_with_links.split("\n\n")
+    html_paragraphs = []
+    for p in paragraphs:
+        if p.strip():
+            p_formatted = p.strip().replace("\n", "<br>")
+            html_paragraphs.append(f'<p style="margin: 0 0 16px 0; line-height: 1.6;">{p_formatted}</p>')
+            
+    return "".join(html_paragraphs)
+
 def send_email_notification(to_email, subject, body_text, promo_banner=False):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        # Гарантоване перетворення переносів рядків з textarea у HTML-теги <br>
-        clean_text = body_text.strip().replace("\r\n", "\n").replace("\r", "\n")
-        html_body = clean_text.replace("\n", "<br>\n")
+        # Форматуємо текст: робимо посилання активними та зберігаємо абзаци
+        html_body = format_text_to_html(body_text)
 
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
@@ -92,9 +124,9 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
 
         html_content = f"""
         <html>
-        <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.6;">
+        <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; font-size: 15px;">
             {banner_html}
-            <div style="font-size: 15px; margin-bottom: 30px; line-height: 1.6; white-space: pre-line;">
+            <div style="margin-bottom: 30px;">
                 {html_body}
             </div>
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
