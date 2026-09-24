@@ -27,6 +27,7 @@ CRM_PASSWORD = os.environ.get('CRM_PASSWORD', 'Mayer2026')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 
+# Конфігурація бізнес-пошти Хостинг Україна з Render
 MAIL_SERVER = os.environ.get('MAIL_SERVER', 'mail.adm.tools')
 MAIL_PORT = 465
 MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
@@ -74,7 +75,10 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        html_body = body_text
+        # Гарантоване перетворення переносів рядків з textarea у HTML-теги <br>
+        clean_text = body_text.strip().replace("\r\n", "\n").replace("\r", "\n")
+        html_body = clean_text.replace("\n", "<br>\n")
+
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
@@ -88,9 +92,9 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
 
         html_content = f"""
         <html>
-        <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.5;">
+        <body style="font-family: 'Aptos', Calibri, Arial, sans-serif; color: #212529; line-height: 1.6;">
             {banner_html}
-            <div style="font-size: 15px; margin-bottom: 30px;">
+            <div style="font-size: 15px; margin-bottom: 30px; line-height: 1.6; white-space: pre-line;">
                 {html_body}
             </div>
             <hr style="border: none; border-top: 1px solid #dee2e6; margin-top: 30px; margin-bottom: 20px;">
