@@ -4,7 +4,7 @@
 <!-- ПІДКЛЮЧЕННЯ РУКОПИСНИХ ШРИФТІВ ДЛЯ БЛОКНОТА -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Marck+Script&family=Neucha&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap" rel="stylesheet">
 
 <!-- КОМПАКТНІ ВЕРХНІ ФІНАНСОВІ ВІДЖЕТИ -->
 <div class="row g-2 mb-1">
@@ -96,7 +96,7 @@
                     <i class="bi bi-plus-lg"></i> Новий клієнт
                 </button>
                 
-                <!-- ВИПАДАЮЧЕ МЕНЮ ЕКСПОРТУ В EXCEL З ФІЛЬТРАМИ ЗАЦІКАВЛЕНОСТІ ТА РОЗМОВАМИ -->
+                <!-- ВИПАДАЮЧЕ МЕНЮ ЕКСПОРТУ В EXCEL -->
                 <div class="dropdown d-inline-block">
                     <button class="btn btn-sm btn-outline-success fw-bold dropdown-toggle shadow-sm d-inline-flex align-items-center gap-1" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-file-earmark-excel"></i> Експорт Excel з розмовами
@@ -329,9 +329,10 @@
     </div>
 </div>
 
-<!-- ВІКНО: БЛОКНОТ -->
+<!-- ВІКНО: БЛОКНОТ (ПОВНІСТЮ ВИПРАВЛЕНИЙ РЕАЛІСТИЧНИЙ ВИГЛЯД) -->
 <div id="window-notepad-win" class="crm-window" style="display: none;">
     <div class="row g-3">
+        <!-- ЛІВА ЧАСТИНА: СТВОРЕННЯ НОВОЇ СТОРІНКИ -->
         <div class="col-md-5">
             <div class="notebook-sheet shadow">
                 <form action="/add_note" method="POST">
@@ -356,8 +357,8 @@
                         </div>
                     </div>
 
-                    <input type="text" name="title" class="notebook-title-input mb-2" placeholder="" required>
-                    <textarea name="content" id="new-note-content" class="notebook-textarea" rows="12" placeholder="" required></textarea>
+                    <input type="text" name="title" class="notebook-title-input mb-1" placeholder="" required>
+                    <textarea name="content" id="new-note-content" class="notebook-textarea" rows="13" placeholder="" required></textarea>
 
                     <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
                         <span class="text-muted small font-monospace">Стор. Нова</span>
@@ -369,6 +370,7 @@
             </div>
         </div>
 
+        <!-- ПРАВА ЧАСТИНА: АРХІВ СТОРІНОК БЛОКНОТА -->
         <div class="col-md-7">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="fw-bold text-dark"><i class="bi bi-journal-text me-1"></i> Збережені сторінки блокнота ({{ notes_list|length }})</span>
@@ -385,10 +387,10 @@
                                 <span class="badge bg-warning-subtle text-dark border border-warning" style="font-size: 0.72rem;">{{ note.tag }}</span>
                             </div>
                             <h6 class="fw-bold text-dark border-bottom pb-1 mb-2 font-monospace">{{ note.title }}</h6>
-                            <div class="notebook-saved-text" style="color: {{ note.ink_color or '#1e3a8a' }};">{{ note.content.strip() }}</div>
+                            <div class="notebook-saved-text" style="color: {{ note.ink_color or '#1e3a8a' }} !important;">{{ note.content.strip() }}</div>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
                             <span class="text-muted font-monospace" style="font-size: 0.68rem;">Стор. #{{ note.id }}</span>
                             <div class="d-flex gap-1">
                                 <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 fw-bold" 
@@ -941,6 +943,97 @@
         </div>
     </div>
 </div>
+
+<!-- ОНОВЛЕНІ ТА ГАРАНТОВАНІ СТИЛІ БЛОКНОТА -->
+<style>
+    #mainClientsTable { border-collapse: separate !important; border-spacing: 0 !important; }
+    #mainClientsTable thead { position: sticky; top: 0; z-index: 10; }
+    #mainClientsTable thead tr.header-titles-row th { position: sticky; top: 0; height: 38px; line-height: 1.2; background-color: #f1f5f9 !important; border-bottom: 1px solid #cbd5e1; z-index: 12; }
+    #mainClientsTable thead tr#excel-filter-row th { position: sticky; top: 38px; background-color: #f8fafc !important; border-bottom: 2px solid #94a3b8; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05); z-index: 11; padding-top: 4px; padding-bottom: 6px; }
+
+    .tasks-grid td { height: 54px; position: relative; cursor: pointer; font-weight: 500; vertical-align: top; padding-top: 5px; }
+    .tasks-grid td:hover { background-color: #f1f5f9 !important; }
+    .tasks-dot-badge { position: absolute; bottom: 3px; right: 3px; font-size: 0.65rem; padding: 2px 5px; border-radius: 6px; display: flex; gap: 3px; align-items: center; font-weight: bold; }
+    .calendar-today-highlight { outline: 2px solid #0f172a !important; outline-offset: -2px; }
+
+    .table-unanswered {
+        background-color: #fee2e2 !important;
+        border-left: 4px solid #dc2626 !important;
+    }
+    .table-unanswered td {
+        background-color: transparent !important;
+    }
+
+    /* РЕАЛІСТИЧНІ СТИЛІ ПАПЕРОВОГО АРКУША БЛОКНОТА */
+    .notebook-sheet {
+        position: relative;
+        background-color: #fffdf7 !important;
+        background-image: repeating-linear-gradient(transparent, transparent 31px, #d1d5db 31px, #d1d5db 32px) !important;
+        line-height: 32px !important;
+        padding: 20px 25px 25px 50px !important;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), -5px 0 0 #e5e7eb;
+    }
+    .notebook-sheet::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 40px;
+        width: 2px;
+        background-color: #ef4444;
+        opacity: 0.7;
+    }
+    .notebook-sheet-header {
+        border-bottom: 2px solid #9ca3af;
+        padding-bottom: 4px;
+        font-family: 'Neucha', cursive, sans-serif !important;
+    }
+    .notebook-title-input {
+        width: 100% !important;
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 1px dashed #9ca3af !important;
+        outline: none !important;
+        font-family: 'Neucha', cursive !important;
+        font-size: 1.3rem !important;
+        font-weight: bold !important;
+        color: #111827 !important;
+        padding: 2px 0 !important;
+    }
+    .notebook-textarea {
+        width: 100% !important;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        resize: vertical !important;
+        font-family: 'Caveat', cursive !important;
+        font-size: 1.55rem !important;
+        font-weight: 600 !important;
+        line-height: 32px !important;
+        color: #1e3a8a;
+        padding: 4px 0 0 0 !important;
+        box-shadow: none !important;
+    }
+    .notebook-saved-sheet {
+        padding: 15px 15px 15px 42px !important;
+        min-height: 230px;
+    }
+    .notebook-saved-sheet::before {
+        left: 32px;
+    }
+    .notebook-saved-text {
+        font-family: 'Caveat', cursive !important;
+        font-size: 1.45rem !important;
+        font-weight: 600 !important;
+        line-height: 32px !important;
+        white-space: pre-wrap !important;
+        text-align: left !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+</style>
 
 <script>
 const allClients = JSON.parse({{ json_clients | tojson | safe }});
