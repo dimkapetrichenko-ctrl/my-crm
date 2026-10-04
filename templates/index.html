@@ -150,12 +150,12 @@
                             <tr class="header-titles-row">
                                 <th style="width: 14%;">Компанії</th>
                                 <th style="width: 13%;">Тип клієнта</th>
-                                <th style="width: 10%;">Країна</th>
+                                <th style="width: 12%;">Країна</th>
                                 <th style="text-align: center; width: 12%;">Зацікавленість</th>
-                                <th style="text-align: center; width: 15%;">Етап угоди</th>
+                                <th style="text-align: center; width: 14%;">Етап угоди</th>
                                 <th style="text-align: center; width: 6%;">MAYER</th>
-                                <th style="width: 19%;">Опис активності</th>
-                                <th style="width: 11%;">Наступна дія</th>
+                                <th style="width: 18%;">Опис активності</th>
+                                <th style="width: 10%;">Наступна дія</th>
                                 <th style="text-align: center; width: 5%;">Дія</th>
                             </tr>
                             <tr id="excel-filter-row">
@@ -175,14 +175,31 @@
                                         <option value="не вказано">не вказано</option>
                                     </select>
                                 </th>
+                                
+                                <!-- ВИПАДАЮЧИЙ СПИСОК ІЗ ГАЛОЧКАМИ (МУЛЬТИВИБІР КРАЇН) -->
                                 <th>
-                                    <select id="filter-country" class="form-select form-select-sm" onchange="filterClientsTable()">
-                                        <option value="">Всі країни</option>
-                                        {% for c_item in countries %}
-                                        <option value="{{ c_item|lower }}">{{ c_item }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <div class="dropdown w-100">
+                                        <button class="btn btn-sm btn-white border dropdown-toggle w-100 text-start text-truncate py-1 px-2 d-flex justify-content-between align-items-center" 
+                                                type="button" id="countryDropdownBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="font-size: 0.8rem; background-color: #fff;">
+                                            <span id="countryDropdownBtnText">Всі країни</span>
+                                        </button>
+                                        <div class="dropdown-menu shadow p-2" aria-labelledby="countryDropdownBtn" style="max-height: 280px; overflow-y: auto; width: 220px; font-size: 0.82rem;">
+                                            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+                                                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-1.5" onclick="selectAllCountries(true)">Всі</button>
+                                                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5" onclick="selectAllCountries(false)">Скинути</button>
+                                            </div>
+                                            {% for c_item in countries %}
+                                            <div class="form-check my-1">
+                                                <input class="form-check-input filter-country-cb" type="checkbox" value="{{ c_item|lower }}" id="cb_country_{{ loop.index }}" onchange="filterClientsTable()">
+                                                <label class="form-check-label text-truncate d-block" for="cb_country_{{ loop.index }}" style="cursor: pointer;">
+                                                    {{ c_item }}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
                                 </th>
+
                                 <th>
                                     <select id="filter-interest" class="form-select form-select-sm text-center" onchange="filterClientsTable()">
                                         <option value="">Всі статуси</option>
@@ -944,7 +961,6 @@
     </div>
 </div>
 
-<!-- ОНОВЛЕНІ ТА ГАРАНТОВАНІ СТИЛІ БЛОКНОТА -->
 <style>
     #mainClientsTable { border-collapse: separate !important; border-spacing: 0 !important; }
     #mainClientsTable thead { position: sticky; top: 0; z-index: 10; }
@@ -1099,10 +1115,44 @@ function updateTasksDesktopBadges() {
     }
 }
 
+function selectAllCountries(selectAll) {
+    const checkboxes = document.querySelectorAll('.filter-country-cb');
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll;
+    });
+    filterClientsTable();
+}
+
+function getSelectedCountries() {
+    const checked = [];
+    document.querySelectorAll('.filter-country-cb:checked').forEach(cb => {
+        checked.push(cb.value.toLowerCase().trim());
+    });
+    return checked;
+}
+
+function updateCountryDropdownText(selectedList) {
+    const btnText = document.getElementById('countryDropdownBtnText');
+    if (!btnText) return;
+    
+    const allCbs = document.querySelectorAll('.filter-country-cb');
+    if (selectedList.length === 0 || selectedList.length === allCbs.length) {
+        btnText.innerText = "Всі країни";
+    } else if (selectedList.length === 1) {
+        const checkedEl = document.querySelector('.filter-country-cb:checked');
+        const label = checkedEl ? document.querySelector(`label[for="${checkedEl.id}"]`) : null;
+        btnText.innerText = label ? label.innerText.trim() : "1 країна";
+    } else {
+        btnText.innerText = `Країни: ${selectedList.length}`;
+    }
+}
+
 function filterClientsTable() {
     const nameVal = (document.getElementById('filter-name')?.value || '').toLowerCase().trim();
     const typeVal = (document.getElementById('filter-type')?.value || '').toLowerCase().trim();
-    const countryVal = (document.getElementById('filter-country')?.value || '').toLowerCase().trim();
+    const selectedCountries = getSelectedCountries();
+    updateCountryDropdownText(selectedCountries);
+
     const interestVal = (document.getElementById('filter-interest')?.value || '').toLowerCase().trim();
     const stageVal = (document.getElementById('filter-stage')?.value || '').toLowerCase().trim();
     const mayerVal = (document.getElementById('filter-mayer')?.value || '').toLowerCase().trim();
@@ -1127,7 +1177,12 @@ function filterClientsTable() {
 
         if (nameVal && !rName.includes(nameVal)) match = false;
         if (typeVal && !rType.includes(typeVal)) match = false;
-        if (countryVal && !rCountry.includes(countryVal)) match = false;
+        
+        // Мультивибір країн
+        if (selectedCountries.length > 0) {
+            if (!selectedCountries.includes(rCountry)) match = false;
+        }
+
         if (interestVal && rInterest !== interestVal) match = false;
         if (stageVal && rStage !== stageVal) match = false;
         if (mayerVal && rMayer !== mayerVal) match = false;
@@ -1147,7 +1202,11 @@ function filterClientsTable() {
 function resetTableFilters() {
     if (document.getElementById('filter-name')) document.getElementById('filter-name').value = '';
     if (document.getElementById('filter-type')) document.getElementById('filter-type').value = '';
-    if (document.getElementById('filter-country')) document.getElementById('filter-country').value = '';
+    
+    // Скидаємо всі чекбокси країн
+    document.querySelectorAll('.filter-country-cb').forEach(cb => cb.checked = false);
+    updateCountryDropdownText([]);
+
     if (document.getElementById('filter-interest')) document.getElementById('filter-interest').value = '';
     if (document.getElementById('filter-stage')) document.getElementById('filter-stage').value = '';
     if (document.getElementById('filter-mayer')) document.getElementById('filter-mayer').value = '';
