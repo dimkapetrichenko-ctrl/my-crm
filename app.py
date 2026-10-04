@@ -76,7 +76,6 @@ def make_links_clickable(text):
     
     def replace_url(match):
         url = match.group(0)
-        # Прибираємо розділові знаки в кінці URL (крапки, коми), якщо вони потрапили
         trailing = ""
         while url and url[-1] in '.,!?;:)':
             trailing = url[-1] + trailing
@@ -90,10 +89,8 @@ def make_links_clickable(text):
 def format_text_to_html(raw_text):
     """Розбиває текст на чіткі абзаци та перетворює посилання на активні"""
     raw_text = raw_text.strip().replace("\r\n", "\n").replace("\r", "\n")
-    # Перетворюємо посилання на клікабельні
     text_with_links = make_links_clickable(raw_text)
     
-    # Розбиваємо подвійні переноси на окремі теги абзаців <p>, а одинарні на <br>
     paragraphs = text_with_links.split("\n\n")
     html_paragraphs = []
     for p in paragraphs:
@@ -108,7 +105,6 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        # Форматуємо текст: робимо посилання активними та зберігаємо абзаци
         html_body = format_text_to_html(body_text)
 
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
@@ -1327,11 +1323,21 @@ def delete_negotiation(neg_id):
 @app.route('/export_excel')
 @login_required
 def export_excel():
+    search_name = request.args.get('search_name', '').strip()
+    buyer_type = request.args.get('buyer_type', '').strip()
+    countries_param = request.args.get('countries', '').strip()
     interest_filter = request.args.get('interest', '').strip()
-    
+    deal_stage = request.args.get('deal_stage', '').strip()
+    mayer_reg = request.args.get('mayer_reg', '').strip()
+    last_activity_text = request.args.get('last_activity', '').strip()
+    next_event_type = request.args.get('next_event_type', '').strip()
+    status_view = request.args.get('status_view', 'active').strip()
+
     conn = get_db_connection()
+    
     query = """
-        SELECT c.name AS "Назва компанії", c.interest_level AS "Зацікавленість", 
+        SELECT c.name AS "Назва компанії", 
+               c.interest_level AS "Зацікавленість", 
                CASE 
                    WHEN c.deal_stage = 'request' THEN '1. Запит / Підбір'
                    WHEN c.deal_stage = 'offer_sent' THEN '2. Рахунок (КП) надіслано'
@@ -1339,12 +1345,24 @@ def export_excel():
                    WHEN c.deal_stage = 'regular' THEN '4. Постійний партнер'
                    ELSE 'Немає активної угоди'
                END AS "Етап угоди",
-               c.buyer_type AS "Тип покупця", c.brands AS "Пріоритетні бренди",
+               c.buyer_type AS "Тип покупця", 
+               c.brands AS "Пріоритетні бренди",
                c.aftermarket_companies AS "Aftermarket оператори",
-               c.website AS "Веб-сайт", c.country AS "Країна", c.address AS "Адреса",
-               c.contact_person AS "Контактна особа 1", c.position AS "Посада 1", c.phone AS "Телефон 1", c.whatsapp_1 AS "WhatsApp 1", c.email AS "Email 1",
-               c.contact_person_2 AS "Контактна особа 2", c.position_2 AS "Посада 2", c.phone_2 AS "Телефон 2", c.whatsapp_2 AS "WhatsApp 2", c.email_2 AS "Email 2",
-               c.next_event_date AS "Дата наступної події", c.next_event_type AS "Вид наступної події",
+               c.website AS "Веб-сайт", 
+               c.country AS "Країна", 
+               c.address AS "Адреса",
+               c.contact_person AS "Контактна особа 1", 
+               c.position AS "Посада 1", 
+               c.phone AS "Телефон 1", 
+               c.whatsapp_1 AS "WhatsApp 1", 
+               c.email AS "Email 1",
+               c.contact_person_2 AS "Контактна особа 2", 
+               c.position_2 AS "Посада 2", 
+               c.phone_2 AS "Телефон 2", 
+               c.whatsapp_2 AS "WhatsApp 2", 
+               c.email_2 AS "Email 2",
+               c.next_event_date AS "Дата наступної події", 
+               c.next_event_type AS "Вид наступної події",
                CASE WHEN c.is_active IS FALSE THEN 'Деактивовано (Архів)' ELSE 'Активний' END AS "Статус клієнта",
                c.deactivation_reason AS "Причина деактивації",
                COALESCE(string_agg(n.date || ' [' || n.author || ']: ' || n.result, E'\n'), 'Історія розмов порожня') AS "Опис розмов та активностей"
@@ -1353,11 +1371,53 @@ def export_excel():
         WHERE 1=1
     """
     params = []
+
+    if status_view == 'active':
+        query += " AND c.is_active IS NOT FALSE"
+    elif status_view == 'archived':
+        query += " AND c.is_active IS FALSE"
+
+    if search_name:
+        query += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.phone) LIKE LOWER(%s) OR LOWER(c.email) LIKE LOWER(%s))"
+        params.extend([f"%{search_name}%", f"%{search_name}%", f"%{search_name}%", f"%{search_name}%"])
+
+    if buyer_type:
+        query += " AND LOWER(c.buyer_type) = LOWER(%s)"
+        params.append(buyer_type)
+
+    if countries_param:
+        countries_list = [c.strip().lower() for c in countries_param.split(',') if c.strip()]
+        if countries_list:
+            placeholders = ', '.join(['%s'] * len(countries_list))
+            query += f" AND LOWER(c.country) IN ({placeholders})"
+            params.extend(countries_list)
+
     if interest_filter:
         query += " AND c.interest_level = %s"
         params.append(interest_filter)
-        
-    query += " GROUP BY c.id ORDER BY c.name ASC"
+
+    if deal_stage:
+        query += " AND LOWER(COALESCE(c.deal_stage, 'none')) = LOWER(%s)"
+        params.append(deal_stage)
+
+    if mayer_reg:
+        query += " AND c.mayer_reg = %s"
+        params.append(mayer_reg)
+
+    if next_event_type:
+        if next_event_type == 'no_event':
+            query += " AND (c.next_event_date IS NULL OR c.next_event_date = '')"
+        else:
+            query += " AND c.next_event_type = %s"
+            params.append(next_event_type)
+
+    query += " GROUP BY c.id"
+
+    if last_activity_text:
+        query += " HAVING (LOWER(COALESCE(string_agg(n.date || ' ' || n.result, ' '), '')) LIKE LOWER(%s))"
+        params.append(f"%{last_activity_text}%")
+
+    query += " ORDER BY c.name ASC"
     
     df = pd.read_sql(query, conn, params=params if params else None)
     conn.close()
@@ -1367,12 +1427,11 @@ def export_excel():
         df.to_excel(writer, index=False, sheet_name='Клієнти та розмови')
     output.seek(0)
     
-    filename_part = f"_{interest_filter}" if interest_filter else "_all"
     return send_file(
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name=f'Mayer_CRM_Export{filename_part}_{datetime.now().strftime("%Y-%m-%d")}.xlsx'
+        download_name=f'Mayer_CRM_Export_Filtered_{datetime.now().strftime("%Y-%m-%d_%H%M")}.xlsx'
     )
 
 if __name__ == '__main__':
