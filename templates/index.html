@@ -2,9 +2,9 @@
 {% block content %}
 
 <!-- ПІДКЛЮЧЕННЯ РУКОПИСНИХ ШРИФТІВ ДЛЯ БЛОКНОТА -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap" rel="stylesheet">
+<link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
+<link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
+<link href="[https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap](https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap)" rel="stylesheet">
 
 <!-- КОМПАКТНІ ВЕРХНІ ФІНАНСОВІ ВІДЖЕТИ -->
 <div class="row g-2 mb-1">
@@ -96,21 +96,10 @@
                     <i class="bi bi-plus-lg"></i> Новий клієнт
                 </button>
                 
-                <!-- ВИПАДАЮЧЕ МЕНЮ ЕКСПОРТУ В EXCEL -->
-                <div class="dropdown d-inline-block">
-                    <button class="btn btn-sm btn-outline-success fw-bold dropdown-toggle shadow-sm d-inline-flex align-items-center gap-1" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-file-earmark-excel"></i> Експорт Excel з розмовами
-                    </button>
-                    <ul class="dropdown-menu shadow" aria-labelledby="exportDropdown" style="font-size: 0.85rem;">
-                        <li><h6 class="dropdown-header">Оберіть фільтр зацікавленості:</h6></li>
-                        <li><a class="dropdown-item fw-bold text-dark" href="/export_excel">📁 Усі клієнти (повна база)</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-success fw-bold" href="/export_excel?interest=зацікавленість">😍 Висока зацікавленість</a></li>
-                        <li><a class="dropdown-item text-warning fw-bold" href="/export_excel?interest=середня зацікавленість">🤔 Середня зацікавленість</a></li>
-                        <li><a class="dropdown-item text-primary fw-bold" href="/export_excel?interest=немає зацікавленості">😴 Немає зацікавленості</a></li>
-                        <li><a class="dropdown-item text-secondary fw-bold" href="/export_excel?interest=не опрацьовано">❓ Не опрацьовано</a></li>
-                    </ul>
-                </div>
+                <!-- ПРЯМА КНОПКА ЕКСПОРТУ В EXCEL ЗА ПОТОЧНИМИ ФІЛЬТРАМИ -->
+                <button type="button" class="btn btn-sm btn-outline-success fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="exportFilteredExcel()">
+                    <i class="bi bi-file-earmark-excel"></i> Експорт в Excel (за фільтрами)
+                </button>
                 
                 <form method="GET" action="/" class="d-flex align-items-center m-0">
                     <input type="hidden" name="search" value="{{ search_query }}">
@@ -346,7 +335,7 @@
     </div>
 </div>
 
-<!-- ВІКНО: БЛОКНОТ (ПОВНІСТЮ ВИПРАВЛЕНИЙ РЕАЛІСТИЧНИЙ ВИГЛЯД) -->
+<!-- ВІКНО: БЛОКНОТ -->
 <div id="window-notepad-win" class="crm-window" style="display: none;">
     <div class="row g-3">
         <!-- ЛІВА ЧАСТИНА: СТВОРЕННЯ НОВОЇ СТОРІНКИ -->
@@ -700,7 +689,7 @@
                                 <td class="text-muted small">{{ plan.payment_date }}</td>
                                 <td class="text-center">
                                     <button class="btn btn-xs btn-outline-secondary py-0 px-1.5 fw-bold btn-edit-finance" 
-                                            data-id="{{ plan.id }}" data-client="{{ plan.client_name }}" data-planned="{{ plan.planned_amount }}" data-month="{{ plan.month_name }}" data-actual="{{ plan.actual_amount }}" data-date="{{ plan.payment_date or '' }}">✏️ Ред.</button>
+                                            data-id="{{ plan.id }}" data-client="{{ plan.client_name }}" data-planned="{{ plan.planned_amount }}" data-month="{{ plan.month_name }}" data-actual="{{ plan.actual_amount }}" data-date="{{ plan.payment_date or '' }}">✏️️ Ред.</button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -783,7 +772,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label mb-0">Веб-сайт</label>
-                            <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
+                            <input type="text" name="website" class="form-control form-control-sm" placeholder="[www.example.com](https://www.example.com)">
                         </div>
                         <div class="col-12">
                             <label class="form-label mb-0">Адреса</label>
@@ -1178,7 +1167,6 @@ function filterClientsTable() {
         if (nameVal && !rName.includes(nameVal)) match = false;
         if (typeVal && !rType.includes(typeVal)) match = false;
         
-        // Мультивибір країн
         if (selectedCountries.length > 0) {
             if (!selectedCountries.includes(rCountry)) match = false;
         }
@@ -1203,7 +1191,6 @@ function resetTableFilters() {
     if (document.getElementById('filter-name')) document.getElementById('filter-name').value = '';
     if (document.getElementById('filter-type')) document.getElementById('filter-type').value = '';
     
-    // Скидаємо всі чекбокси країн
     document.querySelectorAll('.filter-country-cb').forEach(cb => cb.checked = false);
     updateCountryDropdownText([]);
 
@@ -1213,6 +1200,42 @@ function resetTableFilters() {
     if (document.getElementById('filter-last')) document.getElementById('filter-last').value = '';
     if (document.getElementById('filter-next-type')) document.getElementById('filter-next-type').value = '';
     filterClientsTable();
+}
+
+function exportFilteredExcel() {
+    const params = new URLSearchParams();
+
+    const nameVal = (document.getElementById('filter-name')?.value || '').trim();
+    if (nameVal) params.append('search_name', nameVal);
+
+    const typeVal = (document.getElementById('filter-type')?.value || '').trim();
+    if (typeVal) params.append('buyer_type', typeVal);
+
+    const selectedCountries = getSelectedCountries();
+    if (selectedCountries.length > 0) {
+        params.append('countries', selectedCountries.join(','));
+    }
+
+    const interestVal = (document.getElementById('filter-interest')?.value || '').trim();
+    if (interestVal) params.append('interest', interestVal);
+
+    const stageVal = (document.getElementById('filter-stage')?.value || '').trim();
+    if (stageVal) params.append('deal_stage', stageVal);
+
+    const mayerVal = (document.getElementById('filter-mayer')?.value || '').trim();
+    if (mayerVal) params.append('mayer_reg', mayerVal);
+
+    const lastVal = (document.getElementById('filter-last')?.value || '').trim();
+    if (lastVal) params.append('last_activity', lastVal);
+
+    const nextTypeVal = (document.getElementById('filter-next-type')?.value || '').trim();
+    if (nextTypeVal) params.append('next_event_type', nextTypeVal);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusView = urlParams.get('status_view') || 'active';
+    params.append('status_view', statusView);
+
+    window.location.href = `/export_excel?${params.toString()}`;
 }
 
 function switchWindow(targetWinId) {
@@ -1399,7 +1422,7 @@ function selectTasksDate(dateStr) {
                         </form>
                         <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" style="font-size:0.7rem;" onclick="openEditTaskModal(${task.id}, '${escapeQuotes(task.text)}', '${task.deadline || ''}', '${task.author || 'Продажі'}')">✏️</button>
                         <form action="/delete_task/${task.id}" method="POST" class="mb-0" onsubmit="return confirm('Видалити завдання?');">
-                            <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:0.7rem;">🗑️</button>
+                            <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:0.7rem;">🗑️️</button>
                         </form>
                     </div>
                 </div>
