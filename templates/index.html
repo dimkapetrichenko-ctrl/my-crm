@@ -95,11 +95,6 @@
                 <button type="button" class="btn btn-danger btn-sm fw-bold px-3 shadow-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#addClientModal">
                     <i class="bi bi-plus-lg"></i> Новий клієнт
                 </button>
-
-                <!-- КНОПКА ІМПОРТУ КЛІЄНТІВ (EXCEL / ЧЕХІЯ) -->
-                <button type="button" class="btn btn-sm btn-outline-primary fw-bold shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#importClientsModal">
-                    <i class="bi bi-file-earmark-arrow-up"></i> 📥 Імпорт (Чехія / Excel)
-                </button>
                 
                 <!-- ПРЯМА КНОПКА ЕКСПОРТУ В EXCEL ЗА ПОТОЧНИМИ ФІЛЬТРАМИ -->
                 <button type="button" class="btn btn-sm btn-outline-success fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="exportFilteredExcel()">
@@ -718,46 +713,6 @@
 </div>
 
 <!-- МОДАЛЬНІ ВІКНА -->
-
-<!-- МОДАЛЬНЕ ВІКНО: ІМПОРТ КЛІЄНТІВ З EXCEL -->
-<div class="modal fade" id="importClientsModal" tabindex="-1" aria-labelledby="importClientsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white py-2.5">
-                <h5 class="modal-title fw-bold" id="importClientsModalLabel">📥 Імпорт клієнтів (Чехія / Excel)</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="/import_clients_excel" method="POST" enctype="multipart/form-data">
-                <div class="modal-body p-3" style="font-size: 0.88rem;">
-                    <p class="text-muted mb-2">
-                        Завантажте файл таблиці (наприклад, <code>Клиенты Чехия.xlsx</code>). Система автоматично імпортує назви компаній, бренди (Kverneland, Vaderstad, Horsch), сайти, телефони у форматі +420, контакти та запише коментар в історію розмов.
-                    </p>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Оберіть Excel-файл (.xlsx, .xls):</label>
-                        <input type="file" name="excel_file" class="form-control form-control-sm" accept=".xlsx, .xls, .csv" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label mb-0 fw-bold">Країна за замовчуванням:</label>
-                        <input type="text" name="default_country" class="form-control form-control-sm fw-bold" value="Чехія">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label mb-0 fw-bold">Тип покупця за замовчуванням:</label>
-                        <select name="default_buyer_type" class="form-select form-select-sm">
-                            <option value="Дилер сг техніки" selected>Дилер сг техніки</option>
-                            <option value="гуртовий клієнт">гуртовий клієнт</option>
-                            <option value="інтернет-магазин">інтернет-магазин</option>
-                            <option value="не вказано">не вказано</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-                    <button type="submit" class="btn btn-sm btn-primary fw-bold px-4">🚀 Завантажити та імпортувати</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
