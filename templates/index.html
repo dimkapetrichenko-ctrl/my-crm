@@ -2,9 +2,9 @@
 {% block content %}
 
 <!-- ПІДКЛЮЧЕННЯ РУКОПИСНИХ ШРИФТІВ ДЛЯ БЛОКНОТА -->
-<link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
-<link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
-<link href="[https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap](https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap)" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap" rel="stylesheet">
 
 <!-- КОМПАКТНІ ВЕРХНІ ФІНАНСОВІ ВІДЖЕТИ -->
 <div class="row g-2 mb-1">
@@ -94,6 +94,11 @@
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <button type="button" class="btn btn-danger btn-sm fw-bold px-3 shadow-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#addClientModal">
                     <i class="bi bi-plus-lg"></i> Новий клієнт
+                </button>
+
+                <!-- КНОПКА ІМПОРТУ КЛІЄНТІВ (EXCEL / ЧЕХІЯ) -->
+                <button type="button" class="btn btn-sm btn-outline-primary fw-bold shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#importClientsModal">
+                    <i class="bi bi-file-earmark-arrow-up"></i> 📥 Імпорт (Чехія / Excel)
                 </button>
                 
                 <!-- ПРЯМА КНОПКА ЕКСПОРТУ В EXCEL ЗА ПОТОЧНИМИ ФІЛЬТРАМИ -->
@@ -689,7 +694,7 @@
                                 <td class="text-muted small">{{ plan.payment_date }}</td>
                                 <td class="text-center">
                                     <button class="btn btn-xs btn-outline-secondary py-0 px-1.5 fw-bold btn-edit-finance" 
-                                            data-id="{{ plan.id }}" data-client="{{ plan.client_name }}" data-planned="{{ plan.planned_amount }}" data-month="{{ plan.month_name }}" data-actual="{{ plan.actual_amount }}" data-date="{{ plan.payment_date or '' }}">✏️️ Ред.</button>
+                                            data-id="{{ plan.id }}" data-client="{{ plan.client_name }}" data-planned="{{ plan.planned_amount }}" data-month="{{ plan.month_name }}" data-actual="{{ plan.actual_amount }}" data-date="{{ plan.payment_date or '' }}">✏ Ред.</button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -713,6 +718,47 @@
 </div>
 
 <!-- МОДАЛЬНІ ВІКНА -->
+
+<!-- МОДАЛЬНЕ ВІКНО: ІМПОРТ КЛІЄНТІВ З EXCEL -->
+<div class="modal fade" id="importClientsModal" tabindex="-1" aria-labelledby="importClientsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-2.5">
+                <h5 class="modal-title fw-bold" id="importClientsModalLabel">📥 Імпорт клієнтів (Чехія / Excel)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/import_clients_excel" method="POST" enctype="multipart/form-data">
+                <div class="modal-body p-3" style="font-size: 0.88rem;">
+                    <p class="text-muted mb-2">
+                        Завантажте файл таблиці (наприклад, <code>Клиенты Чехия.xlsx</code>). Система автоматично імпортує назви компаній, бренди (Kverneland, Vaderstad, Horsch), сайти, телефони у форматі +420, контакти та запише коментар в історію розмов.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Оберіть Excel-файл (.xlsx, .xls):</label>
+                        <input type="file" name="excel_file" class="form-control form-control-sm" accept=".xlsx, .xls, .csv" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-0 fw-bold">Країна за замовчуванням:</label>
+                        <input type="text" name="default_country" class="form-control form-control-sm fw-bold" value="Чехія">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-0 fw-bold">Тип покупця за замовчуванням:</label>
+                        <select name="default_buyer_type" class="form-select form-select-sm">
+                            <option value="Дилер сг техніки" selected>Дилер сг техніки</option>
+                            <option value="гуртовий клієнт">гуртовий клієнт</option>
+                            <option value="інтернет-магазин">інтернет-магазин</option>
+                            <option value="не вказано">не вказано</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-sm btn-primary fw-bold px-4">🚀 Завантажити та імпортувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
@@ -772,7 +818,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label mb-0">Веб-сайт</label>
-                            <input type="text" name="website" class="form-control form-control-sm" placeholder="[www.example.com](https://www.example.com)">
+                            <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
                         </div>
                         <div class="col-12">
                             <label class="form-label mb-0">Адреса</label>
@@ -1422,7 +1468,7 @@ function selectTasksDate(dateStr) {
                         </form>
                         <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" style="font-size:0.7rem;" onclick="openEditTaskModal(${task.id}, '${escapeQuotes(task.text)}', '${task.deadline || ''}', '${task.author || 'Продажі'}')">✏️</button>
                         <form action="/delete_task/${task.id}" method="POST" class="mb-0" onsubmit="return confirm('Видалити завдання?');">
-                            <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:0.7rem;">🗑️️</button>
+                            <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:0.7rem;">🗑</button>
                         </form>
                     </div>
                 </div>
