@@ -71,7 +71,6 @@ def decode_email_body(msg):
     return body.strip()
 
 def make_links_clickable(text):
-    """Автоматично перетворює посилання у тексті на активні клікабельні HTML-теги <a>"""
     url_pattern = re.compile(r'(https?://[^\s<]+|www\.[^\s<]+)')
     
     def replace_url(match):
@@ -87,7 +86,6 @@ def make_links_clickable(text):
     return url_pattern.sub(replace_url, text)
 
 def format_text_to_html(raw_text):
-    """Розбиває текст на чіткі абзаци та перетворює посилання на активні"""
     raw_text = raw_text.strip().replace("\r\n", "\n").replace("\r", "\n")
     text_with_links = make_links_clickable(raw_text)
     
@@ -106,7 +104,6 @@ def send_email_notification(to_email, subject, body_text, promo_banner=False):
         return False
     try:
         html_body = format_text_to_html(body_text)
-
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
         banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
 
@@ -197,7 +194,8 @@ def init_db():
             is_active BOOLEAN DEFAULT TRUE,
             deactivation_reason TEXT,
             deal_stage TEXT DEFAULT 'none',
-            aftermarket_companies TEXT
+            aftermarket_companies TEXT,
+            eima_meeting TEXT
         )
     ''')
     
@@ -210,7 +208,8 @@ def init_db():
         'interest_level': 'TEXT', 'next_event_date': 'TEXT', 'next_event_type': 'TEXT', 'mayer_reg': 'TEXT',
         'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT', 'is_active': 'BOOLEAN DEFAULT TRUE', 'deactivation_reason': 'TEXT',
         'deal_stage': "TEXT DEFAULT 'none'",
-        'aftermarket_companies': 'TEXT'
+        'aftermarket_companies': 'TEXT',
+        'eima_meeting': 'TEXT'
     }
     
     for field, f_type in new_fields.items():
@@ -505,6 +504,7 @@ def index():
             'next_event_date': str(row['next_event_date']) if row['next_event_date'] else '',
             'next_event_type': str(row['next_event_type']) if row['next_event_type'] else '',
             'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні',
+            'eima_meeting': row['eima_meeting'] if 'eima_meeting' in row and row['eima_meeting'] else '',
             'is_active': row['is_active'] if row['is_active'] is not None else True,
             'deactivation_reason': row['deactivation_reason'] if row['deactivation_reason'] else ''
         })
@@ -555,7 +555,6 @@ def import_clients_excel():
 
     try:
         df = pd.read_excel(file, header=None)
-
         first_row_str = " ".join(df.iloc[0].astype(str).tolist()).lower()
         if 'назва' in first_row_str or 'компания' in first_row_str or 'name' in first_row_str or '№' in first_row_str:
             df = df.iloc[1:]
@@ -569,8 +568,6 @@ def import_clients_excel():
             if not vals or not any(vals):
                 continue
 
-            # Для структури таблиці Чехії:
-            # 0: №, 1: Назва, 2: Бренди, 3: Сайт, 4: Контактна особа, 5: Email, 6: Телефон, 7: Опис
             if len(vals) >= 7 and vals[0].isdigit():
                 name = vals[1]
                 brands = vals[2]
@@ -802,7 +799,6 @@ def detect_brands_ai(client_id):
         page_res = requests.get(site_url, headers=headers, timeout=8, verify=False)
         if page_res.status_code == 200:
             soup = BeautifulSoup(page_res.text, 'html.parser')
-            
             alts = [img.get('alt', '') for img in soup.find_all('img') if img.get('alt')]
             titles = [a.get('title', '') for a in soup.find_all('a') if a.get('title')]
             meta_brand_text = " ".join(alts + titles)
@@ -1121,6 +1117,7 @@ def add_client():
     whatsapp_1 = request.form.get('whatsapp_1', '')
     whatsapp_2 = request.form.get('whatsapp_2', '')
     aftermarket_companies = request.form.get('aftermarket_companies', '').strip()
+    eima_meeting = request.form.get('eima_meeting', '')
     
     if interest_level != 'зацікавленість':
         deal_stage = 'none'
@@ -1143,10 +1140,10 @@ def add_client():
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
-                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage, aftermarket_companies) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s)""",
+                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage, aftermarket_companies, eima_meeting) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s)""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting)
         )
         conn.commit()
         cursor.close()
@@ -1169,6 +1166,7 @@ def edit_client(client_id):
     whatsapp_1 = request.form.get('whatsapp_1', '')
     whatsapp_2 = request.form.get('whatsapp_2', '')
     aftermarket_companies = request.form.get('aftermarket_companies', '').strip()
+    eima_meeting = request.form.get('eima_meeting', '')
     
     if interest_level != 'зацікавленість':
         deal_stage = 'none'
@@ -1192,9 +1190,9 @@ def edit_client(client_id):
         cursor.execute(
             """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
                                   website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
-                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s, deal_stage=%s, aftermarket_companies=%s WHERE id=%s""",
+                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s, deal_stage=%s, aftermarket_companies=%s, eima_meeting=%s WHERE id=%s""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, client_id)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting, client_id)
         )
         conn.commit()
         cursor.close()
@@ -1323,7 +1321,7 @@ def client_detail(client_id):
                        'contact_person', 'position', 'phone', 'email', 
                        'contact_person_2', 'position_2', 'phone_2', 'email_2', 
                        'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp_1', 'whatsapp_2',
-                       'is_active', 'deactivation_reason', 'deal_stage', 'aftermarket_companies']
+                       'is_active', 'deactivation_reason', 'deal_stage', 'aftermarket_companies', 'eima_meeting']
     for field in fields_to_check:
         if field not in client or client[field] is None:
             if field == 'interest_level':
@@ -1430,6 +1428,7 @@ def export_excel():
                c.brands AS "Пріоритетні бренди",
                c.aftermarket_companies AS "Aftermarket оператори",
                c.website AS "Веб-сайт", 
+               c.eima_meeting AS "Зустріч EIMA",
                c.country AS "Країна", 
                c.address AS "Адреса",
                c.contact_person AS "Контактна особа 1", 
