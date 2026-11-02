@@ -46,7 +46,7 @@
 </div>
 {% endif %}
 
-<!-- БЛОК НАДСИЛАННЯ EMAIL (ПОВНІСТЮ РОБОЧЕ ТА АКТИВНЕ ПОЛЕ) -->
+<!-- БЛОК НАДСИЛАННЯ EMAIL -->
 <div class="collapse my-3" id="emailFormCollapse">
     <div class="card card-body bg-dark text-white border-secondary shadow-sm">
         <h5 class="card-title text-warning mb-3">📬 Нове повідомлення для: {{ client.name }}</h5>
@@ -124,6 +124,18 @@
                         <select name="mayer_reg" class="form-select form-select-sm">
                             <option value="Так" {% if client.mayer_reg == 'Так' %}selected{% endif %}>Так</option>
                             <option value="Ні" {% if client.mayer_reg == 'Ні' or not client.mayer_reg %}selected{% endif %}>Ні</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-2 p-2 bg-warning-subtle border border-warning rounded-3">
+                        <label class="form-label mb-1 fw-bold text-dark">🇮🇹 Зустріч EIMA (Болонья)</label>
+                        <select name="eima_meeting" class="form-select form-select-sm fw-bold border-warning text-dark">
+                            <option value="" {% if not client.eima_meeting %}selected{% endif %}>❌ Ні</option>
+                            <option value="10 листопада" {% if client.eima_meeting == '10 листопада' %}selected{% endif %}>📅 Так - 10 листопада</option>
+                            <option value="11 листопада" {% if client.eima_meeting == '11 листопада' %}selected{% endif %}>📅 Так - 11 листопада</option>
+                            <option value="12 листопада" {% if client.eima_meeting == '12 листопада' %}selected{% endif %}>📅 Так - 12 листопада</option>
+                            <option value="13 листопада" {% if client.eima_meeting == '13 листопада' %}selected{% endif %}>📅 Так - 13 листопада</option>
+                            <option value="14 листопада" {% if client.eima_meeting == '14 листопада' %}selected{% endif %}>📅 Так - 14 листопада</option>
                         </select>
                     </div>
 
@@ -207,7 +219,7 @@
 
                     <div class="mb-2">
                         <label class="form-label mb-1">Веб-сайт</label>
-                        <input type="text" name="website" id="client_website_input" class="form-control form-control-sm" value="{{ client.website or '' }}" placeholder="www.example.com">
+                        <input type="text" name="website" id="client_website_input" class="form-control form-control-sm" value="{{ client.website or '' }}" placeholder="[www.example.com](https://www.example.com)">
                     </div>
                     <div class="mb-2">
                         <label class="form-label mb-1">Країна</label>
