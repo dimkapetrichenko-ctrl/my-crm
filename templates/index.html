@@ -137,15 +137,16 @@
                     <table class="table table-sm table-hover align-middle mb-0" id="mainClientsTable" style="font-size: 0.85rem; width: 100%;">
                         <thead>
                             <tr class="header-titles-row">
-                                <th style="width: 14%;">Компанії</th>
-                                <th style="width: 12%;">Тип клієнта</th>
-                                <th style="width: 11%;">Країна</th>
-                                <th style="text-align: center; width: 11%;">Зацікавленість</th>
-                                <th style="text-align: center; width: 13%;">Етап угоди</th>
-                                <th style="text-align: center; width: 6%;">MAYER</th>
-                                <th style="text-align: center; width: 7%;">EIMA</th>
-                                <th style="width: 12%;">Опис активності</th>
-                                <th style="width: 9%;">Наступна дія</th>
+                                <th style="width: 13%;">Компанії</th>
+                                <th style="width: 10%;">Тип клієнта</th>
+                                <th style="width: 10%;">Країна</th>
+                                <th style="text-align: center; width: 10%;">Зацікавленість</th>
+                                <th style="text-align: center; width: 11%;">Етап угоди</th>
+                                <th style="text-align: center; width: 5%;">MAYER</th>
+                                <th style="text-align: center; width: 6%;">EIMA</th>
+                                <th style="text-align: center; width: 11%;">🎯 Цільова КП</th>
+                                <th style="width: 11%;">Опис активності</th>
+                                <th style="width: 8%;">Наступна дія</th>
                                 <th style="text-align: center; width: 5%;">Дія</th>
                             </tr>
                             <tr id="excel-filter-row">
@@ -223,6 +224,21 @@
                                     </select>
                                 </th>
                                 <th>
+                                    <div class="d-flex flex-column gap-1">
+                                        <select id="filter-promo-brand" class="form-select form-select-sm text-center py-0" style="font-size: 0.75rem;" onchange="filterClientsTable()">
+                                            <option value="">Всі бренди</option>
+                                            <option value="any_offer">🔥 Усі з КП</option>
+                                            <option value="vaderstad">Vaderstad</option>
+                                            <option value="pottinger">Pottinger</option>
+                                            <option value="kverneland">Kverneland</option>
+                                            <option value="gaspardo">Gaspardo</option>
+                                            <option value="horsch">Horsch</option>
+                                            <option value="no_offer">⚪ Без КП</option>
+                                        </select>
+                                        <input type="text" id="filter-promo-part" class="form-control form-control-sm py-0 text-center" style="font-size: 0.72rem;" placeholder="🔍 Артикул..." onkeyup="filterClientsTable()">
+                                    </div>
+                                </th>
+                                <th>
                                     <input type="text" id="filter-last" class="form-control form-control-sm" placeholder="🔍 В описі..." onkeyup="filterClientsTable()">
                                 </th>
                                 <th>
@@ -249,6 +265,8 @@
                                 data-stage="{{ client.deal_stage or 'none' }}"
                                 data-mayer="{{ client.mayer_reg or 'Ні' }}"
                                 data-eima="{{ 'так' if client.eima_meeting else '' }}"
+                                data-promo-brand="{{ (client.promo_offer_brand or '')|lower }}"
+                                data-promo-part="{{ (client.promo_offer_part or '')|lower }}"
                                 data-last="{{ (client.last_activity or '')|lower }} {{ (client.last_activity_text or '')|lower }}"
                                 data-next-date="{{ (client.next_event_date or '')|lower }}"
                                 data-next-type="{{ (client.next_event_type or '')|lower }}">
@@ -273,10 +291,10 @@
                                 </td>
                                 
                                 <td>
-                                    <span class="badge badge-soft-primary px-1.5 py-0.5 text-truncate d-inline-block" style="max-width: 120px;">{{ client.buyer_type }}</span>
+                                    <span class="badge badge-soft-primary px-1.5 py-0.5 text-truncate d-inline-block" style="max-width: 110px;">{{ client.buyer_type }}</span>
                                 </td>
                                 
-                                <td><span class="badge badge-soft-secondary px-1.5 py-0.5 text-truncate d-inline-block" style="max-width: 95px;">📍 {{ client.country or '-' }}</span></td>
+                                <td><span class="badge badge-soft-secondary px-1.5 py-0.5 text-truncate d-inline-block" style="max-width: 90px;">📍 {{ client.country or '-' }}</span></td>
                                 
                                 <td style="text-align: center;">
                                     {% if client.interest_level == 'зацікавленість' %}<span class="badge badge-soft-success w-100 py-1 fw-bold">😍 Висока</span>
@@ -311,13 +329,26 @@
                                     {% endif %}
                                 </td>
 
+                                <td style="text-align: center;">
+                                    {% if client.promo_offer_brand or client.promo_offer_part %}
+                                        <span class="badge bg-info-subtle text-dark border border-info w-100 py-1 shadow-xs fw-bold">
+                                            🎯 {{ client.promo_offer_brand or 'Акція' }}
+                                            {% if client.promo_offer_part %}
+                                                <br><small class="font-monospace text-primary fw-bold" style="font-size: 0.68rem;">#{{ client.promo_offer_part }}</small>
+                                            {% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-muted border w-100 py-0.5" style="font-size: 0.72rem;">⚪ —</span>
+                                    {% endif %}
+                                </td>
+
                                 <td style="padding: 6px 8px;">
                                     {% if client.last_activity %}
                                         <span class="badge bg-light text-dark border font-monospace mb-0.5" style="font-size: 0.65rem;">🕒 {{ client.last_activity | replace('2026-', '') }}</span>
                                         {% if '[📵 Недодзвон]' in (client.last_activity_text or '') %}
                                             <span class="badge bg-danger text-white mb-0.5" style="font-size: 0.65rem;">📵 Недодзвон</span>
                                         {% endif %}
-                                        <div class="text-truncate text-secondary" style="font-size: 0.75rem; max-width: 210px;" title="{{ client.last_activity_text }}">
+                                        <div class="text-truncate text-secondary" style="font-size: 0.75rem; max-width: 190px;" title="{{ client.last_activity_text }}">
                                             {{ client.last_activity_text or 'Запис відсутній' }}
                                         </div>
                                     {% else %}
@@ -343,7 +374,7 @@
                             {% endfor %}
                             
                             {% if not clients %}
-                            <tr><td colspan="10" class="text-center text-muted py-4">База клієнтів порожня.</td></tr>
+                            <tr><td colspan="11" class="text-center text-muted py-4">База клієнтів порожня.</td></tr>
                             {% endif %}
                         </tbody>
                     </table>
@@ -381,8 +412,8 @@
                         </div>
                     </div>
 
-                    <input type="text" name="title" class="notebook-title-input mb-1" placeholder="" required>
-                    <textarea name="content" id="new-note-content" class="notebook-textarea" rows="13" placeholder="" required></textarea>
+                    <input type="text" name="title" class="notebook-title-input mb-1" placeholder="Заголовок нотатки..." required>
+                    <textarea name="content" id="new-note-content" class="notebook-textarea" rows="13" placeholder="Напишіть текст тут..." required></textarea>
 
                     <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
                         <span class="text-muted small font-monospace">Стор. Нова</span>
@@ -785,6 +816,26 @@
                             </select>
                         </div>
 
+                        <!-- ЦІЛЬОВА КП (АКЦІЯ / ПЕРЕДСЕЗОН) -->
+                        <div class="col-12 p-2 bg-info-subtle border border-info rounded-3">
+                            <label class="form-label mb-1 fw-bold text-dark">🎯 Цільова КП (Акція / Передсезон)</label>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <select name="promo_offer_brand" class="form-select form-select-sm fw-bold border-info text-dark">
+                                        <option value="" selected>-- Без цільової КП --</option>
+                                        <option value="Vaderstad">Vaderstad</option>
+                                        <option value="Pottinger">Pottinger</option>
+                                        <option value="Kverneland">Kverneland</option>
+                                        <option value="Gaspardo">Gaspardo</option>
+                                        <option value="Horsch">Horsch</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="text" name="promo_offer_part" class="form-control form-control-sm border-info fw-bold" placeholder="Каталожний номер (необов'язково)">
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-md-6">
                             <label class="form-label mb-0">Тип покупця</label>
                             <select name="buyer_type" class="form-select form-select-sm">
@@ -986,7 +1037,7 @@
     #mainClientsTable { border-collapse: separate !important; border-spacing: 0 !important; }
     #mainClientsTable thead { position: sticky; top: 0; z-index: 10; }
     #mainClientsTable thead tr.header-titles-row th { position: sticky; top: 0; height: 38px; line-height: 1.2; background-color: #f1f5f9 !important; border-bottom: 1px solid #cbd5e1; z-index: 12; }
-    #mainClientsTable thead tr#excel-filter-row th { position: sticky; top: 38px; background-color: #f8fafc !important; border-bottom: 2px solid #94a3b8; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05); z-index: 11; padding-top: 4px; padding-bottom: 6px; }
+    #mainClientsTable thead tr#excel-filter-row th { position: sticky; top: 38px; background-color: #f8fafc !important; border-bottom: 2px solid #94a3b8; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05); z-index: 11; padding-top: 4px; padding-bottom: 6px; vertical-align: middle; }
 
     .tasks-grid td { height: 54px; position: relative; cursor: pointer; font-weight: 500; vertical-align: top; padding-top: 5px; }
     .tasks-grid td:hover { background-color: #f1f5f9 !important; }
@@ -1177,6 +1228,8 @@ function filterClientsTable() {
     const stageVal = (document.getElementById('filter-stage')?.value || '').toLowerCase().trim();
     const mayerVal = (document.getElementById('filter-mayer')?.value || '').toLowerCase().trim();
     const eimaVal = (document.getElementById('filter-eima')?.value || '').toLowerCase().trim();
+    const promoBrandVal = (document.getElementById('filter-promo-brand')?.value || '').toLowerCase().trim();
+    const promoPartVal = (document.getElementById('filter-promo-part')?.value || '').toLowerCase().trim();
     const lastVal = (document.getElementById('filter-last')?.value || '').toLowerCase().trim();
     const nextTypeVal = (document.getElementById('filter-next-type')?.value || '').toLowerCase().trim();
 
@@ -1191,6 +1244,8 @@ function filterClientsTable() {
         const rStage = (row.getAttribute('data-stage') || 'none').toLowerCase();
         const rMayer = (row.getAttribute('data-mayer') || '').toLowerCase();
         const rEima = row.getAttribute('data-eima') || '';
+        const rPromoBrand = (row.getAttribute('data-promo-brand') || '').toLowerCase();
+        const rPromoPart = (row.getAttribute('data-promo-part') || '').toLowerCase();
         const rLast = row.getAttribute('data-last') || '';
         const rNextDate = row.getAttribute('data-next-date') || '';
         const rNextType = row.getAttribute('data-next-type') || '';
@@ -1208,6 +1263,18 @@ function filterClientsTable() {
         if (stageVal && rStage !== stageVal) match = false;
         if (mayerVal && rMayer !== mayerVal) match = false;
         if (eimaVal && rEima !== eimaVal) match = false;
+
+        if (promoBrandVal) {
+            if (promoBrandVal === 'any_offer') {
+                if (!rPromoBrand && !rPromoPart) match = false;
+            } else if (promoBrandVal === 'no_offer') {
+                if (rPromoBrand !== '' || rPromoPart !== '') match = false;
+            } else {
+                if (rPromoBrand !== promoBrandVal) match = false;
+            }
+        }
+        if (promoPartVal && !rPromoPart.includes(promoPartVal)) match = false;
+
         if (lastVal && !rLast.includes(lastVal)) match = false;
         if (nextTypeVal) {
             if (nextTypeVal === 'no_event') { if (rNextDate !== '') match = false; } 
@@ -1232,6 +1299,8 @@ function resetTableFilters() {
     if (document.getElementById('filter-stage')) document.getElementById('filter-stage').value = '';
     if (document.getElementById('filter-mayer')) document.getElementById('filter-mayer').value = '';
     if (document.getElementById('filter-eima')) document.getElementById('filter-eima').value = '';
+    if (document.getElementById('filter-promo-brand')) document.getElementById('filter-promo-brand').value = '';
+    if (document.getElementById('filter-promo-part')) document.getElementById('filter-promo-part').value = '';
     if (document.getElementById('filter-last')) document.getElementById('filter-last').value = '';
     if (document.getElementById('filter-next-type')) document.getElementById('filter-next-type').value = '';
     filterClientsTable();
@@ -1259,6 +1328,15 @@ function exportFilteredExcel() {
 
     const mayerVal = (document.getElementById('filter-mayer')?.value || '').trim();
     if (mayerVal) params.append('mayer_reg', mayerVal);
+
+    const eimaVal = (document.getElementById('filter-eima')?.value || '').trim();
+    if (eimaVal) params.append('eima', eimaVal);
+
+    const promoBrandVal = (document.getElementById('filter-promo-brand')?.value || '').trim();
+    if (promoBrandVal) params.append('promo_brand', promoBrandVal);
+
+    const promoPartVal = (document.getElementById('filter-promo-part')?.value || '').trim();
+    if (promoPartVal) params.append('promo_part', promoPartVal);
 
     const lastVal = (document.getElementById('filter-last')?.value || '').trim();
     if (lastVal) params.append('last_activity', lastVal);
