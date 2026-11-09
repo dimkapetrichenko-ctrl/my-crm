@@ -195,7 +195,9 @@ def init_db():
             deactivation_reason TEXT,
             deal_stage TEXT DEFAULT 'none',
             aftermarket_companies TEXT,
-            eima_meeting TEXT
+            eima_meeting TEXT,
+            promo_offer_brand TEXT,
+            promo_offer_part TEXT
         )
     ''')
     
@@ -209,7 +211,9 @@ def init_db():
         'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT', 'is_active': 'BOOLEAN DEFAULT TRUE', 'deactivation_reason': 'TEXT',
         'deal_stage': "TEXT DEFAULT 'none'",
         'aftermarket_companies': 'TEXT',
-        'eima_meeting': 'TEXT'
+        'eima_meeting': 'TEXT',
+        'promo_offer_brand': 'TEXT',
+        'promo_offer_part': 'TEXT'
     }
     
     for field, f_type in new_fields.items():
@@ -465,8 +469,8 @@ def index():
         sql += " AND c.is_active IS FALSE"
 
     if search_query:
-        sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s) OR LOWER(c.buyer_type) LIKE LOWER(%s) OR LOWER(c.aftermarket_companies) LIKE LOWER(%s))"
-        params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
+        sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s) OR LOWER(c.buyer_type) LIKE LOWER(%s) OR LOWER(c.aftermarket_companies) LIKE LOWER(%s) OR LOWER(c.promo_offer_brand) LIKE LOWER(%s) OR LOWER(c.promo_offer_part) LIKE LOWER(%s))"
+        params.extend([f"%{search_query}%"] * 8)
         
     if interest_filter:
         sql += " AND c.interest_level = %s"
@@ -505,6 +509,8 @@ def index():
             'next_event_type': str(row['next_event_type']) if row['next_event_type'] else '',
             'mayer_reg': row['mayer_reg'] if row['mayer_reg'] else 'Ні',
             'eima_meeting': row['eima_meeting'] if 'eima_meeting' in row and row['eima_meeting'] else '',
+            'promo_offer_brand': row['promo_offer_brand'] if 'promo_offer_brand' in row and row['promo_offer_brand'] else '',
+            'promo_offer_part': row['promo_offer_part'] if 'promo_offer_part' in row and row['promo_offer_part'] else '',
             'is_active': row['is_active'] if row['is_active'] is not None else True,
             'deactivation_reason': row['deactivation_reason'] if row['deactivation_reason'] else ''
         })
@@ -1118,6 +1124,8 @@ def add_client():
     whatsapp_2 = request.form.get('whatsapp_2', '')
     aftermarket_companies = request.form.get('aftermarket_companies', '').strip()
     eima_meeting = request.form.get('eima_meeting', '')
+    promo_offer_brand = request.form.get('promo_offer_brand', '').strip()
+    promo_offer_part = request.form.get('promo_offer_part', '').strip()
     
     if interest_level != 'зацікавленість':
         deal_stage = 'none'
@@ -1140,10 +1148,10 @@ def add_client():
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
-                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage, aftermarket_companies, eima_meeting) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s)""",
+                                   contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s, %s, %s)""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part)
         )
         conn.commit()
         cursor.close()
@@ -1167,6 +1175,8 @@ def edit_client(client_id):
     whatsapp_2 = request.form.get('whatsapp_2', '')
     aftermarket_companies = request.form.get('aftermarket_companies', '').strip()
     eima_meeting = request.form.get('eima_meeting', '')
+    promo_offer_brand = request.form.get('promo_offer_brand', '').strip()
+    promo_offer_part = request.form.get('promo_offer_part', '').strip()
     
     if interest_level != 'зацікавленість':
         deal_stage = 'none'
@@ -1190,9 +1200,9 @@ def edit_client(client_id):
         cursor.execute(
             """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
                                   website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
-                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s, deal_stage=%s, aftermarket_companies=%s, eima_meeting=%s WHERE id=%s""",
+                                  phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s, deal_stage=%s, aftermarket_companies=%s, eima_meeting=%s, promo_offer_brand=%s, promo_offer_part=%s WHERE id=%s""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
-             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting, client_id)
+             contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part, client_id)
         )
         conn.commit()
         cursor.close()
@@ -1321,7 +1331,8 @@ def client_detail(client_id):
                        'contact_person', 'position', 'phone', 'email', 
                        'contact_person_2', 'position_2', 'phone_2', 'email_2', 
                        'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp_1', 'whatsapp_2',
-                       'is_active', 'deactivation_reason', 'deal_stage', 'aftermarket_companies', 'eima_meeting']
+                       'is_active', 'deactivation_reason', 'deal_stage', 'aftermarket_companies', 'eima_meeting',
+                       'promo_offer_brand', 'promo_offer_part']
     for field in fields_to_check:
         if field not in client or client[field] is None:
             if field == 'interest_level':
@@ -1408,6 +1419,9 @@ def export_excel():
     interest_filter = request.args.get('interest', '').strip()
     deal_stage = request.args.get('deal_stage', '').strip()
     mayer_reg = request.args.get('mayer_reg', '').strip()
+    eima_filter = request.args.get('eima', '').strip()
+    promo_brand = request.args.get('promo_brand', '').strip()
+    promo_part = request.args.get('promo_part', '').strip()
     last_activity_text = request.args.get('last_activity', '').strip()
     next_event_type = request.args.get('next_event_type', '').strip()
     status_view = request.args.get('status_view', 'active').strip()
@@ -1429,6 +1443,8 @@ def export_excel():
                c.aftermarket_companies AS "Aftermarket оператори",
                c.website AS "Веб-сайт", 
                c.eima_meeting AS "Зустріч EIMA",
+               c.promo_offer_brand AS "Цільова КП (Бренд)",
+               c.promo_offer_part AS "Цільова КП (Артикул)",
                c.country AS "Країна", 
                c.address AS "Адреса",
                c.contact_person AS "Контактна особа 1", 
@@ -1483,6 +1499,22 @@ def export_excel():
     if mayer_reg:
         query += " AND c.mayer_reg = %s"
         params.append(mayer_reg)
+
+    if eima_filter == 'так':
+        query += " AND c.eima_meeting IS NOT NULL AND c.eima_meeting != ''"
+
+    if promo_brand:
+        if promo_brand == 'any_offer':
+            query += " AND ((c.promo_offer_brand IS NOT NULL AND c.promo_offer_brand != '') OR (c.promo_offer_part IS NOT NULL AND c.promo_offer_part != ''))"
+        elif promo_brand == 'no_offer':
+            query += " AND (c.promo_offer_brand IS NULL OR c.promo_offer_brand = '') AND (c.promo_offer_part IS NULL OR c.promo_offer_part = '')"
+        else:
+            query += " AND LOWER(c.promo_offer_brand) = LOWER(%s)"
+            params.append(promo_brand)
+
+    if promo_part:
+        query += " AND LOWER(c.promo_offer_part) LIKE LOWER(%s)"
+        params.append(f"%{promo_part}%")
 
     if next_event_type:
         if next_event_type == 'no_event':
