@@ -139,6 +139,31 @@
                         </select>
                     </div>
 
+                    <!-- ЦІЛЬОВА КП (АКЦІЯ / ПЕРЕДСЕЗОН) -->
+                    <div class="mb-2 p-2 bg-info-subtle border border-info rounded-3">
+                        <label class="form-label mb-1 fw-bold text-dark d-flex justify-content-between align-items-center">
+                            <span>🎯 Цільова КП (Акція / Передсезон)</span>
+                            {% if client.promo_offer_brand or client.promo_offer_part %}
+                            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size: 0.7rem;" onclick="document.getElementById('promo_offer_brand').value=''; document.getElementById('promo_offer_part').value='';" title="Очистити поля КП">✕ Очистити</button>
+                            {% endif %}
+                        </label>
+                        <div class="row g-1">
+                            <div class="col-6">
+                                <select name="promo_offer_brand" id="promo_offer_brand" class="form-select form-select-sm fw-bold border-info text-dark">
+                                    <option value="" {% if not client.promo_offer_brand %}selected{% endif %}>-- Оберіть бренд --</option>
+                                    <option value="Vaderstad" {% if client.promo_offer_brand == 'Vaderstad' %}selected{% endif %}>Vaderstad</option>
+                                    <option value="Pottinger" {% if client.promo_offer_brand == 'Pottinger' %}selected{% endif %}>Pottinger</option>
+                                    <option value="Kverneland" {% if client.promo_offer_brand == 'Kverneland' %}selected{% endif %}>Kverneland</option>
+                                    <option value="Gaspardo" {% if client.promo_offer_brand == 'Gaspardo' %}selected{% endif %}>Gaspardo</option>
+                                    <option value="Horsch" {% if client.promo_offer_brand == 'Horsch' %}selected{% endif %}>Horsch</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <input type="text" name="promo_offer_part" id="promo_offer_part" class="form-control form-control-sm border-info fw-bold" value="{{ client.promo_offer_part or '' }}" placeholder="Артикул (якщо є)...">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-2">
                         <label class="form-label mb-1">Тип покупця</label>
                         <select name="buyer_type" class="form-select form-select-sm">
@@ -564,7 +589,7 @@
         const count = eventsByDate[dateStr] || 0;
         let badgeHtml = '';
         if (count <= 10) { badgeHtml = `<span class="badge bg-success w-100 py-1">🟢 На ${dateStr} заплановано: ${count} под. (День вільний)</span>`; } 
-        else if (count <= 15) { badgeHtml = `<span class="badge bg-warning text-dark w-100 py-1">🟡 На ${dateStr} заплановано: ${count} pop. (Помірне навантаження)</span>`; } 
+        else if (count <= 15) { badgeHtml = `<span class="badge bg-warning text-dark w-100 py-1">🟡 На ${dateStr} заплановано: ${count} под. (Помірне навантаження)</span>`; } 
         else { badgeHtml = `<span class="badge bg-danger w-100 py-1">🔴 На ${dateStr} заплановано: ${count} под. (Високе завантаження!)</span>`; }
         badgeBox.innerHTML = badgeHtml;
     }
