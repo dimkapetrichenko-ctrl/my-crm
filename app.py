@@ -180,6 +180,7 @@ def init_db():
             email TEXT,
             website TEXT,
             buyer_type TEXT,
+            acquisition_channel TEXT,
             brands TEXT,
             contact_person_2 TEXT,
             position_2 TEXT,
@@ -205,7 +206,7 @@ def init_db():
     existing_columns = [row[0] for row in cursor.fetchall()]
     
     new_fields = {
-        'website': 'TEXT', 'buyer_type': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
+        'website': 'TEXT', 'buyer_type': 'TEXT', 'acquisition_channel': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
         'contact_person_2': 'TEXT', 'position_2': 'TEXT', 'phone_2': 'TEXT', 'email_2': 'TEXT',
         'interest_level': 'TEXT', 'next_event_date': 'TEXT', 'next_event_type': 'TEXT', 'mayer_reg': 'TEXT',
         'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT', 'is_active': 'BOOLEAN DEFAULT TRUE', 'deactivation_reason': 'TEXT',
@@ -469,8 +470,8 @@ def index():
         sql += " AND c.is_active IS FALSE"
 
     if search_query:
-        sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s) OR LOWER(c.buyer_type) LIKE LOWER(%s) OR LOWER(c.aftermarket_companies) LIKE LOWER(%s) OR LOWER(c.promo_offer_brand) LIKE LOWER(%s) OR LOWER(c.promo_offer_part) LIKE LOWER(%s))"
-        params.extend([f"%{search_query}%"] * 8)
+        sql += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.brands) LIKE LOWER(%s) OR LOWER(c.country) LIKE LOWER(%s) OR LOWER(c.buyer_type) LIKE LOWER(%s) OR LOWER(c.acquisition_channel) LIKE LOWER(%s) OR LOWER(c.aftermarket_companies) LIKE LOWER(%s) OR LOWER(c.promo_offer_brand) LIKE LOWER(%s) OR LOWER(c.promo_offer_part) LIKE LOWER(%s))"
+        params.extend([f"%{search_query}%"] * 9)
         
     if interest_filter:
         sql += " AND c.interest_level = %s"
@@ -499,6 +500,7 @@ def index():
             'email': row['email'] if row['email'] else '',
             'website': row['website'] if row['website'] else '',
             'buyer_type': row['buyer_type'] if row['buyer_type'] else 'не вказано',
+            'acquisition_channel': row['acquisition_channel'] if 'acquisition_channel' in row and row['acquisition_channel'] else '',
             'brands': row['brands'] if row['brands'] else '-',
             'aftermarket_companies': row['aftermarket_companies'] if row['aftermarket_companies'] else '',
             'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано',
@@ -1114,6 +1116,7 @@ def add_client():
     country = request.form.get('country', '')
     address = request.form.get('address', '')
     buyer_type = request.form.get('buyer_type', '')
+    acquisition_channel = request.form.get('acquisition_channel', '').strip()
     interest_level = request.form.get('interest_level', 'не опрацьовано')
     deal_stage = request.form.get('deal_stage', 'none')
     website = request.form.get('website', '')
@@ -1147,10 +1150,10 @@ def add_client():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, brands, 
+            """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, brands, 
                                    contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s, %s, %s)""",
-            (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s, %s, %s)""",
+            (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, brands,
              contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part)
         )
         conn.commit()
@@ -1165,6 +1168,7 @@ def edit_client(client_id):
     country = request.form.get('country', '')
     address = request.form.get('address', '')
     buyer_type = request.form.get('buyer_type', '')
+    acquisition_channel = request.form.get('acquisition_channel', '').strip()
     interest_level = request.form.get('interest_level', 'не опрацьовано')
     deal_stage = request.form.get('deal_stage', 'none')
     website = request.form.get('website', '')
@@ -1199,9 +1203,9 @@ def edit_client(client_id):
         cursor = conn.cursor()
         cursor.execute(
             """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
-                                  website=%s, buyer_type=%s, brands=%s, contact_person_2=%s, position_2=%s, 
+                                  website=%s, buyer_type=%s, acquisition_channel=%s, brands=%s, contact_person_2=%s, position_2=%s, 
                                   phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s, deal_stage=%s, aftermarket_companies=%s, eima_meeting=%s, promo_offer_brand=%s, promo_offer_part=%s WHERE id=%s""",
-            (name, country, address, contact_person, position, phone, email, website, buyer_type, brands,
+            (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, brands,
              contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part, client_id)
         )
         conn.commit()
@@ -1327,7 +1331,7 @@ def client_detail(client_id):
     raw_client = cursor.fetchone()
     
     client = dict(raw_client) if raw_client else {}
-    fields_to_check = ['buyer_type', 'brands', 'website', 'country', 'address', 
+    fields_to_check = ['buyer_type', 'acquisition_channel', 'brands', 'website', 'country', 'address', 
                        'contact_person', 'position', 'phone', 'email', 
                        'contact_person_2', 'position_2', 'phone_2', 'email_2', 
                        'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp_1', 'whatsapp_2',
@@ -1415,6 +1419,7 @@ def delete_negotiation(neg_id):
 def export_excel():
     search_name = request.args.get('search_name', '').strip()
     buyer_type = request.args.get('buyer_type', '').strip()
+    acquisition_channel = request.args.get('acquisition_channel', '').strip()
     countries_param = request.args.get('countries', '').strip()
     interest_filter = request.args.get('interest', '').strip()
     deal_stage = request.args.get('deal_stage', '').strip()
@@ -1439,6 +1444,8 @@ def export_excel():
                    ELSE 'Немає активної угоди'
                END AS "Етап угоди",
                c.buyer_type AS "Тип покупця", 
+               c.acquisition_channel AS "Канал залучення",
+               c.mayer_reg AS "Реєстрація MAYER PRO",
                c.brands AS "Пріоритетні бренди",
                c.aftermarket_companies AS "Aftermarket оператори",
                c.website AS "Веб-сайт", 
@@ -1480,6 +1487,13 @@ def export_excel():
     if buyer_type:
         query += " AND LOWER(c.buyer_type) = LOWER(%s)"
         params.append(buyer_type)
+
+    if acquisition_channel:
+        if acquisition_channel == 'none':
+            query += " AND (c.acquisition_channel IS NULL OR c.acquisition_channel = '')"
+        else:
+            query += " AND LOWER(c.acquisition_channel) = LOWER(%s)"
+            params.append(acquisition_channel)
 
     if countries_param:
         countries_list = [c.strip().lower() for c in countries_param.split(',') if c.strip()]
