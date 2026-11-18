@@ -181,6 +181,7 @@ def init_db():
             website TEXT,
             buyer_type TEXT,
             acquisition_channel TEXT,
+            created_at TEXT,
             brands TEXT,
             contact_person_2 TEXT,
             position_2 TEXT,
@@ -206,7 +207,7 @@ def init_db():
     existing_columns = [row[0] for row in cursor.fetchall()]
     
     new_fields = {
-        'website': 'TEXT', 'buyer_type': 'TEXT', 'acquisition_channel': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
+        'website': 'TEXT', 'buyer_type': 'TEXT', 'acquisition_channel': 'TEXT', 'created_at': 'TEXT', 'brands': 'TEXT', 'position': 'TEXT',
         'contact_person_2': 'TEXT', 'position_2': 'TEXT', 'phone_2': 'TEXT', 'email_2': 'TEXT',
         'interest_level': 'TEXT', 'next_event_date': 'TEXT', 'next_event_type': 'TEXT', 'mayer_reg': 'TEXT',
         'whatsapp_1': 'TEXT', 'whatsapp_2': 'TEXT', 'is_active': 'BOOLEAN DEFAULT TRUE', 'deactivation_reason': 'TEXT',
@@ -501,6 +502,7 @@ def index():
             'website': row['website'] if row['website'] else '',
             'buyer_type': row['buyer_type'] if row['buyer_type'] else 'не вказано',
             'acquisition_channel': row['acquisition_channel'] if 'acquisition_channel' in row and row['acquisition_channel'] else '',
+            'created_at': str(row['created_at']) if 'created_at' in row and row['created_at'] else '',
             'brands': row['brands'] if row['brands'] else '-',
             'aftermarket_companies': row['aftermarket_companies'] if row['aftermarket_companies'] else '',
             'interest_level': row['interest_level'] if row['interest_level'] else 'не опрацьовано',
@@ -570,6 +572,7 @@ def import_clients_excel():
         conn = get_db_connection()
         cursor = conn.cursor()
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+        today_date_only = datetime.now().strftime("%Y-%m-%d")
 
         for _, row in df.iterrows():
             vals = [str(x).strip() if pd.notna(x) else '' for x in row.tolist()]
@@ -604,12 +607,12 @@ def import_clients_excel():
                     INSERT INTO clients (
                         name, country, website, buyer_type, brands, 
                         contact_person, phone, email, interest_level, 
-                        deal_stage, mayer_reg, is_active
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'none', 'Ні', TRUE)
+                        deal_stage, mayer_reg, is_active, created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'none', 'Ні', TRUE, %s)
                     RETURNING id
                 """, (
                     name, default_country, website, default_buyer_type, 
-                    brands, contact_person, phone, email_val, 'не опрацьовано'
+                    brands, contact_person, phone, email_val, 'не опрацьовано', today_date_only
                 ))
                 new_client_id = cursor.fetchone()[0]
 
@@ -1117,6 +1120,10 @@ def add_client():
     address = request.form.get('address', '')
     buyer_type = request.form.get('buyer_type', '')
     acquisition_channel = request.form.get('acquisition_channel', '').strip()
+    created_at = request.form.get('created_at', '').strip()
+    if not created_at:
+        created_at = datetime.now().strftime("%Y-%m-%d")
+
     interest_level = request.form.get('interest_level', 'не опрацьовано')
     deal_stage = request.form.get('deal_stage', 'none')
     website = request.form.get('website', '')
@@ -1150,10 +1157,10 @@ def add_client():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, brands, 
+            """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, created_at, brands, 
                                    contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part) 
                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s, %s, %s)""",
-            (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, brands,
+            (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, created_at, brands,
              contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part)
         )
         conn.commit()
@@ -1169,6 +1176,7 @@ def edit_client(client_id):
     address = request.form.get('address', '')
     buyer_type = request.form.get('buyer_type', '')
     acquisition_channel = request.form.get('acquisition_channel', '').strip()
+    created_at = request.form.get('created_at', '').strip()
     interest_level = request.form.get('interest_level', 'не опрацьовано')
     deal_stage = request.form.get('deal_stage', 'none')
     website = request.form.get('website', '')
@@ -1203,9 +1211,9 @@ def edit_client(client_id):
         cursor = conn.cursor()
         cursor.execute(
             """UPDATE clients SET name=%s, country=%s, address=%s, contact_person=%s, position=%s, phone=%s, email=%s, 
-                                  website=%s, buyer_type=%s, acquisition_channel=%s, brands=%s, contact_person_2=%s, position_2=%s, 
+                                  website=%s, buyer_type=%s, acquisition_channel=%s, created_at=%s, brands=%s, contact_person_2=%s, position_2=%s, 
                                   phone_2=%s, email_2=%s, interest_level=%s, next_event_date=%s, next_event_type=%s, mayer_reg=%s, whatsapp_1=%s, whatsapp_2=%s, deal_stage=%s, aftermarket_companies=%s, eima_meeting=%s, promo_offer_brand=%s, promo_offer_part=%s WHERE id=%s""",
-            (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, brands,
+            (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, created_at, brands,
              contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part, client_id)
         )
         conn.commit()
@@ -1331,7 +1339,7 @@ def client_detail(client_id):
     raw_client = cursor.fetchone()
     
     client = dict(raw_client) if raw_client else {}
-    fields_to_check = ['buyer_type', 'acquisition_channel', 'brands', 'website', 'country', 'address', 
+    fields_to_check = ['buyer_type', 'acquisition_channel', 'created_at', 'brands', 'website', 'country', 'address', 
                        'contact_person', 'position', 'phone', 'email', 
                        'contact_person_2', 'position_2', 'phone_2', 'email_2', 
                        'interest_level', 'next_event_date', 'next_event_type', 'mayer_reg', 'whatsapp_1', 'whatsapp_2',
@@ -1435,6 +1443,7 @@ def export_excel():
     
     query = """
         SELECT c.name AS "Назва компанії", 
+               c.created_at AS "Дата додавання в базу",
                c.interest_level AS "Зацікавленість", 
                CASE 
                    WHEN c.deal_stage = 'request' THEN '1. Запит / Підбір'
