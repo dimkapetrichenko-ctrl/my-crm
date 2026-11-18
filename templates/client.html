@@ -93,9 +93,15 @@
             
             <div class="card-body p-3" style="font-size: 0.9rem; overflow-y: auto; flex-grow: 1;">
                 <form action="{{ url_for('edit_client', client_id=client.id) }}" method="POST">
-                    <div class="mb-2">
-                        <label class="form-label mb-1"><b>Назва компанії *</b></label>
-                        <input type="text" name="name" class="form-control form-control-sm" value="{{ client.name }}" required>
+                    <div class="row g-2 mb-2">
+                        <div class="col-7">
+                            <label class="form-label mb-1"><b>Назва компанії *</b></label>
+                            <input type="text" name="name" class="form-control form-control-sm" value="{{ client.name }}" required>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label mb-1 text-primary"><b>📅 Дата додавання</b></label>
+                            <input type="date" name="created_date" class="form-control form-control-sm fw-bold border-primary" value="{{ client.created_date or '' }}">
+                        </div>
                     </div>
                     
                     <div class="mb-2">
