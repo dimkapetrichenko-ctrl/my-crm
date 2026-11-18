@@ -165,7 +165,7 @@
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label mb-1">Тип покупця</label>
+                        <label class="form-label mb-1"><b>Тип покупця</b></label>
                         <select name="buyer_type" class="form-select form-select-sm">
                             <option value="не вказано" {% if client.buyer_type == 'не вказано' or not client.buyer_type %}selected{% endif %}>не вказано</option>
                             <option value="інтернет-магазин" {% if client.buyer_type == 'інтернет-магазин' %}selected{% endif %}>інтернет-магазин</option>
@@ -175,6 +175,17 @@
                             <option value="надання послуг" {% if client.buyer_type == 'надання послуг' %}selected{% endif %}>надання послуг</option>
                             <option value="роздрібний покупець" {% if client.buyer_type == 'роздрібний покупець' %}selected{% endif %}>роздрібний покупець</option>
                             <option value="Дилер сг техніки" {% if client.buyer_type == 'Дилер сг техніки' %}selected{% endif %}>Дилер сг техніки</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label mb-1"><b>Канал залучення</b></label>
+                        <select name="acquisition_channel" class="form-select form-select-sm fw-semibold">
+                            <option value="" {% if not client.acquisition_channel %}selected{% endif %}>-- Не вказано --</option>
+                            <option value="Реклама" {% if client.acquisition_channel == 'Реклама' %}selected{% endif %}>📢 Реклама (Платний трафік)</option>
+                            <option value="Органіка" {% if client.acquisition_channel == 'Органіка' %}selected{% endif %}>🌱 Органіка (Вхідний потік)</option>
+                            <option value="Аутріч" {% if client.acquisition_channel == 'Аутріч' %}selected{% endif %}>🎯 Активний пошук (Аутріч)</option>
+                            <option value="Наявна база" {% if client.acquisition_channel == 'Наявна база' %}selected{% endif %}>🔄 Повторні продажі (Наявна база)</option>
                         </select>
                     </div>
 
