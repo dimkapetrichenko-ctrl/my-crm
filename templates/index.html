@@ -261,7 +261,7 @@
                         <tbody id="clients-table-body">
                             {% for client in clients %}
                             <tr class="client-row {% if client.next_event_date == today_date %}table-warning fw-bold{% elif '[📵 Недодзвон]' in (client.last_activity_text or '') %}table-unanswered{% endif %}"
-                                data-name="{{ (client.name or '')|lower }} {{ (client.contact_person or '')|lower }} {{ (client.phone or '')|lower }} {{ (client.email or '')|lower }}"
+                                data-name="{{ (client.name or '')|lower }} {{ (client.contact_person or '')|lower }} {{ (client.phone or '')|lower }} {{ (client.email or '')|lower }} {{ (client.created_at or '')|lower }}"
                                 data-type="{{ (client.buyer_type or 'не вказано')|lower }}"
                                 data-channel="{{ (client.acquisition_channel or 'none')|lower }}"
                                 data-country="{{ (client.country or '')|lower }}"
@@ -290,6 +290,11 @@
                                         <a href="{% if 'http' not in client.website %}https://{% endif %}{{ client.website }}" target="_blank" class="text-decoration-none text-primary d-block text-truncate" style="font-size: 0.70rem;" title="{{ client.website }}">
                                             <i class="bi bi-link-45deg"></i>{{ client.website | replace('https://','') | replace('http://','') | replace('www.','') }}
                                         </a>
+                                    {% endif %}
+                                    {% if client.created_at %}
+                                        <div class="text-muted font-monospace" style="font-size: 0.66rem;" title="Дата додавання в базу: {{ client.created_at }}">
+                                            📥 {{ client.created_at }}
+                                        </div>
                                     {% endif %}
                                 </td>
                                 
@@ -788,9 +793,22 @@
             <form action="/add_client" method="POST" class="mb-0">
                 <div class="modal-body p-3" style="font-size: 0.85rem; max-height: 70vh; overflow-y: auto;">
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <label class="form-label mb-0 fw-bold">Назва компанії *</label>
                             <input type="text" name="name" class="form-control form-control-sm" required placeholder="Введіть назву компанії">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label mb-0 fw-bold">📥 Дата додавання в базу</label>
+                            <input type="date" name="created_at" class="form-control form-control-sm fw-bold text-primary" value="{{ today_date }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0 fw-bold">Зацікавленість *</label>
+                            <select name="interest_level" class="form-select form-select-sm" required>
+                                <option value="не опрацьовано" selected>Прозорий — не опрацьовано</option>
+                                <option value="немає зацікавленості">Синій — немає</option>
+                                <option value="середня зацікавленість">Жовтий — середня</option>
+                                <option value="зацікавленість">Зелений — висока</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label mb-0 fw-bold">Етап угоди</label>
@@ -803,19 +821,20 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label mb-0 fw-bold">Зацікавленість *</label>
-                            <select name="interest_level" class="form-select form-select-sm" required>
-                                <option value="не опрацьовано" selected>Прозорий — не опрацьовано</option>
-                                <option value="немає зацікавленості">Синій — немає</option>
-                                <option value="середня зацікавленість">Жовтий — середня</option>
-                                <option value="зацікавленість">Зелений — висока</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
                             <label class="form-label mb-0 fw-bold">Реєстрація на сайті MAYER PRO</label>
                             <select name="mayer_reg" class="form-select form-select-sm">
                                 <option value="Ні" selected>Ні</option>
                                 <option value="Так">Так</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0 fw-bold">Канал залучення</label>
+                            <select name="acquisition_channel" class="form-select form-select-sm">
+                                <option value="" selected>-- Не вказано --</option>
+                                <option value="Реклама">📢 Реклама (Платний трафік)</option>
+                                <option value="Органіка">🌱 Органіка (Вхідний потік)</option>
+                                <option value="Аутріч">🎯 Активний пошук (Аутріч)</option>
+                                <option value="Наявна база">🔄 Повторні продажі (Наявна база)</option>
                             </select>
                         </div>
                         
@@ -851,7 +870,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label mb-0 fw-bold">Тип покупця</label>
                             <select name="buyer_type" class="form-select form-select-sm">
                                 <option value="не вказано" selected>не вказано</option>
@@ -864,21 +883,11 @@
                                 <option value="Дилер сг техніки">Дилер сг техніки</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label mb-0 fw-bold">Канал залучення</label>
-                            <select name="acquisition_channel" class="form-select form-select-sm">
-                                <option value="" selected>-- Не вказано --</option>
-                                <option value="Реклама">📢 Реклама (Платний трафік)</option>
-                                <option value="Органіка">🌱 Органіка (Вхідний потік)</option>
-                                <option value="Аутріч">🎯 Активний пошук (Аутріч)</option>
-                                <option value="Наявна база">🔄 Повторні продажі (Наявна база)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label mb-0">Країна</label>
                             <input type="text" name="country" class="form-control form-control-sm" placeholder="Наприклад: Польща">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label mb-0">Веб-сайт</label>
                             <input type="text" name="website" class="form-control form-control-sm" placeholder="[www.example.com](https://www.example.com)">
                         </div>
