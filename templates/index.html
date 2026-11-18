@@ -2,9 +2,9 @@
 {% block content %}
 
 <!-- ПІДКЛЮЧЕННЯ РУКОПИСНИХ ШРИФТІВ ДЛЯ БЛОКНОТА -->
-<link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
-<link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
-<link href="[https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap](https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap)" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Marck+Script&family=Neucha&display=swap" rel="stylesheet">
 
 <!-- КОМПАКТНІ ВЕРХНІ ФІНАНСОВІ ВІДЖЕТИ -->
 <div class="row g-2 mb-1">
@@ -137,15 +137,14 @@
                     <table class="table table-sm table-hover align-middle mb-0" id="mainClientsTable" style="font-size: 0.85rem; width: 100%;">
                         <thead>
                             <tr class="header-titles-row">
-                                <th style="width: 13%;">Компанії</th>
+                                <th style="width: 15%;">Компанії</th>
                                 <th style="width: 10%;">Тип клієнта</th>
                                 <th style="width: 10%;">Країна</th>
                                 <th style="text-align: center; width: 10%;">Зацікавленість</th>
                                 <th style="text-align: center; width: 11%;">Етап угоди</th>
-                                <th style="text-align: center; width: 5%;">MAYER</th>
                                 <th style="text-align: center; width: 6%;">EIMA</th>
                                 <th style="text-align: center; width: 11%;">🎯 Цільова КП</th>
-                                <th style="width: 11%;">Опис активності</th>
+                                <th style="width: 14%;">Опис активності</th>
                                 <th style="width: 8%;">Наступна дія</th>
                                 <th style="text-align: center; width: 5%;">Дія</th>
                             </tr>
@@ -211,13 +210,6 @@
                                     </select>
                                 </th>
                                 <th>
-                                    <select id="filter-mayer" class="form-select form-select-sm text-center" onchange="filterClientsTable()">
-                                        <option value="">Всі</option>
-                                        <option value="Так">🌐 Так</option>
-                                        <option value="Ні">🔒 Ні</option>
-                                    </select>
-                                </th>
-                                <th>
                                     <select id="filter-eima" class="form-select form-select-sm text-center" onchange="filterClientsTable()">
                                         <option value="">Всі</option>
                                         <option value="так">🇮🇹 Так</option>
@@ -263,7 +255,6 @@
                                 data-country="{{ (client.country or '')|lower }}"
                                 data-interest="{{ (client.interest_level or 'не опрацьовано')|lower }}"
                                 data-stage="{{ client.deal_stage or 'none' }}"
-                                data-mayer="{{ client.mayer_reg or 'Ні' }}"
                                 data-eima="{{ 'так' if client.eima_meeting else '' }}"
                                 data-promo-brand="{{ (client.promo_offer_brand or '')|lower }}"
                                 data-promo-part="{{ (client.promo_offer_part or '')|lower }}"
@@ -271,7 +262,7 @@
                                 data-next-date="{{ (client.next_event_date or '')|lower }}"
                                 data-next-type="{{ (client.next_event_type or '')|lower }}">
                                 
-                                <td style="padding: 6px 8px; max-width: 150px;">
+                                <td style="padding: 6px 8px; max-width: 170px;">
                                     <a href="/client/{{ client.id }}" class="fw-bold text-decoration-none text-dark d-block text-truncate" title="{{ client.name }}">
                                         <i class="bi bi-building text-primary"></i> {{ client.name }}
                                     </a>
@@ -317,8 +308,6 @@
                                     {% endif %}
                                 </td>
                                 
-                                <td style="text-align: center;">{% if client.mayer_reg == 'Так' %}<span class="badge badge-soft-success fw-bold px-1.5 py-0.5">🌐 Так</span>{% else %}<span class="badge badge-soft-secondary px-1 py-0.5" style="font-size: 0.7rem;">🔒 Ні</span>{% endif %}</td>
-                                
                                 <td style="text-align: center;">
                                     {% if client.eima_meeting %}
                                         <span class="badge bg-warning text-dark border border-warning w-100 py-1 shadow-xs fw-bold">
@@ -348,7 +337,7 @@
                                         {% if '[📵 Недодзвон]' in (client.last_activity_text or '') %}
                                             <span class="badge bg-danger text-white mb-0.5" style="font-size: 0.65rem;">📵 Недодзвон</span>
                                         {% endif %}
-                                        <div class="text-truncate text-secondary" style="font-size: 0.75rem; max-width: 190px;" title="{{ client.last_activity_text }}">
+                                        <div class="text-truncate text-secondary" style="font-size: 0.75rem; max-width: 220px;" title="{{ client.last_activity_text }}">
                                             {{ client.last_activity_text or 'Запис відсутній' }}
                                         </div>
                                     {% else %}
@@ -374,7 +363,7 @@
                             {% endfor %}
                             
                             {% if not clients %}
-                            <tr><td colspan="11" class="text-center text-muted py-4">База клієнтів порожня.</td></tr>
+                            <tr><td colspan="10" class="text-center text-muted py-4">База клієнтів порожня.</td></tr>
                             {% endif %}
                         </tbody>
                     </table>
@@ -855,7 +844,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label mb-0">Веб-сайт</label>
-                            <input type="text" name="website" class="form-control form-control-sm" placeholder="[www.example.com](https://www.example.com)">
+                            <input type="text" name="website" class="form-control form-control-sm" placeholder="www.example.com">
                         </div>
                         <div class="col-12">
                             <label class="form-label mb-0">Адреса</label>
@@ -1226,7 +1215,6 @@ function filterClientsTable() {
 
     const interestVal = (document.getElementById('filter-interest')?.value || '').toLowerCase().trim();
     const stageVal = (document.getElementById('filter-stage')?.value || '').toLowerCase().trim();
-    const mayerVal = (document.getElementById('filter-mayer')?.value || '').toLowerCase().trim();
     const eimaVal = (document.getElementById('filter-eima')?.value || '').toLowerCase().trim();
     const promoBrandVal = (document.getElementById('filter-promo-brand')?.value || '').toLowerCase().trim();
     const promoPartVal = (document.getElementById('filter-promo-part')?.value || '').toLowerCase().trim();
@@ -1242,7 +1230,6 @@ function filterClientsTable() {
         const rCountry = row.getAttribute('data-country') || '';
         const rInterest = row.getAttribute('data-interest') || '';
         const rStage = (row.getAttribute('data-stage') || 'none').toLowerCase();
-        const rMayer = (row.getAttribute('data-mayer') || '').toLowerCase();
         const rEima = row.getAttribute('data-eima') || '';
         const rPromoBrand = (row.getAttribute('data-promo-brand') || '').toLowerCase();
         const rPromoPart = (row.getAttribute('data-promo-part') || '').toLowerCase();
@@ -1261,7 +1248,6 @@ function filterClientsTable() {
 
         if (interestVal && rInterest !== interestVal) match = false;
         if (stageVal && rStage !== stageVal) match = false;
-        if (mayerVal && rMayer !== mayerVal) match = false;
         if (eimaVal && rEima !== eimaVal) match = false;
 
         if (promoBrandVal) {
@@ -1297,7 +1283,6 @@ function resetTableFilters() {
 
     if (document.getElementById('filter-interest')) document.getElementById('filter-interest').value = '';
     if (document.getElementById('filter-stage')) document.getElementById('filter-stage').value = '';
-    if (document.getElementById('filter-mayer')) document.getElementById('filter-mayer').value = '';
     if (document.getElementById('filter-eima')) document.getElementById('filter-eima').value = '';
     if (document.getElementById('filter-promo-brand')) document.getElementById('filter-promo-brand').value = '';
     if (document.getElementById('filter-promo-part')) document.getElementById('filter-promo-part').value = '';
@@ -1325,9 +1310,6 @@ function exportFilteredExcel() {
 
     const stageVal = (document.getElementById('filter-stage')?.value || '').trim();
     if (stageVal) params.append('deal_stage', stageVal);
-
-    const mayerVal = (document.getElementById('filter-mayer')?.value || '').trim();
-    if (mayerVal) params.append('mayer_reg', mayerVal);
 
     const eimaVal = (document.getElementById('filter-eima')?.value || '').trim();
     if (eimaVal) params.append('eima', eimaVal);
