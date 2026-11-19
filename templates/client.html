@@ -116,12 +116,16 @@
 
                     <div id="deal_stage_container" class="mb-2 p-2 bg-success-subtle border border-success rounded-3" style="display: none;">
                         <label class="form-label mb-1 fw-bold text-success-emphasis small">🎯 Етап угоди (Воронка продажу):</label>
-                        <select name="deal_stage" id="client_deal_stage" class="form-select form-select-sm fw-bold">
+                        <select name="deal_stage" id="client_deal_stage" class="form-select form-select-sm fw-bold"
+                                data-prev-stage="{{ client.deal_stage or 'none' }}"
+                                onchange="handleDealStageChange(this)">
                             <option value="none" {% if client.deal_stage == 'none' or not client.deal_stage %}selected{% endif %}>⚪ Немає активної угоди</option>
-                            <option value="request" {% if client.deal_stage == 'request' %}selected{% endif %}>📩 1. Запит / Підбір запчастин</option>
-                            <option value="offer_sent" {% if client.deal_stage == 'offer_sent' %}selected{% endif %}>📄 2. Рахунок (КП) надіслано</option>
-                            <option value="paid_shipped" {% if client.deal_stage == 'paid_shipped' %}selected{% endif %}>📦 3. Оплачено / Відвантажено</option>
-                            <option value="regular" {% if client.deal_stage == 'regular' %}selected{% endif %}>🤝 4. Постійний партнер</option>
+                            <option value="request" {% if client.deal_stage == 'request' %}selected{% endif %}>📩 1. Запит на підбір запчастин</option>
+                            <option value="kp_sent" {% if client.deal_stage == 'kp_sent' %}selected{% endif %}>📋 2. КП надіслано</option>
+                            <option value="invoice_sent" {% if client.deal_stage == 'invoice_sent' %}selected{% endif %}>📄 3. Рахунок надіслано</option>
+                            <option value="paid" {% if client.deal_stage == 'paid' %}selected{% endif %}>💰 4. Оплачено</option>
+                            <option value="shipped" {% if client.deal_stage == 'shipped' %}selected{% endif %}>📦 5. Відвантажено</option>
+                            <option value="refused" {% if client.deal_stage == 'refused' %}selected{% endif %}>❌ Відмова</option>
                         </select>
                     </div>
 
@@ -473,7 +477,7 @@
             <div class="card-body p-0">
                 <div class="list-group list-group-flush" style="max-height: 65vh; overflow-y: auto;">
                     {% for item in history %}
-                    <div class="list-group-item p-3 {% if '[📵 Недодзвон]' in (item.result or '') %}bg-danger-subtle border-start border-4 border-danger{% endif %}">
+                    <div class="list-group-item p-3 {% if '[📵 Недодзвон]' in (item.result or '') or '[ВІДМОВА ВІД УГОДИ]' in (item.result or '') %}bg-danger-subtle border-start border-4 border-danger{% endif %}">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <div>
                                 <span class="badge bg-dark font-monospace">🕒 {{ item.date }}</span>
@@ -540,6 +544,31 @@
     </div>
 </div>
 
+<div class="modal fade" id="refusalModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white py-2">
+                <h6 class="modal-title fw-bold">❌ Відмова від угоди — вкажіть причину</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('refuse_deal', client_id=client.id) }}" method="POST" id="refusalForm">
+                <input type="hidden" name="author" id="refusal_author_input" value="Продажі">
+                <div class="modal-body p-3 bg-light">
+                    <p class="small text-dark mb-2">
+                        Опишіть причину відмови клієнта <strong>{{ client.name }}</strong>. Інформація автоматично збережеться в історії розмов.
+                    </p>
+                    <label class="form-label mb-1 fw-bold small">Причина відмови *</label>
+                    <textarea name="reason" id="refusal_reason_text" class="form-control form-control-sm" rows="3" placeholder="Наприклад: Висока ціна, купили у конкурентів, довгий термін доставки..." required></textarea>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                    <button type="submit" class="btn btn-sm btn-danger fw-bold px-3">💾 Зберегти відмову</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="workloadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-primary">
@@ -581,6 +610,25 @@
         localStorage.setItem('crm_role', role);
         const quickAuthor = document.getElementById('quick_unanswered_author');
         if (quickAuthor) quickAuthor.value = role;
+        const refusalAuthor = document.getElementById('refusal_author_input');
+        if (refusalAuthor) refusalAuthor.value = role;
+    }
+
+    let refusalSubmitted = false;
+
+    function handleDealStageChange(selectEl) {
+        if (selectEl.value === 'refused') {
+            refusalSubmitted = false;
+            const reasonArea = document.getElementById('refusal_reason_text');
+            if (reasonArea) reasonArea.value = '';
+            const modalEl = document.getElementById('refusalModal');
+            if (modalEl) {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        } else {
+            selectEl.setAttribute('data-prev-stage', selectEl.value);
+        }
     }
 
     function toggleDealStageVisibility() {
@@ -748,6 +796,26 @@
                 }
             });
         }
+
+        const refusalForm = document.getElementById('refusalForm');
+        if (refusalForm) {
+            refusalForm.addEventListener('submit', function() {
+                refusalSubmitted = true;
+            });
+        }
+
+        const refusalModalEl = document.getElementById('refusalModal');
+        if (refusalModalEl) {
+            refusalModalEl.addEventListener('hidden.bs.modal', function() {
+                if (!refusalSubmitted) {
+                    const stageSelect = document.getElementById('client_deal_stage');
+                    if (stageSelect) {
+                        stageSelect.value = stageSelect.getAttribute('data-prev-stage') || 'none';
+                    }
+                }
+            });
+        }
     });
 </script>
 {% endblock %}
+
