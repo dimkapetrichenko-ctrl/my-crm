@@ -213,11 +213,13 @@
                                 <th>
                                     <select id="filter-stage" class="form-select form-select-sm text-center" onchange="filterClientsTable()">
                                         <option value="">Всі етапи</option>
-                                        <option value="request">📩 Запит</option>
-                                        <option value="offer_sent">📄 Рахунок</option>
-                                        <option value="paid_shipped">📦 Оплачено</option>
-                                        <option value="regular">🤝 Постійний</option>
                                         <option value="none">⚪ Без угоди</option>
+                                        <option value="request">📩 Запит на підбір</option>
+                                        <option value="kp_sent">📋 КП надіслано</option>
+                                        <option value="invoice_sent">📄 Рахунок надіслано</option>
+                                        <option value="paid">💰 Оплачено</option>
+                                        <option value="shipped">📦 Відвантажено</option>
+                                        <option value="refused">❌ Відмова</option>
                                     </select>
                                 </th>
                                 <th>
@@ -326,14 +328,18 @@
                                 </td>
 
                                 <td style="text-align: center;">
-                                    {% if client.deal_stage == 'offer_sent' %}
-                                        <span class="badge bg-warning text-dark border border-dark w-100 py-1 shadow-xs fw-bold">📄 Рахунок (КП)</span>
-                                    {% elif client.deal_stage == 'request' %}
-                                        <span class="badge bg-info-subtle text-info border border-info w-100 py-1 fw-bold">📩 Запит/Підбір</span>
-                                    {% elif client.deal_stage == 'paid_shipped' %}
-                                        <span class="badge bg-success text-white w-100 py-1 fw-bold">📦 Оплачено</span>
-                                    {% elif client.deal_stage == 'regular' %}
-                                        <span class="badge bg-primary text-white w-100 py-1 fw-bold">🤝 Партнер</span>
+                                    {% if client.deal_stage == 'request' %}
+                                        <span class="badge bg-info-subtle text-info border border-info w-100 py-1 fw-bold">📩 Запит на підбір</span>
+                                    {% elif client.deal_stage == 'kp_sent' %}
+                                        <span class="badge bg-primary-subtle text-primary border border-primary w-100 py-1 fw-bold">📋 КП надіслано</span>
+                                    {% elif client.deal_stage == 'invoice_sent' %}
+                                        <span class="badge bg-warning text-dark border border-dark w-100 py-1 shadow-xs fw-bold">📄 Рахунок надіслано</span>
+                                    {% elif client.deal_stage == 'paid' %}
+                                        <span class="badge bg-success text-white w-100 py-1 fw-bold">💰 Оплачено</span>
+                                    {% elif client.deal_stage == 'shipped' %}
+                                        <span class="badge bg-primary text-white w-100 py-1 fw-bold">📦 Відвантажено</span>
+                                    {% elif client.deal_stage == 'refused' %}
+                                        <span class="badge bg-danger text-white w-100 py-1 fw-bold">❌ Відмова</span>
                                     {% else %}
                                         <span class="badge bg-light text-muted border w-100 py-0.5" style="font-size: 0.72rem;">⚪ Без угоди</span>
                                     {% endif %}
@@ -814,10 +820,12 @@
                             <label class="form-label mb-0 fw-bold">Етап угоди</label>
                             <select name="deal_stage" class="form-select form-select-sm fw-bold">
                                 <option value="none" selected>⚪ Немає активної угоди</option>
-                                <option value="request">📩 1. Запит / Підбір</option>
-                                <option value="offer_sent">📄 2. Рахунок (КП) надіслано</option>
-                                <option value="paid_shipped">📦 3. Оплачено / Відвантажено</option>
-                                <option value="regular">🤝 4. Постійний партнер</option>
+                                <option value="request">📩 1. Запит на підбір запчастин</option>
+                                <option value="kp_sent">📋 2. КП надіслано</option>
+                                <option value="invoice_sent">📄 3. Рахунок надіслано</option>
+                                <option value="paid">💰 4. Оплачено</option>
+                                <option value="shipped">📦 5. Відвантажено</option>
+                                <option value="refused">❌ Відмова</option>
                             </select>
                         </div>
                         <div class="col-md-6">
