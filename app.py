@@ -712,22 +712,28 @@ def toggle_client_status(client_id):
 @login_required
 def refuse_deal(client_id):
     reason = request.form.get('reason', '').strip()
-    author = request.form.get('author', 'Продажі')
+    author = request.form.get('author', 'Продажі').strip() or 'Продажі'
     
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-    
-    cursor.execute("UPDATE clients SET deal_stage = 'refused' WHERE id = %s", (client_id,))
-    log_text = f"❌ [ВІДМОВА ПО УГОДІ] Причина відмови: {reason or 'Не вказано'}"
-    cursor.execute(
-        "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
-        (client_id, current_date, log_text, author)
-    )
-    
-    conn.commit()
-    cursor.close()
-    conn.close()
+    if reason:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+        
+        cursor.execute(
+            "UPDATE clients SET deal_stage = 'refused' WHERE id = %s",
+            (client_id,)
+        )
+        
+        log_text = f"❌ [ВІДМОВА ВІД УГОДИ] Причина: {reason}"
+        cursor.execute(
+            "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+            (client_id, current_date, log_text, author)
+        )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
     return redirect(url_for('client_detail', client_id=client_id))
 
 @app.route('/add_quick_sale/<int:client_id>', methods=['POST'])
@@ -1181,7 +1187,7 @@ def add_client():
         cursor.execute(
             """INSERT INTO clients (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, created_at, brands, 
                                    contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, is_active, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s, %s, %s)""",
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s, %s, %s)""",
             (name, country, address, contact_person, position, phone, email, website, buyer_type, acquisition_channel, created_at, brands,
              contact_person_2, position_2, phone_2, email_2, interest_level, next_event_date, next_event_type, mayer_reg, whatsapp_1, whatsapp_2, deal_stage, aftermarket_companies, eima_meeting, promo_offer_brand, promo_offer_part)
         )
@@ -1469,11 +1475,11 @@ def export_excel():
                c.interest_level AS "Зацікавленість", 
                CASE 
                    WHEN c.deal_stage = 'request' THEN '1. Запит на підбір запчастин'
-                   WHEN c.deal_stage = 'offer_sent' THEN '2. КП надіслано'
+                   WHEN c.deal_stage = 'kp_sent' THEN '2. КП надіслано'
                    WHEN c.deal_stage = 'invoice_sent' THEN '3. Рахунок надіслано'
-                   WHEN c.deal_stage IN ('paid', 'paid_shipped') THEN '4. Оплачено'
+                   WHEN c.deal_stage = 'paid' THEN '4. Оплачено'
                    WHEN c.deal_stage = 'shipped' THEN '5. Відвантажено'
-                   WHEN c.deal_stage = 'refused' THEN '❌ Відмова'
+                   WHEN c.deal_stage = 'refused' THEN 'Відмова'
                    ELSE 'Немає активної угоди'
                END AS "Етап угоди",
                c.buyer_type AS "Тип покупця", 
@@ -1514,8 +1520,8 @@ def export_excel():
         query += " AND c.is_active IS FALSE"
 
     if search_name:
-        query += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.phone) LIKE LOWER(%s) OR LOWER(c.email) LIKE LOWER(%s) OR LOWER(COALESCE(c.created_at, '')) LIKE LOWER(%s))"
-        params.extend([f"%{search_name}%"] * 5)
+        query += " AND (LOWER(c.name) LIKE LOWER(%s) OR LOWER(c.contact_person) LIKE LOWER(%s) OR LOWER(c.phone) LIKE LOWER(%s) OR LOWER(c.email) LIKE LOWER(%s))"
+        params.extend([f"%{search_name}%", f"%{search_name}%", f"%{search_name}%", f"%{search_name}%"])
 
     if buyer_type:
         query += " AND LOWER(c.buyer_type) = LOWER(%s)"
@@ -1540,11 +1546,8 @@ def export_excel():
         params.append(interest_filter)
 
     if deal_stage:
-        if deal_stage == 'paid':
-            query += " AND LOWER(COALESCE(c.deal_stage, 'none')) IN ('paid', 'paid_shipped')"
-        else:
-            query += " AND LOWER(COALESCE(c.deal_stage, 'none')) = LOWER(%s)"
-            params.append(deal_stage)
+        query += " AND LOWER(COALESCE(c.deal_stage, 'none')) = LOWER(%s)"
+        params.append(deal_stage)
 
     if mayer_reg:
         query += " AND c.mayer_reg = %s"
