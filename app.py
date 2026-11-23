@@ -1599,59 +1599,6 @@ def export_excel():
         download_name=f'Mayer_CRM_Export_Filtered_{datetime.now().strftime("%Y-%m-%d_%H%M")}.xlsx'
     )
 
-@app.route('/fix_dates_once')
-@login_required
-def fix_dates_once():
-    updates = [
-        ("AGRIMEC STORE SRL", "2026-10-29"),
-        ("Zlatex OOd", "2026-10-29"),
-        ("Zava doprava a.s", "2026-10-29"),
-        ("SARL ECOSUN AGRO", "2026-10-30"),
-        ("MAP SAS", "2026-11-02"),
-        ("Rokaf Trading", "2026-11-05"),
-        ("Sarl CGS", "2026-11-17"),
-        ("Mtc metals", "2026-11-22"),
-    ]
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    report = []
-
-    for name, new_date in updates:
-        # Шукаємо клієнта без урахування регістру та зайвих пробілів (також враховуємо можливу крапку в кінці, як у a.s.)
-        cursor.execute(
-            "SELECT id, name FROM clients WHERE LOWER(TRIM(name)) LIKE LOWER(%s)",
-            (f"{name.strip()}%",)
-        )
-        rows = cursor.fetchall()
-        
-        if not rows:
-            report.append(f"❌ Не знайдено в базі: {name}")
-            continue
-            
-        for client_id, db_name in rows:
-            # 1. Оновлюємо дату додавання клієнта
-            cursor.execute(
-                "UPDATE clients SET created_at = %s WHERE id = %s",
-                (new_date, client_id)
-            )
-            # 2. Оновлюємо дату в історії активностей, зберігаючи час (HH:MM)
-            cursor.execute(
-                """
-                UPDATE negotiations
-                SET date = %s || SUBSTRING(date FROM 11)
-                WHERE client_id = %s
-                """,
-                (new_date, client_id)
-            )
-            updated_negs = cursor.rowcount
-            report.append(f"✅ {db_name} (ID {client_id}) -> {new_date} (оновлено записів в історії: {updated_negs})")
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-    
-    return "<br>".join(report)
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
