@@ -610,71 +610,147 @@ def index():
 @login_required
 def import_clients_excel():
     file = request.files.get('excel_file')
-    default_country = request.form.get('default_country', 'Чехія').strip() or 'Чехія'
-    default_buyer_type = request.form.get('default_buyer_type', 'Дилер сг техніки').strip()
+    default_country = request.form.get('default_country', '').strip()
+    default_buyer_type = request.form.get('default_buyer_type', 'фермерське господарство').strip()
+    default_channel = request.form.get('default_channel', '').strip()
+    force_buyer_type = request.form.get('force_buyer_type') == 'on'
 
     if not file or file.filename == '':
         return redirect(url_for('index'))
 
+    def clean_val(val):
+        if pd.isna(val):
+            return ''
+        s = str(val).strip()
+        if s.lower() == 'nan':
+            return ''
+        if s.endswith('.0') and s[:-2].replace('-', '').isdigit():
+            s = s[:-2]
+        return s
+
     try:
-        df = pd.read_excel(file, header=None)
-        first_row_str = " ".join(df.iloc[0].astype(str).tolist()).lower()
-        if 'назва' in first_row_str or 'компания' in first_row_str or 'name' in first_row_str or '№' in first_row_str:
-            df = df.iloc[1:]
+        df_named = pd.read_excel(file, dtype=str)
+        cols = [str(c).strip() for c in df_named.columns]
 
         conn = get_db_connection()
         cursor = conn.cursor()
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
         today_date_only = datetime.now().strftime("%Y-%m-%d")
 
-        for _, row in df.iterrows():
-            vals = [str(x).strip() if pd.notna(x) else '' for x in row.tolist()]
-            if not vals or not any(vals):
-                continue
+        # Варіант 1: структурований Excel із заголовками (як "Фермерські господарства від реклами.xlsx")
+        if 'Назва компанії' in cols:
+            df_named.columns = cols
+            for _, row in df_named.iterrows():
+                name = clean_val(row.get('Назва компанії', ''))
+                email_val = clean_val(row.get('Email 1', ''))
+                if not name and not email_val:
+                    continue
+                if not name:
+                    name = email_val
 
-            if len(vals) >= 7 and vals[0].isdigit():
-                name = vals[1]
-                brands = vals[2]
-                website = vals[3]
-                contact_person = vals[4]
-                email_val = vals[5]
-                phone = '+' + vals[6] if vals[6] and not vals[6].startswith('+') else vals[6]
-                comment = vals[7] if len(vals) > 7 else ''
-            else:
-                name = vals[0]
-                brands = vals[1] if len(vals) > 1 else ''
-                website = vals[2] if len(vals) > 2 else ''
-                contact_person = vals[3] if len(vals) > 3 else ''
-                email_val = vals[4] if len(vals) > 4 else ''
-                phone = '+' + vals[5] if len(vals) > 5 and vals[5] and not vals[5].startswith('+') else (vals[5] if len(vals) > 5 else '')
-                comment = vals[6] if len(vals) > 6 else ''
+                country = clean_val(row.get('Країна', '')) or default_country
+                address = clean_val(row.get('Адреса', ''))
+                website = clean_val(row.get('Веб-сайт', ''))
+                contact_person = clean_val(row.get('Контактна особа 1', ''))
+                position = clean_val(row.get('Посада 1', ''))
+                phone = clean_val(row.get('Телефон 1', ''))
+                whatsapp_1 = clean_val(row.get('WhatsApp 1', ''))
 
-            if not name or name.lower() in ['назва', 'компанія', 'nan']:
-                continue
+                contact_person_2 = clean_val(row.get('Контактна особа 2', ''))
+                position_2 = clean_val(row.get('Посада 2', ''))
+                phone_2 = clean_val(row.get('Телефон 2', ''))
+                whatsapp_2 = clean_val(row.get('WhatsApp 2', ''))
+                email_2 = clean_val(row.get('Email 2', ''))
 
-            cursor.execute("SELECT id FROM clients WHERE LOWER(name) = LOWER(%s)", (name,))
-            existing = cursor.fetchone()
+                nip = clean_val(row.get('NIP / TAX ID', ''))
+                interest_level = clean_val(row.get('Зацікавленість', '')) or 'не опрацьовано'
+                file_buyer_type = clean_val(row.get('Тип покупця', ''))
+                buyer_type = default_buyer_type if (force_buyer_type or not file_buyer_type) else file_buyer_type
 
-            if not existing:
+                # Перевірка на дублікат за назвою або Email
+                if email_val:
+                    cursor.execute(
+                        "SELECT id FROM clients WHERE LOWER(name) = LOWER(%s) OR LOWER(email) = LOWER(%s) OR LOWER(email_2) = LOWER(%s)",
+                        (name, email_val, email_val)
+                    )
+                else:
+                    cursor.execute("SELECT id FROM clients WHERE LOWER(name) = LOWER(%s)", (name,))
+
+                if cursor.fetchone():
+                    continue
+
                 cursor.execute("""
                     INSERT INTO clients (
-                        name, country, website, buyer_type, brands, 
-                        contact_person, phone, email, interest_level, 
-                        deal_stage, mayer_reg, is_active, created_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'none', 'Ні', TRUE, %s)
+                        name, country, address, website, buyer_type, acquisition_channel,
+                        contact_person, position, phone, whatsapp_1, email,
+                        contact_person_2, position_2, phone_2, whatsapp_2, email_2,
+                        interest_level, deal_stage, mayer_reg, is_active, created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'none', 'Ні', TRUE, %s)
                     RETURNING id
                 """, (
-                    name, default_country, website, default_buyer_type, 
-                    brands, contact_person, phone, email_val, 'не опрацьовано', today_date_only
+                    name, country, address, website, buyer_type, default_channel,
+                    contact_person, position, phone, whatsapp_1, email_val,
+                    contact_person_2, position_2, phone_2, whatsapp_2, email_2,
+                    interest_level, today_date_only
                 ))
                 new_client_id = cursor.fetchone()[0]
 
-                if comment:
-                    note_text = f"📋 [ІМПОРТ З БАЗИ]: {comment}"
+                note_parts = [f"📋 [ІМПОРТ З EXCEL]: Файл «{file.filename}»"]
+                if nip:
+                    note_parts.append(f"NIP / TAX ID: {nip}")
+                cursor.execute(
+                    "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+                    (new_client_id, current_date, " | ".join(note_parts), 'CEO')
+                )
+
+        # Варіант 2: старий простий формат без заголовків
+        else:
+            file.seek(0)
+            df = pd.read_excel(file, header=None)
+            first_row_str = " ".join(df.iloc[0].astype(str).tolist()).lower()
+            if 'назва' in first_row_str or 'компания' in first_row_str or 'name' in first_row_str or '№' in first_row_str:
+                df = df.iloc[1:]
+
+            for _, row in df.iterrows():
+                vals = [clean_val(x) for x in row.tolist()]
+                if not vals or not any(vals):
+                    continue
+
+                if len(vals) >= 7 and vals[0].isdigit():
+                    name, brands, website, contact_person, email_val = vals[1], vals[2], vals[3], vals[4], vals[5]
+                    phone = '+' + vals[6] if vals[6] and not vals[6].startswith('+') else vals[6]
+                    comment = vals[7] if len(vals) > 7 else ''
+                else:
+                    name = vals[0]
+                    brands = vals[1] if len(vals) > 1 else ''
+                    website = vals[2] if len(vals) > 2 else ''
+                    contact_person = vals[3] if len(vals) > 3 else ''
+                    email_val = vals[4] if len(vals) > 4 else ''
+                    phone = '+' + vals[5] if len(vals) > 5 and vals[5] and not vals[5].startswith('+') else (vals[5] if len(vals) > 5 else '')
+                    comment = vals[6] if len(vals) > 6 else ''
+
+                if not name or name.lower() in ['назва', 'компанія', 'nan']:
+                    continue
+
+                cursor.execute("SELECT id FROM clients WHERE LOWER(name) = LOWER(%s)", (name,))
+                if not cursor.fetchone():
                     cursor.execute("""
-                        INSERT INTO negotiations (client_id, date, result, author)
-                        VALUES (%s, %s, %s, %s)
-                    """, (new_client_id, current_date, note_text, 'CEO'))
+                        INSERT INTO clients (
+                            name, country, website, buyer_type, acquisition_channel, brands,
+                            contact_person, phone, email, interest_level,
+                            deal_stage, mayer_reg, is_active, created_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'не опрацьовано', 'none', 'Ні', TRUE, %s)
+                        RETURNING id
+                    """, (
+                        name, default_country, website, default_buyer_type, default_channel,
+                        brands, contact_person, phone, email_val, today_date_only
+                    ))
+                    new_client_id = cursor.fetchone()[0]
+                    if comment:
+                        cursor.execute(
+                            "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
+                            (new_client_id, current_date, f"📋 [ІМПОРТ З БАЗИ]: {comment}", 'CEO')
+                        )
 
         conn.commit()
         cursor.close()
