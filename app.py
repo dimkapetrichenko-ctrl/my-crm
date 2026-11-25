@@ -15,6 +15,7 @@ from email.header import Header, decode_header
 import requests
 from bs4 import BeautifulSoup
 import urllib3
+from urllib.parse import quote
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -98,17 +99,28 @@ def format_text_to_html(raw_text):
             
     return "".join(html_paragraphs)
 
-def send_email_notification(to_email, subject, body_text, promo_banner=False):
+def get_available_banners():
+    banners_dir = os.path.join(app.root_path, 'static', 'banners')
+    if not os.path.exists(banners_dir):
+        return []
+    allowed_ext = ('.jpg', '.jpeg', '.png', '.webp', '.gif')
+    files = [
+        f for f in os.listdir(banners_dir)
+        if os.path.isfile(os.path.join(banners_dir, f)) and f.lower().endswith(allowed_ext)
+    ]
+    return sorted(files)
+
+def send_email_notification(to_email, subject, body_text, promo_banner=None):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
         html_body = format_text_to_html(body_text)
-        logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png" 
-        banner_url = "https://my-crm-q24n.onrender.com/static/promo_en.jpg"
+        logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png"
 
         banner_html = ""
         if promo_banner:
+            banner_url = f"https://my-crm-q24n.onrender.com/static/banners/{quote(promo_banner)}"
             banner_html = f"""
             <div style="margin-bottom: 25px;">
                 <img src="{banner_url}" alt="MAYER PRO Promotion" style="max-width: 100%; height: auto; display: block; border-radius: 4px; border: 1px solid #dee2e6;">
@@ -997,7 +1009,7 @@ def send_client_email():
     to_email = request.form.get('email', '').strip()
     subject = request.form.get('subject', '').strip()
     body_text = request.form.get('body', '').strip()
-    promo_banner = request.form.get('promo_banner') == 'on'
+    promo_banner = request.form.get('promo_banner', '').strip()
     
     if to_email and body_text:
         success = send_email_notification(to_email, subject, body_text, promo_banner=promo_banner)
@@ -1006,7 +1018,7 @@ def send_client_email():
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            banner_log = " (+ Англійський промо-банер)" if promo_banner else ""
+            banner_log = f" (+ Банер: {promo_banner})" if promo_banner else ""
             log_text = f"Надіслано фірмовий HTML-Email{banner_log}. Тема: \"{subject}\""
             
             cursor.execute(
@@ -1415,7 +1427,8 @@ def client_detail(client_id):
         client_lost_demand=client_lost_demand, 
         json_events_by_date=json_events_by_date,
         deal_count=deal_count,
-        deal_total_sum=deal_total_sum
+        deal_total_sum=deal_total_sum,
+        banners=get_available_banners()
     )
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
