@@ -11,6 +11,9 @@ import smtplib
 import imaplib
 import email
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from email.header import Header, decode_header
 import requests
 from bs4 import BeautifulSoup
@@ -110,7 +113,18 @@ def get_available_banners():
     ]
     return sorted(files)
 
-def send_email_notification(to_email, subject, body_text, promo_banner=None):
+def get_available_prices():
+    prices_dir = os.path.join(app.root_path, 'static', 'prices')
+    if not os.path.exists(prices_dir):
+        return []
+    allowed_ext = ('.xlsx', '.xls', '.pdf', '.csv', '.docx', '.doc', '.zip')
+    files = [
+        f for f in os.listdir(prices_dir)
+        if os.path.isfile(os.path.join(prices_dir, f)) and f.lower().endswith(allowed_ext)
+    ]
+    return sorted(files)
+
+def send_email_notification(to_email, subject, body_text, promo_banner=None, server_attachments=None, uploaded_files=None):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
@@ -162,11 +176,38 @@ def send_email_notification(to_email, subject, body_text, promo_banner=None):
         </html>
         """
 
-        msg = MIMEText(html_content, 'html', 'utf-8')
+        msg = MIMEMultipart()
         msg['Subject'] = Header(subject, 'utf-8')
         msg['From'] = MAIL_USERNAME
         msg['To'] = to_email
-        
+
+        msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+
+        # Прикріплення прайсів із папки static/prices
+        if server_attachments:
+            prices_dir = os.path.join(app.root_path, 'static', 'prices')
+            for fname in server_attachments:
+                safe_name = os.path.basename(fname)
+                file_path = os.path.join(prices_dir, safe_name)
+                if os.path.isfile(file_path):
+                    with open(file_path, 'rb') as f:
+                        part = MIMEBase('application', 'octet-stream')
+                        part.set_payload(f.read())
+                    encoders.encode_base64(part)
+                    part.add_header('Content-Disposition', 'attachment', filename=('utf-8', '', safe_name))
+                    msg.attach(part)
+
+        # Прикріплення додаткових файлів із комп'ютера
+        if uploaded_files:
+            for uploaded in uploaded_files:
+                if uploaded and uploaded.filename:
+                    safe_name = os.path.basename(uploaded.filename)
+                    part = MIMEBase('application', 'octet-stream')
+                    part.set_payload(uploaded.read())
+                    encoders.encode_base64(part)
+                    part.add_header('Content-Disposition', 'attachment', filename=('utf-8', '', safe_name))
+                    msg.attach(part)
+
         server = smtplib.SMTP_SSL(MAIL_SERVER, MAIL_PORT)
         server.login(MAIL_USERNAME, MAIL_PASSWORD)
         server.sendmail(MAIL_USERNAME, [to_email], msg.as_string())
@@ -1010,16 +1051,31 @@ def send_client_email():
     subject = request.form.get('subject', '').strip()
     body_text = request.form.get('body', '').strip()
     promo_banner = request.form.get('promo_banner', '').strip()
+    price_files = request.form.getlist('price_files')
+    custom_files = [f for f in request.files.getlist('custom_attachments') if f and f.filename]
     
     if to_email and body_text:
-        success = send_email_notification(to_email, subject, body_text, promo_banner=promo_banner)
+        attached_names = list(price_files) + [os.path.basename(f.filename) for f in custom_files]
+        success = send_email_notification(
+            to_email,
+            subject,
+            body_text,
+            promo_banner=promo_banner,
+            server_attachments=price_files,
+            uploaded_files=custom_files
+        )
         if success:
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            banner_log = f" (+ Банер: {promo_banner})" if promo_banner else ""
-            log_text = f"Надіслано фірмовий HTML-Email{banner_log}. Тема: \"{subject}\""
+            extras = []
+            if promo_banner:
+                extras.append(f"Банер: {promo_banner}")
+            if attached_names:
+                extras.append(f"Файли: {', '.join(attached_names)}")
+            extras_log = f" (+ {'; '.join(extras)})" if extras else ""
+            log_text = f"Надіслано фірмовий HTML-Email{extras_log}. Тема: \"{subject}\""
             
             cursor.execute(
                 "INSERT INTO negotiations (client_id, date, result, author) VALUES (%s, %s, %s, %s)",
@@ -1428,7 +1484,8 @@ def client_detail(client_id):
         json_events_by_date=json_events_by_date,
         deal_count=deal_count,
         deal_total_sum=deal_total_sum,
-        banners=get_available_banners()
+        banners=get_available_banners(),
+        prices=get_available_prices()
     )
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
