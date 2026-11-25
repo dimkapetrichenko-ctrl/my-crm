@@ -63,11 +63,19 @@
                 <input type="text" class="form-control form-control-sm bg-light text-dark fw-bold" id="subject" name="subject" placeholder="Введіть тему листа..." required>
             </div>
             
-            <div class="form-check mb-3 mt-2">
-                <input class="form-check-input" type="checkbox" name="promo_banner" id="promoBannerCheck">
-                <label class="form-check-label fw-bold text-warning" for="promoBannerCheck" style="cursor: pointer;">
-                    🖼️ Додати до листа англійський промо-банер (Презентація MAYER PRO)
+            <div class="mb-3 mt-2">
+                <label for="promoBannerSelect" class="form-label mb-1 small fw-bold text-warning">
+                    🖼️ Додати рекламний банер (з папки static/banners):
                 </label>
+                <select class="form-select form-select-sm bg-light text-dark fw-semibold" name="promo_banner" id="promoBannerSelect" onchange="previewSelectedBanner(this.value)">
+                    <option value="">-- Без банера --</option>
+                    {% for banner in banners %}
+                    <option value="{{ banner }}">{{ banner }}</option>
+                    {% endfor %}
+                </select>
+                <div id="bannerPreviewBox" class="mt-2" style="display: none;">
+                    <img id="bannerPreviewImg" src="" alt="Прев'ю банера" class="img-fluid rounded border border-secondary" style="max-height: 200px;">
+                </div>
             </div>
 
             <div class="mb-3">
@@ -606,6 +614,18 @@
     let wMonth = new Date().getMonth();
     const wMonthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
+    function previewSelectedBanner(filename) {
+        const box = document.getElementById('bannerPreviewBox');
+        const img = document.getElementById('bannerPreviewImg');
+        if (filename) {
+            img.src = '/static/banners/' + encodeURIComponent(filename);
+            box.style.display = 'block';
+        } else {
+            img.src = '';
+            box.style.display = 'none';
+        }
+    }
+
     function setRole(role) {
         localStorage.setItem('crm_role', role);
         const quickAuthor = document.getElementById('quick_unanswered_author');
@@ -818,4 +838,3 @@
     });
 </script>
 {% endblock %}
-
