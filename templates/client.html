@@ -58,6 +58,31 @@
                 <input type="email" class="form-control form-control-sm bg-secondary text-white border-0" id="email" name="email" value="{{ client.email }}" readonly required>
             </div>
             
+            <!-- ВИБІР ТА УПРАВЛІННЯ ШАБЛОНАМИ ЛИСТІВ -->
+            <div class="mb-2 p-2 rounded border border-warning bg-black bg-opacity-25">
+                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                    <label for="emailTemplateSelect" class="form-label mb-0 small fw-bold text-warning">
+                        📋 Шаблон листа (автопідвантаження з форматуванням):
+                    </label>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-xs btn-outline-warning py-0 px-2 fw-semibold" style="font-size: 0.75rem;" onclick="saveCurrentAsTemplate()" title="Зберегти поточний текст і тему як шаблон у базу">
+                            💾 Зберегти як шаблон
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size: 0.75rem; display: none;" id="btnDeleteTemplate" onclick="deleteSelectedTemplate()" title="Видалити обраний шаблон">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <select class="form-select form-select-sm bg-light text-dark fw-semibold" id="emailTemplateSelect" onchange="applyEmailTemplate(this.value)">
+                        <option value="">-- Оберіть збережений шаблон --</option>
+                        {% for tpl in email_templates %}
+                        <option value="{{ tpl.id }}">{{ tpl.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
             <div class="mb-2">
                 <label for="subject" class="form-label mb-0.5 small text-muted">Тема листа:</label>
                 <input type="text" class="form-control form-control-sm bg-light text-dark fw-bold" id="subject" name="subject" placeholder="Введіть тему листа..." required>
@@ -104,8 +129,80 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label mb-1 small text-white fw-bold">Текст повідомлення:</label>
-                <textarea class="form-control bg-white text-dark" id="emailBodyTextarea" name="body" rows="8" style="font-size: 15px; line-height: 1.5;" placeholder="Доброго дня!..." required>Доброго дня!</textarea>
+                <label class="form-label mb-1 small text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span>Текст повідомлення (візуальний редактор):</span>
+                    <small class="text-secondary fw-normal">Підтримується форматування, кольори, списки та блоки-акценти</small>
+                </label>
+
+                <!-- ПАНЕЛЬ ІНСТРУМЕНТІВ РЕДАГУВАННЯ ТЕКСТУ -->
+                <div class="email-editor-toolbar bg-light border rounded-top p-1.5 d-flex flex-wrap align-items-center gap-1" id="emailEditorToolbar">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-dark py-0.5 px-2 fw-bold" onmousedown="event.preventDefault(); execEmailCmd('bold')" title="Жирний (Ctrl+B)">B</button>
+                        <button type="button" class="btn btn-outline-dark py-0.5 px-2 fst-italic" onmousedown="event.preventDefault(); execEmailCmd('italic')" title="Курсив (Ctrl+I)">I</button>
+                        <button type="button" class="btn btn-outline-dark py-0.5 px-2 text-decoration-underline" onmousedown="event.preventDefault(); execEmailCmd('underline')" title="Підкреслений (Ctrl+U)">U</button>
+                        <button type="button" class="btn btn-outline-dark py-0.5 px-2 text-decoration-line-through" onmousedown="event.preventDefault(); execEmailCmd('strikeThrough')" title="Закреслений">S</button>
+                    </div>
+
+                    <select class="form-select form-select-sm py-0.5 px-1.5 text-dark fw-semibold" style="width: auto; font-size: 0.78rem;" onchange="if(this.value){ execEmailCmd('fontSize', this.value); this.value=''; }" title="Розмір шрифту">
+                        <option value="">Розмір...</option>
+                        <option value="2">Малий (13px)</option>
+                        <option value="3">Звичайний (15px)</option>
+                        <option value="4">Середній (18px)</option>
+                        <option value="5">Великий (20px)</option>
+                    </select>
+
+                    <!-- Колір тексту -->
+                    <div class="d-inline-flex align-items-center border rounded px-1.5 py-0.5 bg-white gap-1" title="Колір тексту">
+                        <span class="small fw-bold text-dark" style="font-size: 0.75rem;">A</span>
+                        <button type="button" class="btn p-0 border rounded-circle" style="width: 16px; height: 16px; background: #111111;" onmousedown="event.preventDefault(); execEmailCmd('foreColor', '#111111')" title="Чорний"></button>
+                        <button type="button" class="btn p-0 border rounded-circle" style="width: 16px; height: 16px; background: #C8102E;" onmousedown="event.preventDefault(); execEmailCmd('foreColor', '#C8102E')" title="Фірмовий червоний MAYER PRO"></button>
+                        <button type="button" class="btn p-0 border rounded-circle" style="width: 16px; height: 16px; background: #0d6efd;" onmousedown="event.preventDefault(); execEmailCmd('foreColor', '#0d6efd')" title="Синій"></button>
+                        <button type="button" class="btn p-0 border rounded-circle" style="width: 16px; height: 16px; background: #15803d;" onmousedown="event.preventDefault(); execEmailCmd('foreColor', '#15803d')" title="Зелений"></button>
+                        <input type="color" id="emailTextColorPicker" value="#111111" style="width: 20px; height: 20px; padding: 0; border: none; cursor: pointer;" onchange="execEmailCmd('foreColor', this.value)" title="Інший колір тексту">
+                    </div>
+
+                    <!-- Колір виділення (маркер) -->
+                    <div class="d-inline-flex align-items-center border rounded px-1.5 py-0.5 bg-white gap-1" title="Колір фону (маркер)">
+                        <span class="small fw-bold text-dark" style="font-size: 0.72rem;">🖍️</span>
+                        <button type="button" class="btn p-0 border rounded-circle" style="width: 16px; height: 16px; background: #fef08a;" onmousedown="event.preventDefault(); execEmailCmd('hiliteColor', '#fef08a')" title="Жовтий маркер"></button>
+                        <button type="button" class="btn p-0 border rounded-circle" style="width: 16px; height: 16px; background: #F5F5F7;" onmousedown="event.preventDefault(); execEmailCmd('hiliteColor', '#F5F5F7')" title="Світло-сірий фон"></button>
+                        <button type="button" class="btn p-0 border rounded-circle bg-white text-danger d-flex align-items-center justify-content-center" style="width: 16px; height: 16px; font-size: 10px;" onmousedown="event.preventDefault(); execEmailCmd('hiliteColor', 'transparent')" title="Прибрати фон">✕</button>
+                    </div>
+
+                    <!-- Списки -->
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-dark py-0.5 px-2" onmousedown="event.preventDefault(); execEmailCmd('insertUnorderedList')" title="Маркований список">• Список</button>
+                        <button type="button" class="btn btn-outline-dark py-0.5 px-2" onmousedown="event.preventDefault(); execEmailCmd('insertOrderedList')" title="Нумерований список">1. Список</button>
+                    </div>
+
+                    <!-- Вирівнювання -->
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-dark py-0.5 px-1.5" onmousedown="event.preventDefault(); execEmailCmd('justifyLeft')" title="Ліворуч">⬅</button>
+                        <button type="button" class="btn btn-outline-dark py-0.5 px-1.5" onmousedown="event.preventDefault(); execEmailCmd('justifyCenter')" title="По центру">⬌</button>
+                        <button type="button" class="btn btn-outline-dark py-0.5 px-1.5" onmousedown="event.preventDefault(); execEmailCmd('justifyRight')" title="Праворуч">➡</button>
+                    </div>
+
+                    <!-- Посилання та фірмова рамка -->
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0.5 px-2" onmousedown="event.preventDefault(); insertEmailLink()" title="Вставити посилання">🔗 Посилання</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0.5 px-2 fw-semibold" onmousedown="event.preventDefault(); insertCalloutBox()" title="Вставити фірмовий блок-акцент із червоною лінією (як у Word)">🟥 Блок-акцент</button>
+
+                    <!-- Скасувати / Очистити -->
+                    <div class="btn-group btn-group-sm ms-auto" role="group">
+                        <button type="button" class="btn btn-outline-secondary py-0.5 px-1.5" onmousedown="event.preventDefault(); execEmailCmd('undo')" title="Скасувати (Ctrl+Z)">↩</button>
+                        <button type="button" class="btn btn-outline-secondary py-0.5 px-1.5" onmousedown="event.preventDefault(); execEmailCmd('redo')" title="Повторити (Ctrl+Y)">↪</button>
+                        <button type="button" class="btn btn-outline-secondary py-0.5 px-2" onmousedown="event.preventDefault(); execEmailCmd('removeFormat')" title="Очистити форматування виділеного тексту">Tx</button>
+                    </div>
+                </div>
+
+                <!-- ПОЛЕ ВІЗУАЛЬНОГО РЕДАКТОРА -->
+                <div id="emailEditor" contenteditable="true" class="bg-white text-dark border border-top-0 rounded-bottom p-3"
+                     style="min-height: 260px; max-height: 480px; overflow-y: auto; font-family: 'Aptos', Calibri, Arial, sans-serif; font-size: 15px; line-height: 1.6; outline: none;">
+                    <p style="margin: 0 0 12px 0;">Доброго дня!</p>
+                </div>
+
+                <!-- ПРИХОВАНІ ПОЛЯ ДЛЯ ВІДПРАВКИ НА СЕРВЕР -->
+                <input type="hidden" name="body_html" id="emailBodyHtmlInput">
+                <textarea name="body" id="emailBodyTextarea" style="display: none;"></textarea>
             </div>
             
             <div class="d-flex justify-content-end gap-2">
@@ -635,6 +732,125 @@
 
 <script>
     const eventsByDate = JSON.parse({{ json_events_by_date | tojson | safe }});
+    let emailTemplatesList = JSON.parse({{ json_email_templates | tojson | safe }});
+    const currentClientContactName = {{ (client.contact_person or '') | tojson | safe }};
+
+    function execEmailCmd(cmd, value = null) {
+        const editor = document.getElementById('emailEditor');
+        if (!editor) return;
+        editor.focus();
+        document.execCommand(cmd, false, value);
+    }
+
+    function insertEmailLink() {
+        const url = prompt('Введіть URL посилання (наприклад, https://mayer-pro.com):', 'https://');
+        if (url && url.trim() !== '' && url.trim() !== 'https://') {
+            execEmailCmd('createLink', url.trim());
+        }
+    }
+
+    function insertCalloutBox() {
+        const boxHtml = `<div style="background-color: #F5F5F7; border-left: 4px solid #C8102E; padding: 14px 18px; margin: 12px 0; border-radius: 0 4px 4px 0;"><p style="margin: 0 0 6px 0; font-size: 16px; font-weight: bold; color: #111111;">Заголовок блоку</p><p style="margin: 0; font-size: 15px; color: #212529; line-height: 1.55;">Введіть важливий текст тут...</p></div><p style="margin: 0 0 12px 0;"><br></p>`;
+        execEmailCmd('insertHTML', boxHtml);
+    }
+
+    function applyEmailTemplate(templateId) {
+        const delBtn = document.getElementById('btnDeleteTemplate');
+        if (!templateId) {
+            if (delBtn) delBtn.style.display = 'none';
+            return;
+        }
+        const tpl = emailTemplatesList.find(t => String(t.id) === String(templateId));
+        if (!tpl) return;
+
+        if (delBtn) delBtn.style.display = 'inline-block';
+
+        const subjectInput = document.getElementById('subject');
+        if (subjectInput && tpl.subject) {
+            subjectInput.value = tpl.subject;
+        }
+
+        const editor = document.getElementById('emailEditor');
+        if (editor) {
+            let html = tpl.body_html || '';
+            if (currentClientContactName && currentClientContactName.trim() !== '') {
+                const firstName = currentClientContactName.trim();
+                html = html.replace(/\[Name\]/g, firstName);
+            }
+            editor.innerHTML = html;
+        }
+    }
+
+    function saveCurrentAsTemplate() {
+        const subjectInput = document.getElementById('subject');
+        const editor = document.getElementById('emailEditor');
+        const selectEl = document.getElementById('emailTemplateSelect');
+        if (!editor) return;
+
+        let defaultName = '';
+        if (selectEl && selectEl.value) {
+            const existing = emailTemplatesList.find(t => String(t.id) === String(selectEl.value));
+            if (existing) defaultName = existing.name;
+        }
+
+        const tplName = prompt('Введіть назву шаблону (якщо вказати існуючу назву — шаблон оновиться):', defaultName);
+        if (!tplName || !tplName.trim()) return;
+
+        fetch('/save_email_template', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: tplName.trim(),
+                subject: subjectInput ? subjectInput.value.trim() : '',
+                body_html: editor.innerHTML.trim()
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.template) {
+                const idx = emailTemplatesList.findIndex(t => String(t.id) === String(data.template.id));
+                if (idx >= 0) {
+                    emailTemplatesList[idx] = data.template;
+                } else {
+                    emailTemplatesList.push(data.template);
+                    const opt = document.createElement('option');
+                    opt.value = data.template.id;
+                    opt.text = data.template.name;
+                    selectEl.appendChild(opt);
+                }
+                selectEl.value = data.template.id;
+                const delBtn = document.getElementById('btnDeleteTemplate');
+                if (delBtn) delBtn.style.display = 'inline-block';
+                alert(data.message);
+            } else {
+                alert(data.message || 'Не вдалося зберегти шаблон.');
+            }
+        })
+        .catch(() => alert('Помилка з\'єднання при збереженні шаблону.'));
+    }
+
+    function deleteSelectedTemplate() {
+        const selectEl = document.getElementById('emailTemplateSelect');
+        if (!selectEl || !selectEl.value) return;
+        const tplId = selectEl.value;
+        const tpl = emailTemplatesList.find(t => String(t.id) === String(tplId));
+        if (!confirm(`Видалити шаблон «${tpl ? tpl.name : ''}»?`)) return;
+
+        fetch(`/delete_email_template/${tplId}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                emailTemplatesList = emailTemplatesList.filter(t => String(t.id) !== String(tplId));
+                const opt = selectEl.querySelector(`option[value="${tplId}"]`);
+                if (opt) opt.remove();
+                selectEl.value = '';
+                const delBtn = document.getElementById('btnDeleteTemplate');
+                if (delBtn) delBtn.style.display = 'none';
+            } else {
+                alert(data.message || 'Помилка видалення.');
+            }
+        });
+    }
     let wYear = new Date().getFullYear();
     let wMonth = new Date().getMonth();
     const wMonthNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
@@ -846,6 +1062,26 @@
         if (refusalForm) {
             refusalForm.addEventListener('submit', function() {
                 refusalSubmitted = true;
+            });
+        }
+
+        const crmEmailForm = document.getElementById('crmEmailForm');
+        if (crmEmailForm) {
+            crmEmailForm.addEventListener('submit', function(e) {
+                const editor = document.getElementById('emailEditor');
+                const htmlInput = document.getElementById('emailBodyHtmlInput');
+                const textArea = document.getElementById('emailBodyTextarea');
+                if (editor) {
+                    const plainText = (editor.innerText || '').trim();
+                    if (!plainText) {
+                        e.preventDefault();
+                        alert('Будь ласка, введіть текст повідомлення перед відправкою.');
+                        editor.focus();
+                        return;
+                    }
+                    if (htmlInput) htmlInput.value = editor.innerHTML;
+                    if (textArea) textArea.value = plainText;
+                }
             });
         }
 
