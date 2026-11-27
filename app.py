@@ -37,6 +37,23 @@ MAIL_PORT = 465
 MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
 MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 
+DEFAULT_FARM_TEMPLATE_NAME = "🚜 Фермерські господарства — Follow-Up (EN)"
+DEFAULT_FARM_TEMPLATE_SUBJECT = "Your MAYER-PRO price list + warehouse availability in Slovakia"
+DEFAULT_FARM_TEMPLATE_HTML = """<p style="margin: 0 0 16px 0; font-size: 20px; font-weight: bold; color: #111111; line-height: 1.3;">Dear [Name],</p>
+<p style="margin: 0 0 14px 0; font-size: 15px; color: #212529; line-height: 1.6;">Following up on the <strong>MAYER-PRO</strong> catalogue you downloaded &mdash; as promised, please find our full price list attached for spare parts compatible with <strong>Väderstad, Horsch, Kverneland, and Maschio Gaspardo</strong>.</p>
+<p style="margin: 0 0 10px 0; font-size: 15px; color: #212529; line-height: 1.6;">Ordering directly from our European warehouse in <strong>Senec, Slovakia</strong> gives you clear advantages:</p>
+<ul style="margin: 0 0 18px 0; padding-left: 22px; font-size: 15px; color: #212529; line-height: 1.6;">
+    <li style="margin-bottom: 6px;"><strong style="color: #111111;">Factory-direct prices</strong> &mdash; buy straight from the manufacturer with zero distributor markups.</li>
+    <li style="margin-bottom: 6px;"><strong style="color: #111111;">Fast 24–48h dispatch</strong> &mdash; all listed wear parts are <strong>in stock</strong> and ready for immediate shipping across Europe.</li>
+    <li style="margin-bottom: 6px;"><strong style="color: #111111;">High-grade boron steel</strong> &mdash; proven durability and maximum wear resistance in demanding soil conditions.</li>
+</ul>
+<div style="background-color: #F5F5F7; border-left: 4px solid #C8102E; padding: 14px 18px; margin: 0 0 18px 0; border-radius: 0 4px 4px 0;">
+    <p style="margin: 0 0 6px 0; font-size: 16px; font-weight: bold; color: #111111;">Ready to order? (Minimum order: €600)</p>
+    <p style="margin: 0; font-size: 15px; color: #212529; line-height: 1.55;">Reply to this email with the <strong>OEM part numbers and quantities</strong> you need (minimum order value is <strong>€600</strong>). We will immediately confirm availability, calculate delivery to your farm, and send you a ready-to-pay invoice.</p>
+</div>
+<p style="margin: 0 0 14px 0; font-size: 15px; color: #212529; line-height: 1.6;">Need help selecting the right wear parts for your specific machinery model or reaching the <strong>€600 minimum order</strong> for the upcoming season? Simply reply to this message &mdash; I will be happy to assist you.</p>"""
+
+
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
@@ -124,12 +141,12 @@ def get_available_prices():
     ]
     return sorted(files)
 
-def send_email_notification(to_email, subject, body_text, promo_banner=None, server_attachments=None, uploaded_files=None):
+def send_email_notification(to_email, subject, body_text, promo_banner=None, server_attachments=None, uploaded_files=None, body_html=None):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
         print("⚠️ Налаштування пошти відсутні в змінних оточення Render!")
         return False
     try:
-        html_body = format_text_to_html(body_text)
+        html_body = body_html.strip() if (body_html and body_html.strip()) else format_text_to_html(body_text)
         logo_url = "https://my-crm-q24n.onrender.com/static/logotipnew.png"
 
         banner_html = ""
@@ -337,6 +354,30 @@ def init_db():
             created_at TEXT
         )
     ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS email_templates (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            subject TEXT NOT NULL,
+            body_html TEXT NOT NULL,
+            created_at TEXT
+        )
+    ''')
+
+    cursor.execute(
+        '''
+        INSERT INTO email_templates (name, subject, body_html, created_at)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (name) DO NOTHING
+        ''',
+        (
+            DEFAULT_FARM_TEMPLATE_NAME,
+            DEFAULT_FARM_TEMPLATE_SUBJECT,
+            DEFAULT_FARM_TEMPLATE_HTML,
+            datetime.now().strftime("%Y-%m-%d %H:%M")
+        )
+    )
     
     conn.commit()
     cursor.close()
@@ -1126,11 +1167,12 @@ def send_client_email():
     to_email = request.form.get('email', '').strip()
     subject = request.form.get('subject', '').strip()
     body_text = request.form.get('body', '').strip()
+    body_html = request.form.get('body_html', '').strip()
     promo_banner = request.form.get('promo_banner', '').strip()
     price_files = request.form.getlist('price_files')
     custom_files = [f for f in request.files.getlist('custom_attachments') if f and f.filename]
     
-    if to_email and body_text:
+    if to_email and (body_html or body_text):
         attached_names = list(price_files) + [os.path.basename(f.filename) for f in custom_files]
         success = send_email_notification(
             to_email,
@@ -1138,7 +1180,8 @@ def send_client_email():
             body_text,
             promo_banner=promo_banner,
             server_attachments=price_files,
-            uploaded_files=custom_files
+            uploaded_files=custom_files,
+            body_html=body_html
         )
         if success:
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -1161,6 +1204,58 @@ def send_client_email():
             cursor.close()
             conn.close()
     return redirect(url_for('client_detail', client_id=client_id))
+
+
+@app.route('/save_email_template', methods=['POST'])
+@login_required
+def save_email_template():
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    subject = (data.get('subject') or '').strip()
+    body_html = (data.get('body_html') or '').strip()
+
+    if not name or not body_html:
+        return jsonify({'success': False, 'message': 'Вкажіть назву шаблону та текст листа!'})
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        cursor.execute(
+            '''
+            INSERT INTO email_templates (name, subject, body_html, created_at)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (name) DO UPDATE
+            SET subject = EXCLUDED.subject, body_html = EXCLUDED.body_html, created_at = EXCLUDED.created_at
+            RETURNING id
+            ''',
+            (name, subject, body_html, now_str)
+        )
+        tpl_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({
+            'success': True,
+            'template': {'id': tpl_id, 'name': name, 'subject': subject, 'body_html': body_html},
+            'message': f'Шаблон «{name}» успішно збережено!'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Помилка збереження: {str(e)}'})
+
+@app.route('/delete_email_template/<int:template_id>', methods=['POST'])
+@login_required
+def delete_email_template(template_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM email_templates WHERE id = %s", (template_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Шаблон видалено.'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Помилка видалення: {str(e)}'})
 
 @app.route('/sync_emails', methods=['POST'])
 @login_required
@@ -1550,6 +1645,19 @@ def client_detail(client_id):
     events_by_date = dict(cursor.fetchall())
     json_events_by_date = json.dumps(events_by_date, ensure_ascii=False)
 
+    cursor.execute("SELECT id, name, subject, body_html FROM email_templates ORDER BY id ASC")
+    email_templates_raw = cursor.fetchall()
+    email_templates = [
+        {
+            'id': int(t['id']),
+            'name': t['name'],
+            'subject': t['subject'],
+            'body_html': t['body_html']
+        }
+        for t in email_templates_raw
+    ]
+    json_email_templates = json.dumps(email_templates, ensure_ascii=False)
+
     cursor.close()
     conn.close()
     return render_template(
@@ -1561,7 +1669,9 @@ def client_detail(client_id):
         deal_count=deal_count,
         deal_total_sum=deal_total_sum,
         banners=get_available_banners(),
-        prices=get_available_prices()
+        prices=get_available_prices(),
+        email_templates=email_templates,
+        json_email_templates=json_email_templates
     )
 
 @app.route('/edit_negotiation/<int:neg_id>', methods=['POST'])
